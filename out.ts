@@ -349,6 +349,157 @@ const lean_uint32_of_nat2 = (n) => Number(BigInt.asUintN(32, n));
 const lean_uint64_to_float = (a) => Number(a);
 const lean_uint32_to_float = (a) => Number(a);
 
+// ---- misc externs reached by toString / repr / platform ----
+// Array.mk : List a -> Array a (the IR ctor for the Array's backing buffer).
+const lean_array_mk = (lst) => {
+  const out = [];
+  let cur = lst;
+  while (typeof cur !== 'number' && cur.tag === 1) { out.push(cur.fields[0]); cur = cur.fields[1]; }
+  return out;
+};
+// USize.repr / Nat.repr style decimal rendering.
+const lean_string_of_usize = (a) => a.toString();
+// System.Platform.getNumBits : the host word size; the value model treats
+// USize as 64-bit (see prelude header), so report 64.
+const lean_system_platform_nbits = () => 64n;
+
+// ===================== IO runtime =====================
+// Representation (verified against EmitC / lean.h):
+//   - Every compiled IO/BaseIO action is a function `(...args) => io_result`.
+//     The `World` token is an IR `void` param; the emitter drops void params,
+//     so actions receive NO trailing world arg (closure `app` sites do pass an
+//     erased `undefined`, which the prelude closures simply ignore).
+//   - io_result mirrors `EST.Out` / `lean_io_result`: ok = ctor tag 0, error =
+//     ctor tag 1, each with one field. So {tag:0,fields:[value]} / {tag:1,fields:[err]}.
+const lean_io_result_mk_ok = (a) => ({ tag: 0, fields: [a] });
+const lean_io_result_mk_error = (e) => ({ tag: 1, fields: [e] });
+const lean_io_result_is_ok = (r) => lean_tag(r) === 0;
+const lean_io_result_get_value = (r) => r.fields[0];
+const lean_io_result_get_error = (r) => r.fields[0];
+
+// IO.Error.userError msg. userError is the last ctor of the IO.Error inductive
+// (cidx 18); render via its message field. Object form (multi-ctor inductive).
+const IO_ERROR_USER = 18;
+const lean_mk_io_user_error = (msg) => ({ tag: IO_ERROR_USER, fields: [msg] });
+const lean_io_error_to_string = (e) =>
+  (typeof e === 'object' && e !== null && Array.isArray(e.fields) && typeof e.fields[0] === 'string')
+    ? e.fields[0]
+    : String(e);
+
+// FS.Stream ctor: field order from `structure FS.Stream`
+//   flush(0) read(1) write(2) getLine(3) putStr(4) isTty(5).
+// Each field is itself an IO action closure: it takes its value args then an
+// erased world arg, and returns an io_result. lean_apply invokes them.
+const _utf8encIO = new TextEncoder();
+const _mkWriteStream = (write) => ({
+  tag: 0,
+  fields: [
+    () => lean_io_result_mk_ok(0),
+    (_n) => lean_io_result_mk_ok(new Uint8Array(0)),
+    (buf) => { write(Buffer.from(buf)); return lean_io_result_mk_ok(0); },
+    () => lean_io_result_mk_ok(''),
+    (s) => { write(s); return lean_io_result_mk_ok(0); },
+    () => lean_io_result_mk_ok(0),
+  ],
+});
+let _stdoutStream = _mkWriteStream((x) => process.stdout.write(x));
+let _stderrStream = _mkWriteStream((x) => process.stderr.write(x));
+let _stdinStream = {
+  tag: 0,
+  fields: [
+    () => lean_io_result_mk_ok(0),
+    (_n) => lean_io_result_mk_ok(new Uint8Array(0)),
+    (_b) => lean_io_result_mk_ok(0),
+    () => lean_io_result_mk_ok(''),
+    (_s) => lean_io_result_mk_ok(0),
+    () => lean_io_result_mk_ok(0),
+  ],
+};
+// getStdout/getStderr/getStdin are BaseIO actions: BaseIO cannot error, so its
+// `EST.Out.ok` is erased and the extern returns the bare Stream (the consuming
+// IR does `proj[4]` directly on the result). Likewise the set* variants return
+// the previous stream directly.
+const lean_get_stdout = () => _stdoutStream;
+const lean_get_stderr = () => _stderrStream;
+const lean_get_stdin = () => _stdinStream;
+const lean_get_set_stdout = (s) => { const p = _stdoutStream; _stdoutStream = s; return p; };
+const lean_get_set_stderr = (s) => { const p = _stderrStream; _stderrStream = s; return p; };
+const lean_get_set_stdin = (s) => { const p = _stdinStream; _stdinStream = s; return p; };
+// @[export] aliases some emitted code calls directly.
+const lean_io_eprint = (s) => { process.stderr.write(s); return lean_io_result_mk_ok(0); };
+const lean_io_eprintln = (s) => { process.stderr.write(s + '\n'); return lean_io_result_mk_ok(0); };
+
+// IO.Ref / ST.Ref : a single mutable cell {value}. These are BaseIO actions
+// (cannot error), so `EST.Out.ok` is erased and the externs return bare values
+// (the consuming IR uses the result directly, never `case`-ing on a tag).
+const lean_st_mk_ref = (a) => ({ value: a });
+const lean_st_ref_get = (r) => r.value;
+const lean_st_ref_set = (r, a) => { r.value = a; return 0; };
+const lean_st_ref_swap = (r, a) => { const o = r.value; r.value = a; return o; };
+const lean_st_ref_take = (r) => { const o = r.value; r.value = undefined; return o; };
+const lean_st_ref_ptr_eq = (r1, r2) => (r1 === r2 ? 1 : 0);
+
+// IO.getEnv : BaseIO (Option String). BaseIO -> bare Option (no io_result wrap).
+// none = 0 (nullary), some = {tag:1,fields:[s]}.
+const lean_io_getenv = (name) => {
+  const v = process.env[name];
+  return v === undefined ? 0 : { tag: 1, fields: [v] };
+};
+
+// IO.Process.exit / forceExit.
+const lean_io_exit = (code) => { process.exit(Number(code) & 0xff); };
+const lean_io_force_exit = (code) => { process.exit(Number(code) & 0xff); };
+
+// FS.Handle primitives (node:fs sync). `node:fs` is loaded lazily so the
+// function-export diff-test harness (which evaluates the prelude with no module
+// loader) is unaffected unless a handle primitive is actually called.
+let _nodeFsCache = null;
+const _nodeFs = new Proxy({}, { get: (_t, k) => {
+  if (!_nodeFsCache) _nodeFsCache = require('node:fs');
+  return _nodeFsCache[k];
+} });
+const _MODE_FLAG = ['r', 'w', 'wx', 'r+', 'a']; // FS.Mode cidx -> open flag
+const lean_io_prim_handle_mk = (path, mode) => {
+  try { return lean_io_result_mk_ok({ fd: _nodeFs.openSync(path, _MODE_FLAG[mode]) }); }
+  catch (e) { return lean_io_result_mk_error(lean_mk_io_user_error(String(e && e.message ? e.message : e))); }
+};
+const lean_io_prim_handle_put_str = (h, s) => {
+  _nodeFs.writeSync(h.fd, Buffer.from(s, 'utf8')); return lean_io_result_mk_ok(0);
+};
+const lean_io_prim_handle_write = (h, buf) => {
+  _nodeFs.writeSync(h.fd, Buffer.from(buf)); return lean_io_result_mk_ok(0);
+};
+const lean_io_prim_handle_read = (h, n) => {
+  const b = Buffer.alloc(Number(n));
+  const k = _nodeFs.readSync(h.fd, b, 0, Number(n), null);
+  return lean_io_result_mk_ok(new Uint8Array(b.subarray(0, k)));
+};
+const lean_io_prim_handle_flush = () => lean_io_result_mk_ok(0);
+const lean_io_prim_handle_is_tty = () => lean_io_result_mk_ok(0);
+
+// Entry point: run a compiled `main`, decode the io_result like C `main`.
+// `mainFn` already has its void world param dropped (the emitter omits it), so
+// arity-1 IO actions are invoked with no args; arity-2 (`List String -> IO X`)
+// receives the argv-derived List. `retIsU32` picks the exit-code expression.
+const lean_run_main = (mainFn, hasArgs, retIsU32) => {
+  let res;
+  if (hasArgs) {
+    const argv = process.argv.slice(2);
+    const args = argv.reduceRight((tl, s) => ({ tag: 1, fields: [s, tl] }), 0);
+    res = mainFn(args);
+  } else {
+    res = mainFn();
+  }
+  if (lean_io_result_is_ok(res)) {
+    const v = lean_io_result_get_value(res);
+    process.exitCode = retIsU32 ? Number(v) & 0xff : 0;
+  } else {
+    process.stderr.write('uncaught exception: ' +
+      lean_io_error_to_string(lean_io_result_get_error(res)) + '\n');
+    process.exitCode = 1;
+  }
+};
+
 // ================ GENERATED ================
 
 function LeanJs_Demo_double(x_1) {

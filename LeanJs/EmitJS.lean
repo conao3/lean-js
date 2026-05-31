@@ -238,6 +238,36 @@ def emitKnownFap (c : FunId) (ys : Array Arg) : Option String :=
   | `Nat.toUSize                  => call "lean_usize_of_nat"
   | `UInt64.toFloat               => call "lean_uint64_to_float"
   | `UInt32.toFloat               => call "lean_uint32_to_float"
+  -- IO / ST.Ref / streams / process. The World/void arg is dropped by the
+  -- emitter (filtered params), so these take only their runtime args.
+  | `IO.getStdout                 => call "lean_get_stdout"
+  | `IO.getStderr                 => call "lean_get_stderr"
+  | `IO.getStdin                  => call "lean_get_stdin"
+  | `IO.setStdout                 => call "lean_get_set_stdout"
+  | `IO.setStderr                 => call "lean_get_set_stderr"
+  | `IO.setStdin                  => call "lean_get_set_stdin"
+  | `IO.eprint                    => call "lean_io_eprint"
+  | `IO.eprintln                  => call "lean_io_eprintln"
+  | `IO.getEnv                    => call "lean_io_getenv"
+  | `IO.Process.exit              => call "lean_io_exit"
+  | `IO.Process.Prim.exit         => call "lean_io_exit"
+  | `ST.Prim.mkRef                => call "lean_st_mk_ref"
+  | `ST.Prim.Ref.get              => call "lean_st_ref_get"
+  | `ST.Prim.Ref.set              => call "lean_st_ref_set"
+  | `ST.Prim.Ref.swap             => call "lean_st_ref_swap"
+  | `ST.Prim.Ref.take             => call "lean_st_ref_take"
+  | `ST.Prim.Ref.ptrEq            => call "lean_st_ref_ptr_eq"
+  | `IO.FS.Handle.mk              => call "lean_io_prim_handle_mk"
+  | `IO.FS.Handle.putStr          => call "lean_io_prim_handle_put_str"
+  | `IO.FS.Handle.write           => call "lean_io_prim_handle_write"
+  | `IO.FS.Handle.read            => call "lean_io_prim_handle_read"
+  | `IO.FS.Handle.flush           => call "lean_io_prim_handle_flush"
+  | `IO.FS.Handle.isTty           => call "lean_io_prim_handle_is_tty"
+  -- misc reached by toString / repr / platform width.
+  | `Array.mk                     => call "lean_array_mk"
+  | `String.ofList                => call "lean_string_mk"
+  | `USize.repr                   => call "lean_string_of_usize"
+  | `System.Platform.getNumBits   => call "lean_system_platform_nbits"
   | _ => none
 
 def ctorLit (i : CtorInfo) (ys : Array Arg) : String :=
@@ -579,5 +609,50 @@ def render (decls : Array Decl) : String := Id.run do
 /-- Collect transitively from roots and render a self-contained module body. -/
 def renderFromRoots (env : Environment) (roots : Array Name) : String :=
   render (collectTransitive env roots)
+
+/-! ## Program entry (analogue of EmitC `emitMainFnIfNeeded` / `emitMainFn`)
+
+A runnable program defines `main`. We mirror EmitC's decisions: branch on IR
+arity (the `void` World param is one of the params, so arity 1 = `IO X`, arity
+2 = `List String → IO X`), and inspect the Lean-level `IO` result type for the
+exit-code expression (`UInt32` → numeric code, else `Unit`/other → 0). The
+generated tail calls `lean_run_main`, which threads the world and unwraps the
+io_result exactly like the C `main`. -/
+
+/-- IR arity of `main` counting all params (the `void` World token is a real IR
+    param here). EmitC accepts arity 1 (`IO X`) or 2 (`List String → IO X`). -/
+def mainHasArgs (d : Decl) : Bool := d.params.size ≥ 2
+
+/-- Is `main`'s `IO` result type `UInt32`? Recovered from the Lean-level type
+    `... → IO X` by stripping binders and taking the `X` in `IO X`, mirroring
+    EmitC's `retTy.getForallBody.appArg!` then `constName? == some ``UInt32``. -/
+def mainRetIsUInt32 (env : Environment) (mainName : Name) : Bool :=
+  match env.find? mainName with
+  | some ci =>
+    match ci.type.getForallBody.appArg!.constName? with
+    | some n => n == ``UInt32
+    | none   => false
+  | none => false
+
+/-- Emit the program entry that runs `main` and decodes the io_result. -/
+def emitMainEntry (env : Environment) (d : Decl) : EmitM Unit := do
+  let hasArgs := if mainHasArgs d then "true" else "false"
+  let retU32  := if mainRetIsUInt32 env d.name then "true" else "false"
+  line ""
+  line s!"lean_run_main({funRef d.name}, {hasArgs}, {retU32});"
+
+/-- Render a runnable program from a `main` root: the transitive function
+    declarations plus the entry that invokes `main`. -/
+def renderProgram (env : Environment) (mainName : Name) : String := Id.run do
+  let decls := collectTransitive env #[mainName]
+  let act : EmitM Unit := do
+    for d in decls do
+      emitDecl d
+      line ""
+    match decls.find? (fun d => d.name == mainName) with
+    | some d => emitMainEntry env d
+    | none   => pure ()
+  let (_, st) := act.run {}
+  return st.out
 
 end LeanJs

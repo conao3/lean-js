@@ -1,5 +1,6 @@
 import LeanJs.EmitJS
 import LeanJs.Demo
+import LeanJs.DemoIO
 import LeanTodo.Basic
 
 open Lean Lean.IR
@@ -34,8 +35,10 @@ def rootNames : Array Name := #[
 def main (args : List String) : IO Unit := do
   let outPath := args.headD "out.ts"
   let preludePath := args.getD 1 "prelude.ts"
+  let progPath := args.getD 2 "out-io.mjs"
   initSearchPath (← findSysroot)
-  let env ← importModules #[{ module := `LeanJs.Demo }, { module := `LeanTodo.Basic }] {}
+  let env ← importModules
+    #[{ module := `LeanJs.Demo }, { module := `LeanJs.DemoIO }, { module := `LeanTodo.Basic }] {}
     (loadExts := true)
   let prelude ← IO.FS.readFile preludePath
   let decls := LeanJs.collectTransitive env rootNames
@@ -43,3 +46,7 @@ def main (args : List String) : IO Unit := do
   let ts := prelude ++ "\n// ================ GENERATED ================\n\n" ++ body
   IO.FS.writeFile outPath ts
   IO.println s!"wrote {decls.size} decls to {outPath}"
+  let progBody := LeanJs.renderProgram env `LeanJs.DemoIO.main
+  let prog := prelude ++ "\n// ================ GENERATED PROGRAM ================\n\n" ++ progBody
+  IO.FS.writeFile progPath prog
+  IO.println s!"wrote runnable program to {progPath}"
