@@ -1,5 +1,6 @@
 import LeanTodo.Basic
 import LeanJs.DemoHO
+import Std.Data.HashMap
 
 open LeanTodo
 open LeanJs.DemoHO
@@ -245,6 +246,7 @@ def main : IO Unit := do
   IO.println s!"fmapList = {fmapList [1,2,3]}"
   IO.println s!"safeDiv 10 2 = {safeDivStr 10 2}"
   IO.println s!"safeDiv 10 0 = {safeDivStr 10 0}"
+  IO.println s!"hmDemo = {hmDemo}"
   -- Acyclic cross-function tail chain (small-N value diff; deep no-overflow
   -- check lives node-side in test-tco.mjs).
   IO.println s!"chainHead 10 = {chainHead 10}"

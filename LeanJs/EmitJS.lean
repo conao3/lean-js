@@ -101,6 +101,7 @@ def emitKnownFapSpecialNames : Std.HashSet Name := Std.HashSet.ofList [
   `Int.ofNat,                     -- C lean_nat_to_int -> prelude lean_int_of_nat
   `Nat.shiftLeft, `Nat.shiftRight,-- C lean_nat_shiftl/r -> lean_nat_shift_left/right
   `Array.usize,                   -- C lean_array_size -> prelude lean_array_usize
+  `Array.set, `Array.set!,        -- C lean_array_fset -> prelude lean_array_set (copy)
   `Array.ugetBorrowed, `Array.getInternalBorrowed, -- C *_borrowed -> lean_array_uget
   -- Array empties lowered to the `[]` literal
   `Array.empty, `Array.mkEmpty, `Array.emptyWithCapacity, `Array.mkArray0
@@ -149,6 +150,7 @@ def preludeSymbols : Std.HashSet String := Std.HashSet.ofList [
   "lean_usize_land", "lean_usize_lor", "lean_usize_xor", "lean_usize_complement",
   "lean_usize_shift_left", "lean_usize_shift_right",
   "lean_usize_dec_eq", "lean_usize_dec_lt", "lean_usize_dec_le", "lean_usize_to_nat",
+  "lean_uint64_to_usize",
   -- signed fixed-width ints
   "lean_int8_of_int", "lean_int8_of_nat", "lean_int8_to_int",
   "lean_int8_add", "lean_int8_sub", "lean_int8_mul", "lean_int8_div", "lean_int8_mod",
