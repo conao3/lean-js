@@ -28,6 +28,13 @@ fi
 node test-tco.mjs
 echo "--- TCO deep check done ---"
 
+# 32-bit USize profile: flip WORD_BITS=32 in the generated source and assert the
+# usize wrap (2^32) and getNumBits (32). Checked against hand-computed literals
+# (a 64-bit host cannot natively produce a 32-bit reference); the 64-bit profile
+# is the one the native oracle covers.
+node test-usize32.mjs
+echo "--- 32-bit USize profile check done ---"
+
 # Fail-loud extern link check (negative test): an unmapped extern must be a hard
 # extraction error, not a dangling runtime call. This is an extraction-time check
 # (no program to compile), so it stays on the interpreter.

@@ -199,4 +199,13 @@ def f32log (x : Float32) : Float32 := x.log
 def f32cbrt (x : Float32) : Float32 := x.cbrt
 def f32toBits (x : Float32) : UInt32 := x.toBits
 
+-- USize / platform-word width. On the host (64-bit) profile these match the
+-- native oracle; under a WORD_BITS=32 profile, getNumBits reports 32 and USize
+-- arithmetic wraps at 2^32 (asserted node-side in test-usize32.mjs).
+def nbits : Nat := System.Platform.numBits
+def uszOfU64 (x : UInt64) : USize := x.toUSize
+def uszAdd (a b : USize) : USize := a + b
+def uszCompl (a : USize) : USize := ~~~a
+def uszToNat (a : USize) : Nat := a.toNat
+
 end LeanJs.Demo

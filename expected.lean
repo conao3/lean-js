@@ -284,6 +284,12 @@ def main : IO Unit := do
   IO.println s!"f32log = {float32Str (LeanJs.Demo.f32log 10.0)}"
   IO.println s!"f32cbrt = {float32Str (LeanJs.Demo.f32cbrt 27.0)}"
   IO.println s!"f32toBits = {LeanJs.Demo.f32toBits 1.0}"
+  -- USize / platform word width on the host (64-bit) profile. The 32-bit profile
+  -- (WORD_BITS=32) is asserted node-side in test-usize32.mjs.
+  IO.println s!"nbits = {LeanJs.Demo.nbits}"
+  IO.println s!"uszOfU64 = {LeanJs.Demo.uszToNat (LeanJs.Demo.uszOfU64 4294967296)}"
+  IO.println s!"uszAddWrap = {LeanJs.Demo.uszToNat (LeanJs.Demo.uszAdd 0xFFFFFFFFFFFFFFFF 1)}"
+  IO.println s!"uszCompl = {LeanJs.Demo.uszToNat (LeanJs.Demo.uszCompl 0)}"
   -- TodoList sequence: add, add, add, toggle, remove
   let l0 := TodoList.empty
   let l1 := l0.add "buy milk"

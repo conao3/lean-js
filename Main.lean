@@ -42,6 +42,8 @@ def rootNames : Array Name := #[
   `LeanJs.Demo.ftoBits, `LeanJs.Demo.fofBits, `LeanJs.Demo.ffrExpM, `LeanJs.Demo.ffrExpE,
   `LeanJs.Demo.f32tan, `LeanJs.Demo.f32exp, `LeanJs.Demo.f32log, `LeanJs.Demo.f32cbrt,
   `LeanJs.Demo.f32toBits,
+  `LeanJs.Demo.nbits, `LeanJs.Demo.uszOfU64, `LeanJs.Demo.uszAdd,
+  `LeanJs.Demo.uszCompl, `LeanJs.Demo.uszToNat,
   `LeanJs.DemoHO.hofApply,
   `LeanJs.DemoHO.listMapLam, `LeanJs.DemoHO.listFilterLam, `LeanJs.DemoHO.listFoldlLam,
   `LeanJs.DemoHO.arrMapLam,

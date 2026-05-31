@@ -242,9 +242,9 @@ const lean_uint16_of_nat = _u16.ofNat, lean_uint16_add = _u16.add, lean_uint16_s
 const lean_uint32_add = _u32.add, lean_uint32_sub = _u32.sub, lean_uint32_mul = _u32.mul, lean_uint32_div = _u32.div, lean_uint32_mod = _u32.mod, lean_uint32_land = _u32.land, lean_uint32_lor = _u32.lor, lean_uint32_xor = _u32.xor, lean_uint32_complement = _u32.complement, lean_uint32_neg = _u32.neg, lean_uint32_shift_left = _u32.shiftLeft, lean_uint32_shift_right = _u32.shiftRight, lean_uint32_dec_eq = _u32.decEq, lean_uint32_dec_lt = _u32.decLt, lean_uint32_dec_le = _u32.decLe, lean_uint32_to_nat = _u32.toNat;
 const lean_uint64_of_nat = _u64.ofNat, lean_uint64_add = _u64.add, lean_uint64_sub = _u64.sub, lean_uint64_mul = _u64.mul, lean_uint64_div = _u64.div, lean_uint64_mod = _u64.mod, lean_uint64_land = _u64.land, lean_uint64_lor = _u64.lor, lean_uint64_xor = _u64.xor, lean_uint64_complement = _u64.complement, lean_uint64_neg = _u64.neg, lean_uint64_shift_left = _u64.shiftLeft, lean_uint64_shift_right = _u64.shiftRight, lean_uint64_dec_eq = _u64.decEq, lean_uint64_dec_lt = _u64.decLt, lean_uint64_dec_le = _u64.decLe, lean_uint64_to_nat = _u64.toNat;
 const lean_usize_of_nat = _usz.ofNat, lean_usize_add = _usz.add, lean_usize_sub = _usz.sub, lean_usize_mul = _usz.mul, lean_usize_div = _usz.div, lean_usize_mod = _usz.mod, lean_usize_land = _usz.land, lean_usize_lor = _usz.lor, lean_usize_xor = _usz.xor, lean_usize_complement = _usz.complement, lean_usize_neg = _usz.neg, lean_usize_shift_left = _usz.shiftLeft, lean_usize_shift_right = _usz.shiftRight, lean_usize_dec_eq = _usz.decEq, lean_usize_dec_lt = _usz.decLt, lean_usize_dec_le = _usz.decLe, lean_usize_to_nat = _usz.toNat;
-// UInt64 and USize share the bigint 64-bit representation, so the conversion is
-// a re-mask to 64 bits (identity for in-range values).
-const lean_uint64_to_usize = (x) => BigInt.asUintN(64, x);
+// UInt64 -> USize truncates to the platform word width; on the 64-bit profile
+// this is an identity re-mask, on a 32-bit profile it drops the high 32 bits.
+const lean_uint64_to_usize = (x) => BigInt.asUintN(WORD_BITS, x);
 
 // ---- Signed fixed-width ints Int8/16/32/64/ISize (BigInt + asIntN) ----
 // Uniform bigint representation across all widths (avoids number/bigint mixing).
@@ -598,9 +598,10 @@ const lean_array_mk = (lst) => {
 };
 // USize.repr / Nat.repr style decimal rendering.
 const lean_string_of_usize = (a) => a.toString();
-// System.Platform.getNumBits : the host word size; the value model treats
-// USize as 64-bit (see prelude header), so report 64.
-const lean_system_platform_nbits = () => 64n;
+// System.Platform.getNumBits : the platform word size. Derived from WORD_BITS so
+// that flipping the single knob to 32 keeps getNumBits, USize.size, and the
+// usize arithmetic wrap all consistent on a 32-bit profile.
+const lean_system_platform_nbits = () => BigInt(WORD_BITS);
 
 // ===================== IO runtime =====================
 // Representation (verified against EmitC / lean.h):

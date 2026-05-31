@@ -31,6 +31,8 @@ const exports = [
   'LeanJs_Demo_ftoBits', 'LeanJs_Demo_fofBits', 'LeanJs_Demo_ffrExpM', 'LeanJs_Demo_ffrExpE',
   'LeanJs_Demo_f32tan', 'LeanJs_Demo_f32exp', 'LeanJs_Demo_f32log', 'LeanJs_Demo_f32cbrt',
   'LeanJs_Demo_f32toBits',
+  'LeanJs_Demo_nbits', 'LeanJs_Demo_uszOfU64', 'LeanJs_Demo_uszAdd',
+  'LeanJs_Demo_uszCompl', 'LeanJs_Demo_uszToNat',
   'LeanJs_DemoHO_hofApply', 'LeanJs_DemoHO_listMapLam', 'LeanJs_DemoHO_listFilterLam',
   'LeanJs_DemoHO_listFoldlLam', 'LeanJs_DemoHO_arrMapLam', 'LeanJs_DemoHO_applyAdders',
   'LeanJs_DemoHO_currySplit', 'LeanJs_DemoHO_optSeq', 'LeanJs_DemoHO_exSeq',
@@ -118,6 +120,11 @@ const {
   LeanJs_Demo_f32log: f32log,
   LeanJs_Demo_f32cbrt: f32cbrt,
   LeanJs_Demo_f32toBits: f32toBits,
+  LeanJs_Demo_nbits: nbits,
+  LeanJs_Demo_uszOfU64: uszOfU64,
+  LeanJs_Demo_uszAdd: uszAdd,
+  LeanJs_Demo_uszCompl: uszCompl,
+  LeanJs_Demo_uszToNat: uszToNat,
   LeanJs_DemoHO_hofApply: hofApply,
   LeanJs_DemoHO_listMapLam: listMapLam,
   LeanJs_DemoHO_listFilterLam: listFilterLam,
@@ -316,6 +323,10 @@ console.log(`f32exp = ${float32Str(f32exp(2.0))}`);
 console.log(`f32log = ${float32Str(f32log(10.0))}`);
 console.log(`f32cbrt = ${float32Str(f32cbrt(27.0))}`);
 console.log(`f32toBits = ${f32toBits(1.0)}`);
+console.log(`nbits = ${nbits()}`);
+console.log(`uszOfU64 = ${uszToNat(uszOfU64(4294967296n))}`);
+console.log(`uszAddWrap = ${uszToNat(uszAdd(0xFFFFFFFFFFFFFFFFn, 1n))}`);
+console.log(`uszCompl = ${uszToNat(uszCompl(0n))}`);
 
 // ---- TodoList JS model ----
 // List: nil = 0, cons = { tag:1, fields:[head, tail] }
