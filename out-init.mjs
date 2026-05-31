@@ -547,11 +547,69 @@ const lean_string_get_byte_fast = (s, p) => _utf8enc.encode(s)[Number(p)];
 // String.decodeChar (extern lean_string_utf8_get_fast): decode the char whose
 // UTF-8 sequence begins at byte offset; same decode as String.get.
 const lean_string_utf8_get_fast = (s, p) => lean_string_utf8_get(s, p);
+// String.Internal.isPrefixOf (extern lean_string_isprefixof): p, s -> Bool.
+const lean_string_isprefixof = (p, s) => L_bool(s.startsWith(p));
+// String.Internal.any (extern lean_string_any): apply the Char->Bool closure to
+// each code point until one returns true (Bool scalar 1).
+const lean_string_any = (s, p) => {
+  for (const ch of s) if (lean_trampoline(lean_apply(p, [ch.codePointAt(0)]))) return 1;
+  return 0;
+};
+
+// ---- ByteArray: a Uint8Array (matches IO read buffers). Setters copy, like
+// Array, because the JS reference graph cannot honor Lean's uniqueness. ----
+const lean_mk_empty_byte_array = (_cap) => new Uint8Array(0);
+const lean_byte_array_size = (a) => BigInt(a.length);
+const lean_sarray_size = (a) => BigInt(a.length);
+const lean_byte_array_push = (a, b) => {
+  const r = new Uint8Array(a.length + 1);
+  r.set(a);
+  r[a.length] = Number(b) & 0xff;
+  return r;
+};
+// ByteArray.get! : byte at index; out-of-bounds panics in Lean, returns 0 here.
+const lean_byte_array_get = (a, i) => { const x = a[Number(i)]; return x === undefined ? 0 : x; };
+const lean_byte_array_fget = (a, i) => a[Number(i)];
+const lean_byte_array_uget = (a, i) => a[Number(i)];
+const lean_byte_array_set = (a, i, b) => {
+  const j = Number(i);
+  if (j < 0 || j >= a.length) return a;
+  const r = a.slice();
+  r[j] = Number(b) & 0xff;
+  return r;
+};
+const lean_byte_array_fset = lean_byte_array_set;
+const lean_byte_array_uset = lean_byte_array_set;
+// ByteArray.copySlice src srcOff dest destOff len exact : splice src[srcOff,+len)
+// into dest at destOff, growing dest, exactly as the Lean Array-extract spec.
+const lean_byte_array_copy_slice = (src, srcOff, dest, destOff, len, _exact) => {
+  const so = Number(srcOff), doff = Number(destOff), n = Number(len);
+  const take = Math.min(n, Math.max(0, src.length - so));
+  const head = dest.subarray(0, doff);
+  const mid = src.subarray(so, so + take);
+  const tail = dest.subarray(doff + take);
+  const r = new Uint8Array(head.length + mid.length + tail.length);
+  r.set(head, 0);
+  r.set(mid, head.length);
+  r.set(tail, head.length + mid.length);
+  return r;
+};
+// String.toByteArray / toUTF8 (extern lean_string_to_utf8).
+const lean_string_to_utf8 = (s) => _utf8enc.encode(s);
+// String.ofByteArray / fromUTF8(!)/Unchecked (extern lean_string_from_utf8_unchecked).
+const lean_string_from_utf8_unchecked = (b) => _utf8dec.decode(b);
+// ByteArray.validateUTF8 (extern lean_string_validate_utf8): Bool scalar.
+const lean_string_validate_utf8 = (b) => {
+  try { new TextDecoder('utf-8', { fatal: true }).decode(b); return 1; }
+  catch { return 0; }
+};
 
 // ---- Array: JS array. get is bounds-checked w/ default; push mutates. ----
 const lean_array_get_size = (a) => BigInt(a.length);
 const lean_array_fget = (a, i) => a[Number(i)];
-const lean_array_get = (a, i, dflt) => {
+// Array.get!Internal (extern lean_array_get): the C signature passes the
+// Inhabited default FIRST, then the array, then the index (a[i]! lowers here).
+const lean_array_get = (dflt, a, i) => {
   const idx = Number(i); return idx >= 0 && idx < a.length ? a[idx] : dflt;
 };
 const lean_array_uget = (a, i) => a[Number(i)];

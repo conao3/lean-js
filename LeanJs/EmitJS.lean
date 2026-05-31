@@ -240,6 +240,13 @@ def preludeSymbols : Std.HashSet String := Std.HashSet.ofList [
   "lean_string_utf8_set",
   "lean_string_contains", "lean_string_of_usize",
   "lean_string_get_byte_fast", "lean_string_utf8_get_fast",
+  "lean_string_isprefixof", "lean_string_any",
+  "lean_string_to_utf8", "lean_string_from_utf8_unchecked", "lean_string_validate_utf8",
+  -- ByteArray
+  "lean_mk_empty_byte_array", "lean_byte_array_size", "lean_byte_array_push",
+  "lean_byte_array_get", "lean_byte_array_fget", "lean_byte_array_uget",
+  "lean_byte_array_set", "lean_byte_array_fset", "lean_byte_array_uset",
+  "lean_byte_array_copy_slice", "lean_sarray_size",
   -- Array
   "lean_array_get_size", "lean_array_get", "lean_array_fget", "lean_array_set",
   "lean_array_push", "lean_array_pop", "lean_array_swap", "lean_array_uget",

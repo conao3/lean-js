@@ -44,3 +44,7 @@ root = "OracleInit"
 [[lean_exe]]
 name = "oracle-stress"
 root = "OracleStress"
+
+[[lean_exe]]
+name = "oracle-stress2"
+root = "OracleStress2"
