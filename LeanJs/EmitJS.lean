@@ -38,9 +38,22 @@ def argToJs : Arg → String
   | .var id => varName id
   | .erased => "undefined"
 
-/-- TS function reference for an arbitrary FunId: dots become `_`. -/
-def funRef (c : FunId) : String :=
-  (toString c).replace "." "_"
+/-- TS function reference for an arbitrary FunId. Dots become `_`, and any other
+    character that is not a valid JS identifier char (`?`, `!`, `'`, Greek/
+    subscript hygiene markers, etc. — all legal in Lean names) is escaped to a
+    `_uNN_`/`_NNN_` form so the emitted name is always a valid JS identifier.
+    Mirrors EmitC's name mangling intent (it has its own scheme); we only need a
+    deterministic, collision-free, syntactically-valid encoding. -/
+def funRef (c : FunId) : String := Id.run do
+  let mut acc := ""
+  for ch in (toString c).toList do
+    if ch == '.' then acc := acc ++ "_"
+    else if (ch.isAlphanum || ch == '_') && ch.toNat < 128 then acc := acc.push ch
+    else
+      -- escape any other char (incl. non-ASCII) by its code point, bracketed by
+      -- `_` so it cannot merge with adjacent digits/letters.
+      acc := acc ++ "_x" ++ toString ch.toNat ++ "_"
+  return acc
 
 /-! ## Extern → prelude-symbol single source of truth (analogue of EmitC)
 
@@ -172,6 +185,7 @@ def preludeSymbols : Std.HashSet String := Std.HashSet.ofList [
   "lean_string_utf8_get_opt", "lean_string_utf8_next", "lean_string_utf8_prev",
   "lean_string_utf8_at_end", "lean_string_utf8_extract", "lean_string_utf8_pos_of",
   "lean_string_contains", "lean_string_of_usize",
+  "lean_string_get_byte_fast", "lean_string_utf8_get_fast",
   -- Array
   "lean_array_get_size", "lean_array_get", "lean_array_fget", "lean_array_set",
   "lean_array_push", "lean_array_pop", "lean_array_swap", "lean_array_uget",
@@ -721,10 +735,16 @@ partial def emitPrefixThenTail (self : FunId) (scc : Std.HashSet Name)
   | b => emitNonTail self scc params jps b
 
 partial def emitTailRebind (params : Array Param) (args : Array Arg) : EmitM Unit := do
+  -- Only the params that survive as JS function parameters are rebound: the
+  -- `void` World token and erased (type/proof) params are dropped from the
+  -- function signature (emitDeclWith), so assigning to them would reference an
+  -- undeclared variable (`x_3 = __t_3` for a void World param). Filter in
+  -- lockstep with the positionally-aligned args.
+  let live := (params.zip args).filter (fun (p, _) => !p.ty.isVoid && !p.ty.isErased)
   -- stage all new values into temporaries first (aliasing safety)
-  for (p, a) in params.zip args do
+  for (p, a) in live do
     line s!"const __t_{p.x.idx} = {argToJs a};"
-  for p in params do
+  for (p, _) in live do
     line s!"{varName p.x} = __t_{p.x.idx};"
   line "continue;"
 
@@ -1045,6 +1065,31 @@ def emitMainEntry (env : Environment) (d : Decl) : EmitM Unit := do
   line ""
   line s!"lean_run_main({funRef d.name}, {hasArgs}, {retU32});"
 
+/-- Register init thunks for every reached decl carrying an `@[init]` /
+    `builtin_initialize` init fn (analogue of `EmitC.emitDeclInit`). Each thunk
+    runs the init action (the init fn is a separately-collected decl emitted as
+    `funRef initFn`) and assigns its io_result value to the decl's global, then
+    returns the io_result so `lean_run_init` can short-circuit on error. Builtin
+    inits (`isIOUnitBuiltinInitFn`) are skipped — they configure the compiler
+    environment, not the runtime program, exactly as EmitC guards them behind
+    `if (builtin)`. EmitC runs decl inits in reverse decl order; `decls` is
+    callee-first so the reverse is caller-first. -/
+def emitInitRegistrations (env : Environment) (decls : Array Decl) : EmitM Unit := do
+  for d in decls.reverse do
+    match getInitFnNameFor? env d.name with
+    | some initFn =>
+      -- skip pure builtin (compiler-time) inits; only runtime program inits run
+      unless isIOUnitBuiltinInitFn env d.name do
+        if isIOUnitInitFn env d.name then
+          -- @[init action] returning IO Unit: run for effect, no global binding.
+          line ("lean_register_init(() => " ++ funRef initFn ++ "());")
+        else
+          -- nullary global with an init fn: bind the io_result value to the global.
+          line ("lean_register_init(() => { const __r = " ++ funRef initFn
+            ++ "(); if (lean_io_result_is_ok(__r)) { " ++ funRef d.name
+            ++ " = lean_io_result_get_value(__r); } return __r; });")
+    | none => pure ()
+
 /-- Render a runnable program from a `main` root: the transitive function
     declarations plus the entry that invokes `main`. Fails loud on an unmapped
     extern (link check) before emitting, like `renderChecked`. -/
@@ -1061,6 +1106,14 @@ def renderProgramChecked (env : Environment) (mainName : Name) : Except String S
     for d in decls do
       emitDeclWith sccs d
       line ""
+    -- Module-init chain (analogue of EmitC.emitInitFn / emitDeclInit). For each
+    -- reached decl carrying an `@[init]` / `builtin_initialize` init fn, register
+    -- a thunk that runs the init action and binds its result to the decl's global
+    -- (the init fn itself is collected as an ordinary decl). `decls` is
+    -- callee-first; EmitC runs decl inits in reverse decl order, i.e. caller-first
+    -- here, so we iterate the reverse. Pure closed-term globals are emitted as
+    -- lazily-called zero-arg functions elsewhere, so they need no registration.
+    emitInitRegistrations env decls
     match decls.find? (fun d => d.name == mainName) with
     | some d => emitMainEntry env d
     | none   => pure ()

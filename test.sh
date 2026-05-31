@@ -37,3 +37,33 @@ else
   echo "--- stderr diff ---"; diff /tmp/lean-io.err /tmp/ts-io.err || true
   exit 1
 fi
+
+# Stdin program: feed the same input to `lean --run` and to node (out-stdin.mjs),
+# diffing stdout. Exercises IO.getStdin / Stream.getLine over a piped fd 0.
+printf 'alpha\nbeta\ngamma\n' > /tmp/stdin-in.txt
+lake env lean --run expected-stdin.lean < /tmp/stdin-in.txt > /tmp/lean-stdin.out 2>&1
+node out-stdin.mjs < /tmp/stdin-in.txt > /tmp/ts-stdin.out 2>&1
+echo "=== STDIN LEAN ==="; cat /tmp/lean-stdin.out
+echo "=== STDIN node ===";  cat /tmp/ts-stdin.out
+if diff -q /tmp/lean-stdin.out /tmp/ts-stdin.out >/dev/null; then
+  echo "STDIN-DIFF-TEST PASS: stdout identical"
+else
+  echo "STDIN-DIFF-TEST FAIL"; diff /tmp/lean-stdin.out /tmp/ts-stdin.out || true; exit 1
+fi
+
+# Error program: a userError throw must print the same Lean-format stderr
+# ("uncaught exception: ...") and exit 1 under both `lean --run` and node.
+LEAN_EC=0; lake env lean --run expected-err.lean > /tmp/lean-err.out 2> /tmp/lean-err.err || LEAN_EC=$?
+NODE_EC=0; node out-err.mjs > /tmp/ts-err.out 2> /tmp/ts-err.err || NODE_EC=$?
+echo "=== ERR LEAN stderr ==="; cat /tmp/lean-err.err
+echo "=== ERR node stderr ===";  cat /tmp/ts-err.err
+if diff -q /tmp/lean-err.out /tmp/ts-err.out >/dev/null \
+   && diff -q /tmp/lean-err.err /tmp/ts-err.err >/dev/null \
+   && [ "$LEAN_EC" = "$NODE_EC" ]; then
+  echo "ERR-DIFF-TEST PASS: stdout+stderr+exit($LEAN_EC) identical"
+else
+  echo "ERR-DIFF-TEST FAIL (lean exit=$LEAN_EC node exit=$NODE_EC)"
+  echo "--- stdout diff ---"; diff /tmp/lean-err.out /tmp/ts-err.out || true
+  echo "--- stderr diff ---"; diff /tmp/lean-err.err /tmp/ts-err.err || true
+  exit 1
+fi

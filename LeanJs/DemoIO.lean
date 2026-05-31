@@ -44,4 +44,26 @@ def main : IO Unit := do
   IO.println s!"todo = {showList l3}"
   IO.eprintln "diagnostic to stderr"
 
+/-- Stdin-echo program: reads all lines from stdin (IO.getStdin / Stream.getLine)
+    and echoes each prefixed, until EOF. Exercises the real fd-0 stdin wiring. -/
+partial def echoLoop (stdin : IO.FS.Stream) (n : Nat) : IO Unit := do
+  let line ← stdin.getLine
+  if line.isEmpty then
+    IO.println s!"EOF after {n} lines"
+  else
+    -- getLine keeps the trailing newline; drop a single trailing '\n' for echo.
+    let trimmed := if line.back == '\n' then line.dropEnd 1 else line
+    IO.println s!"line {n}: {trimmed}"
+    echoLoop stdin (n + 1)
+
+def stdinEcho : IO Unit := do
+  let stdin ← IO.getStdin
+  echoLoop stdin 1
+
+/-- Error program: throws a userError so the process prints the Lean-format
+    "uncaught exception: ..." to stderr and exits 1. -/
+def errMain : IO Unit := do
+  IO.println "before error"
+  throw (IO.userError "boom from lean-js")
+
 end LeanJs.DemoIO

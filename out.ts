@@ -364,6 +364,12 @@ const lean_string_contains = (s, c) =>
   L_bool(Number(lean_string_utf8_pos_of(s, c)) !== _utf8enc.encode(s).length);
 // String.get_byte : raw byte at offset.
 const lean_string_get_byte = (s, p) => _utf8enc.encode(s)[Number(p)];
+// String.getUTF8Byte (extern lean_string_get_byte_fast): byte at byte offset p.
+// The dependent `p < rawEndPos` proof arg is erased/dropped by the emitter.
+const lean_string_get_byte_fast = (s, p) => _utf8enc.encode(s)[Number(p)];
+// String.decodeChar (extern lean_string_utf8_get_fast): decode the char whose
+// UTF-8 sequence begins at byte offset; same decode as String.get.
+const lean_string_utf8_get_fast = (s, p) => lean_string_utf8_get(s, p);
 
 // ---- Array: JS array. get is bounds-checked w/ default; push mutates. ----
 const lean_array_get_size = (a) => BigInt(a.length);
@@ -436,10 +442,51 @@ const lean_io_result_get_error = (r) => r.fields[0];
 // (cidx 18); render via its message field. Object form (multi-ctor inductive).
 const IO_ERROR_USER = 18;
 const lean_mk_io_user_error = (msg) => ({ tag: IO_ERROR_USER, fields: [msg] });
-const lean_io_error_to_string = (e) =>
-  (typeof e === 'object' && e !== null && Array.isArray(e.fields) && typeof e.fields[0] === 'string')
-    ? e.fields[0]
-    : String(e);
+// Full IO.Error.toString matching `@[export lean_io_error_to_string]`
+// (Init/System/IOError.lean): 19 constructors, cidx order
+//   0 alreadyExists 1 otherError 2 resourceBusy 3 resourceVanished
+//   4 unsupportedOperation 5 hardwareFault 6 unsatisfiedConstraints
+//   7 illegalOperation 8 protocolError 9 timeExpired 10 interrupted
+//   11 noFileOrDirectory 12 invalidArgument 13 permissionDenied
+//   14 resourceExhausted 15 inappropriateType 16 noSuchThing
+//   17 unexpectedEof (nullary) 18 userError.
+// fopenErrorToString / otherErrorToString decapitalize the first char of the
+// gist (and of `details` when present); osCode is a UInt32 (so -2 -> 4294967294).
+const _decap = (s) => (typeof s !== 'string' || s.length === 0 ? s : s[0].toLowerCase() + s.slice(1));
+const _ef = (e, i) => (typeof e === 'object' && e !== null && Array.isArray(e.fields)) ? e.fields[i] : undefined;
+// `Option String` field: none == 0 (number), some == {tag:1,fields:[s]}.
+const _optFn = (o) => (typeof o === 'object' && o !== null && Array.isArray(o.fields)) ? o.fields[0] : null;
+const _ioFopen = (gist, fn, code, details) =>
+  _decap(gist) + ' (error code: ' + String((Number(code) >>> 0)) +
+  (details != null ? ', ' + _decap(details) : '') + ')\n  file: ' + fn;
+const _ioOther = (gist, code, details) =>
+  _decap(gist) + ' (error code: ' + String((Number(code) >>> 0)) +
+  (details != null ? ', ' + _decap(details) : '') + ')';
+const lean_io_error_to_string = (e) => {
+  const tag = lean_tag(e);
+  switch (tag) {
+    case 0:  { const fn = _optFn(_ef(e, 0)); return fn != null ? _ioFopen('already exists', fn, _ef(e, 1), _ef(e, 2)) : _ioOther('already exists', _ef(e, 1), _ef(e, 2)); }
+    case 1:  return _ioOther(_ef(e, 1), _ef(e, 0), null);
+    case 2:  return _ioOther('resource busy', _ef(e, 0), _ef(e, 1));
+    case 3:  return _ioOther('resource vanished', _ef(e, 0), _ef(e, 1));
+    case 4:  return _ioOther('unsupported operation', _ef(e, 0), _ef(e, 1));
+    case 5:  return _ioOther('hardware fault', _ef(e, 0), null);
+    case 6:  return _ioOther('directory not empty', _ef(e, 0), null);
+    case 7:  return _ioOther('illegal operation', _ef(e, 0), _ef(e, 1));
+    case 8:  return _ioOther('protocol error', _ef(e, 0), _ef(e, 1));
+    case 9:  return _ioOther('time expired', _ef(e, 0), _ef(e, 1));
+    case 10: return _ioFopen('interrupted system call', _ef(e, 0), _ef(e, 1), _ef(e, 2));
+    case 11: return _ioFopen('no such file or directory', _ef(e, 0), _ef(e, 1), null);
+    case 12: { const fn = _optFn(_ef(e, 0)); return fn != null ? _ioFopen('invalid argument', fn, _ef(e, 1), _ef(e, 2)) : _ioOther('invalid argument', _ef(e, 1), _ef(e, 2)); }
+    case 13: { const fn = _optFn(_ef(e, 0)), d = _ef(e, 2); return fn != null ? _ioFopen(d, fn, _ef(e, 1), null) : _ioOther(d, _ef(e, 1), null); }
+    case 14: { const fn = _optFn(_ef(e, 0)); return fn != null ? _ioFopen('resource exhausted', fn, _ef(e, 1), _ef(e, 2)) : _ioOther('resource exhausted', _ef(e, 1), _ef(e, 2)); }
+    case 15: { const fn = _optFn(_ef(e, 0)); return fn != null ? _ioFopen('inappropriate type', fn, _ef(e, 1), _ef(e, 2)) : _ioOther('inappropriate type', _ef(e, 1), _ef(e, 2)); }
+    case 16: { const fn = _optFn(_ef(e, 0)); return fn != null ? _ioFopen('no such thing', fn, _ef(e, 1), _ef(e, 2)) : _ioOther('no such thing', _ef(e, 1), _ef(e, 2)); }
+    case 17: return 'end of file';
+    case 18: return _ef(e, 0);
+    default: return String(e);
+  }
+};
 
 // FS.Stream ctor: field order from `structure FS.Stream`
 //   flush(0) read(1) write(2) getLine(3) putStr(4) isTty(5).
@@ -459,15 +506,48 @@ const _mkWriteStream = (write) => ({
 });
 let _stdoutStream = _mkWriteStream((x) => process.stdout.write(x));
 let _stderrStream = _mkWriteStream((x) => process.stderr.write(x));
+// Real fd-0 stdin stream. Field order matches FS.Stream:
+//   flush(0) read(1) write(2) getLine(3) putStr(4) isTty(5).
+// Lean getLine reads up to AND including the next '\n' ('' == EOF); read(n)
+// reads up to n bytes (empty array == EOF, stream stays open). Node has no
+// portable blocking line read, so we readSync(0,...) byte-by-byte; works for
+// piped/redirected input and files. readSync returning 0 (or EOF/EAGAIN) is EOF.
+const _utf8decIO = new TextDecoder('utf-8');
+const _readByte0 = () => {
+  const b = Buffer.alloc(1);
+  try {
+    const k = _nodeFs.readSync(0, b, 0, 1, null);
+    return k === 0 ? -1 : b[0];
+  } catch (e) {
+    if (e && (e.code === 'EOF' || e.code === 'EAGAIN')) return -1;
+    throw e;
+  }
+};
 let _stdinStream = {
   tag: 0,
   fields: [
     () => lean_io_result_mk_ok(0),
-    (_n) => lean_io_result_mk_ok(new Uint8Array(0)),
+    (n) => {
+      const want = Number(n);
+      const buf = Buffer.alloc(want);
+      let got = 0;
+      try { got = _nodeFs.readSync(0, buf, 0, want, null); }
+      catch (e) { if (!(e && (e.code === 'EOF' || e.code === 'EAGAIN'))) throw e; }
+      return lean_io_result_mk_ok(new Uint8Array(buf.subarray(0, got)));
+    },
     (_b) => lean_io_result_mk_ok(0),
-    () => lean_io_result_mk_ok(''),
+    () => {
+      const bytes = [];
+      for (;;) {
+        const c = _readByte0();
+        if (c < 0) break;          // EOF
+        bytes.push(c);
+        if (c === 0x0a) break;     // '\n' inclusive
+      }
+      return lean_io_result_mk_ok(_utf8decIO.decode(Uint8Array.from(bytes)));
+    },
     (_s) => lean_io_result_mk_ok(0),
-    () => lean_io_result_mk_ok(0),
+    () => lean_io_result_mk_ok(process.stdin.isTTY ? 1 : 0),
   ],
 };
 // getStdout/getStderr/getStdin are BaseIO actions: BaseIO cannot error, so its
@@ -507,12 +587,21 @@ const lean_io_force_exit = (code) => { process.exit(Number(code) & 0xff); };
 
 // FS.Handle primitives (node:fs sync). `node:fs` is loaded lazily so the
 // function-export diff-test harness (which evaluates the prelude with no module
-// loader) is unaffected unless a handle primitive is actually called.
+// loader) is unaffected unless a handle primitive is actually called. Loaded via
+// `process.getBuiltinModule` (Node >= 20.16) so it works from BOTH a CommonJS
+// `new Function(src)` eval (no ESM `import`) AND an `.mjs` ES module (no
+// `require`); falls back to a bare `require` if getBuiltinModule is absent.
 let _nodeFsCache = null;
-const _nodeFs = new Proxy({}, { get: (_t, k) => {
-  if (!_nodeFsCache) _nodeFsCache = require('node:fs');
-  return _nodeFsCache[k];
-} });
+const _loadNodeFs = () => {
+  if (_nodeFsCache) return _nodeFsCache;
+  if (typeof process !== 'undefined' && typeof process.getBuiltinModule === 'function') {
+    _nodeFsCache = process.getBuiltinModule('node:fs');
+  } else {
+    _nodeFsCache = require('node:fs');
+  }
+  return _nodeFsCache;
+};
+const _nodeFs = new Proxy({}, { get: (_t, k) => _loadNodeFs()[k] });
 const _MODE_FLAG = ['r', 'w', 'wx', 'r+', 'a']; // FS.Mode cidx -> open flag
 const lean_io_prim_handle_mk = (path, mode) => {
   try { return lean_io_result_mk_ok({ fd: _nodeFs.openSync(path, _MODE_FLAG[mode]) }); }
@@ -531,26 +620,72 @@ const lean_io_prim_handle_read = (h, n) => {
 };
 const lean_io_prim_handle_flush = () => lean_io_result_mk_ok(0);
 const lean_io_prim_handle_is_tty = () => lean_io_result_mk_ok(0);
+// Handle.getLine: read up to and including the next '\n' from the handle's fd
+// ('' == EOF). Byte-loop then UTF-8 decode, matching Lean's line semantics.
+const lean_io_prim_handle_get_line = (h) => {
+  const bytes = [];
+  const one = Buffer.alloc(1);
+  for (;;) {
+    let k = 0;
+    try { k = _nodeFs.readSync(h.fd, one, 0, 1, null); }
+    catch (e) { if (e && (e.code === 'EOF' || e.code === 'EAGAIN')) break; throw e; }
+    if (k === 0) break;
+    bytes.push(one[0]);
+    if (one[0] === 0x0a) break;
+  }
+  return lean_io_result_mk_ok(new TextDecoder('utf-8').decode(Uint8Array.from(bytes)));
+};
+
+// lean_io_result_show_error analogue: matches the C runtime which prints, to
+// stderr, "uncaught exception: " + IO.Error.toString(err) + "\n" then exits 1.
+const lean_io_result_show_error = (res) => {
+  process.stderr.write('uncaught exception: ' +
+    lean_io_error_to_string(lean_io_result_get_error(res)) + '\n');
+};
+
+// ---- module-initialization chain (emitInitFn / emitDeclInit analogue) ----
+// EmitC emits, per module, an init fn that (1) runs imported modules' inits in
+// dependency order, then (2) runs each decl's init in reverse decl order:
+// @[init]/builtin_initialize IO Unit actions and closed-term global
+// initializers, short-circuiting on the first IOResult error. We mirror that
+// with a thunk registry. Each registered thunk returns an io_result (ok = value
+// already assigned to its global inside the thunk; error = mk_error). The
+// _G_initialized guard makes it idempotent.
+const _leanInitThunks = [];
+let _leanInitialized = false;
+const lean_register_init = (thunk) => { _leanInitThunks.push(thunk); };
+const lean_run_init = () => {
+  if (_leanInitialized) return lean_io_result_mk_ok(0);
+  _leanInitialized = true;
+  for (const t of _leanInitThunks) {
+    const res = t();
+    if (!lean_io_result_is_ok(res)) return res; // propagate; do not continue
+  }
+  return lean_io_result_mk_ok(0);
+};
 
 // Entry point: run a compiled `main`, decode the io_result like C `main`.
 // `mainFn` already has its void world param dropped (the emitter omits it), so
 // arity-1 IO actions are invoked with no args; arity-2 (`List String -> IO X`)
 // receives the argv-derived List. `retIsU32` picks the exit-code expression.
+// Module init runs first (mirrors emitMainFn): an init-time IOResult error
+// flows through the SAME show-error + exit-1 path as a main-time error.
 const lean_run_main = (mainFn, hasArgs, retIsU32) => {
-  let res;
-  if (hasArgs) {
-    const argv = process.argv.slice(2);
-    const args = argv.reduceRight((tl, s) => ({ tag: 1, fields: [s, tl] }), 0);
-    res = mainFn(args);
-  } else {
-    res = mainFn();
+  let res = lean_run_init();
+  if (lean_io_result_is_ok(res)) {
+    if (hasArgs) {
+      const argv = process.argv.slice(2);
+      const args = argv.reduceRight((tl, s) => ({ tag: 1, fields: [s, tl] }), 0);
+      res = mainFn(args);
+    } else {
+      res = mainFn();
+    }
   }
   if (lean_io_result_is_ok(res)) {
     const v = lean_io_result_get_value(res);
     process.exitCode = retIsU32 ? Number(v) & 0xff : 0;
   } else {
-    process.stderr.write('uncaught exception: ' +
-      lean_io_error_to_string(lean_io_result_get_error(res)) + '\n');
+    lean_io_result_show_error(res);
     process.exitCode = 1;
   }
 };

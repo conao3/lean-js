@@ -61,3 +61,14 @@ def main (args : List String) : IO Unit := do
   let prog := prelude ++ "\n// ================ GENERATED PROGRAM ================\n\n" ++ progBody
   IO.FS.writeFile progPath prog
   IO.println s!"wrote runnable program to {progPath}"
+  -- Extra IO programs: stdin echo + an error-throwing program, each a
+  -- self-contained runnable module diff-tested against `lean --run`.
+  let emitProg (root : Name) (path : String) : IO Unit := do
+    match LeanJs.renderProgramChecked env root with
+    | .ok body =>
+      IO.FS.writeFile path
+        (prelude ++ "\n// ================ GENERATED PROGRAM ================\n\n" ++ body)
+      IO.println s!"wrote runnable program to {path}"
+    | .error e => throw (IO.userError s!"lean-js: {e}")
+  emitProg `LeanJs.DemoIO.stdinEcho "out-stdin.mjs"
+  emitProg `LeanJs.DemoIO.errMain "out-err.mjs"
