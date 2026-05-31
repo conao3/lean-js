@@ -111,7 +111,6 @@ def emitKnownFapSpecialNames : Std.HashSet Name := Std.HashSet.ofList [
   `Nat.shiftLeft, `Nat.shiftRight,-- C lean_nat_shiftl/r -> lean_nat_shift_left/right
   `Array.usize,                   -- C lean_array_size -> prelude lean_array_usize
   `Array.set, `Array.set!,        -- C lean_array_fset -> prelude lean_array_set (copy)
-  `Array.ugetBorrowed, `Array.getInternalBorrowed, -- C *_borrowed -> lean_array_uget
   -- Array empties lowered to the `[]` literal
   `Array.empty, `Array.mkEmpty, `Array.emptyWithCapacity, `Array.mkArray0,
   -- Float/Float32 libm transcendentals: the resolved C symbol is the BARE libm
@@ -249,8 +248,10 @@ def preludeSymbols : Std.HashSet String := Std.HashSet.ofList [
   "lean_byte_array_set", "lean_byte_array_fset", "lean_byte_array_uset",
   "lean_byte_array_copy_slice", "lean_sarray_size",
   -- Array
-  "lean_array_get_size", "lean_array_get", "lean_array_fget", "lean_array_set",
+  "lean_array_get_size", "lean_array_get", "lean_array_get_borrowed",
+  "lean_array_fget", "lean_array_fget_borrowed", "lean_array_set",
   "lean_array_push", "lean_array_pop", "lean_array_swap", "lean_array_uget",
+  "lean_array_uget_borrowed",
   "lean_array_uset", "lean_array_usize", "lean_array_to_list", "lean_mk_array", "lean_array_mk",
   -- platform / panic
   "lean_system_platform_nbits", "lean_panic_fn",
@@ -541,9 +542,9 @@ def emitKnownFap (externMap : Std.HashMap Name String) (c : FunId) (ys : Array A
   | `Array.pop                    => call "lean_array_pop"
   | `Array.swap                   => call "lean_array_swap"
   | `Array.uget                   => call "lean_array_uget"
-  | `Array.ugetBorrowed           => call "lean_array_uget"
+  | `Array.ugetBorrowed           => call "lean_array_uget_borrowed"
   | `Array.getInternal            => call "lean_array_uget"
-  | `Array.getInternalBorrowed    => call "lean_array_uget"
+  | `Array.getInternalBorrowed    => call "lean_array_fget_borrowed"
   | `Array.uset                   => call "lean_array_uset"
   | `Array.usize                  => call "lean_array_usize"
   | `Array.toList                 => call "lean_array_to_list"

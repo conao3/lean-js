@@ -646,7 +646,20 @@ const lean_array_fget = (a, i) => a[Number(i)];
 const lean_array_get = (dflt, a, i) => {
   const idx = Number(i); return idx >= 0 && idx < a.length ? a[idx] : dflt;
 };
+// Array.get!InternalBorrowed (extern lean_array_get_borrowed): identical
+// signature and semantics to lean_array_get; the only C-level difference is the
+// borrowed-vs-owned refcount on `a`, which is a no-op in GC'd JS. The compiler
+// emits this variant when the indexed element is only borrowed (e.g. a[i]!.size).
+const lean_array_get_borrowed = lean_array_get;
 const lean_array_uget = (a, i) => a[Number(i)];
+// Array.getInternalBorrowed (C lean_array_fget_borrowed) and Array.ugetBorrowed
+// (C lean_array_uget_borrowed): the borrowed twins of fget/uget. The only
+// C-level difference is the borrowed-vs-owned refcount on the returned element,
+// which is a no-op in GC'd JS, so each is a direct alias of its owned variant.
+// Defined as named symbols (symmetric with lean_array_get_borrowed) so the
+// prelude is self-documenting rather than routing the Lean decls to lean_array_uget.
+const lean_array_fget_borrowed = lean_array_fget;
+const lean_array_uget_borrowed = lean_array_uget;
 // Setters return a fresh array (functional), mirroring the ctor reuse/copy
 // model: JS arrays are reference-shared with no refcount, so in-place updates
 // from the compiler's unsafe (assumed-unique) map/foldl paths would corrupt the

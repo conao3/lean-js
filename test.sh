@@ -9,7 +9,7 @@ set -euo pipefail
 lake build
 lake exe lean-js out.ts prelude.ts out-io.mjs
 # Compile every oracle program natively once; subsequent runs are lake-cached.
-lake build oracle-fns oracle-io oracle-stdin oracle-err oracle-panic oracle-init oracle-stress oracle-stress2 oracle-stress3
+lake build oracle-fns oracle-io oracle-stdin oracle-err oracle-panic oracle-init oracle-stress oracle-stress2 oracle-stress3 oracle-verify
 ORACLE=.lake/build/bin
 
 # Function-level value equivalence: the native oracle prints every function
@@ -158,6 +158,22 @@ if diff -q /tmp/lean-stress3.out /tmp/ts-stress3.out >/dev/null; then
   echo "STRESS3-DIFF-TEST PASS: stdout identical"
 else
   echo "STRESS3-DIFF-TEST FAIL"; diff /tmp/lean-stress3.out /tmp/ts-stress3.out || true; exit 1
+fi
+
+# Verify program: an independent verifier-authored realistic program (recursive
+# JSON pretty-printer, run-length encode/decode round-trip, integer matrix
+# multiply over Array (Array Int), and Std.HashMap-backed Dijkstra relaxation).
+# Its inner loops index with `a[i]!` where the element is only borrowed, which
+# lowers to Array.get!InternalBorrowed (extern lean_array_get_borrowed) -- the
+# borrowed-variant extern that previously failed loud. Diff against the native oracle.
+"$ORACLE/oracle-verify" > /tmp/lean-verify.out 2>&1
+node out-verify.mjs > /tmp/ts-verify.out 2>&1
+echo "=== VERIFY ORACLE ==="; cat /tmp/lean-verify.out
+echo "=== VERIFY node ===";    cat /tmp/ts-verify.out
+if diff -q /tmp/lean-verify.out /tmp/ts-verify.out >/dev/null; then
+  echo "VERIFY-DIFF-TEST PASS: stdout identical"
+else
+  echo "VERIFY-DIFF-TEST FAIL"; diff /tmp/lean-verify.out /tmp/ts-verify.out || true; exit 1
 fi
 
 # Property-based fuzz: seeded-reproducible random vectors (numeric wrap edges,

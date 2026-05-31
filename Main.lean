@@ -6,6 +6,7 @@ import LeanJs.DemoInit
 import LeanJs.DemoStress
 import LeanJs.DemoStress2
 import LeanJs.DemoStress3
+import LeanJs.DemoVerify
 import LeanJs.Fuzz
 import LeanTodo.Basic
 
@@ -72,7 +73,8 @@ def main (args : List String) : IO Unit := do
     #[{ module := `LeanJs.Demo }, { module := `LeanJs.DemoHO },
       { module := `LeanJs.DemoIO }, { module := `LeanJs.DemoInit },
       { module := `LeanJs.DemoStress }, { module := `LeanJs.DemoStress2 },
-      { module := `LeanJs.DemoStress3 }, { module := `LeanJs.Fuzz },
+      { module := `LeanJs.DemoStress3 }, { module := `LeanJs.DemoVerify },
+      { module := `LeanJs.Fuzz },
       { module := `LeanTodo.Basic }] {}
     (loadExts := true)
   let prelude ← IO.FS.readFile preludePath
@@ -107,3 +109,4 @@ def main (args : List String) : IO Unit := do
   emitProg `LeanJs.DemoStress.stressMain "out-stress.mjs"
   emitProg `LeanJs.DemoStress2.stress2Main "out-stress2.mjs"
   emitProg `LeanJs.DemoStress3.stress3Main "out-stress3.mjs"
+  emitProg `LeanJs.DemoVerify.verifyMain "out-verify.mjs"

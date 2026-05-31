@@ -646,7 +646,20 @@ const lean_array_fget = (a, i) => a[Number(i)];
 const lean_array_get = (dflt, a, i) => {
   const idx = Number(i); return idx >= 0 && idx < a.length ? a[idx] : dflt;
 };
+// Array.get!InternalBorrowed (extern lean_array_get_borrowed): identical
+// signature and semantics to lean_array_get; the only C-level difference is the
+// borrowed-vs-owned refcount on `a`, which is a no-op in GC'd JS. The compiler
+// emits this variant when the indexed element is only borrowed (e.g. a[i]!.size).
+const lean_array_get_borrowed = lean_array_get;
 const lean_array_uget = (a, i) => a[Number(i)];
+// Array.getInternalBorrowed (C lean_array_fget_borrowed) and Array.ugetBorrowed
+// (C lean_array_uget_borrowed): the borrowed twins of fget/uget. The only
+// C-level difference is the borrowed-vs-owned refcount on the returned element,
+// which is a no-op in GC'd JS, so each is a direct alias of its owned variant.
+// Defined as named symbols (symmetric with lean_array_get_borrowed) so the
+// prelude is self-documenting rather than routing the Lean decls to lean_array_uget.
+const lean_array_fget_borrowed = lean_array_fget;
+const lean_array_uget_borrowed = lean_array_uget;
 // Setters return a fresh array (functional), mirroring the ctor reuse/copy
 // model: JS arrays are reference-shared with no refcount, so in-place updates
 // from the compiler's unsafe (assumed-unique) map/foldl paths would corrupt the
@@ -2374,7 +2387,7 @@ function Std_DHashMap_Internal_AssocList_foldlM__at___private_Std_Data_DHashMap_
             const x_16 = 1n;
             const x_17 = lean_usize_sub(x_15, x_16);
             const x_18 = lean_usize_land(x_14, x_17);
-            const x_19 = lean_array_uget(x_1, x_18);
+            const x_19 = lean_array_uget_borrowed(x_1, x_18);
             x_2.fields[2] = x_19;
             const x_20 = lean_array_uset(x_1, x_18, x_2);
             const __t_1 = x_20;
@@ -2400,7 +2413,7 @@ function Std_DHashMap_Internal_AssocList_foldlM__at___private_Std_Data_DHashMap_
             const x_35 = 1n;
             const x_36 = lean_usize_sub(x_34, x_35);
             const x_37 = lean_usize_land(x_33, x_36);
-            const x_38 = lean_array_uget(x_1, x_37);
+            const x_38 = lean_array_uget_borrowed(x_1, x_37);
             const x_39 = lean_ctor(1, 3, 0, 0, x_22, x_23, x_38);
             const x_40 = lean_array_uset(x_1, x_37, x_39);
             const __t_1 = x_40;
@@ -2537,7 +2550,7 @@ function Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCoun
       const x_17 = 1n;
       const x_18 = lean_usize_sub(x_16, x_17);
       const x_19 = lean_usize_land(x_15, x_18);
-      const x_20 = lean_array_uget(x_6, x_19);
+      const x_20 = lean_array_uget_borrowed(x_6, x_19);
       const x_21 = Std_DHashMap_Internal_AssocList_contains__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_2__redArg(x_2, x_20);
       switch (x_21) {
         case 0: {
@@ -2593,7 +2606,7 @@ function Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCoun
       const x_49 = 1n;
       const x_50 = lean_usize_sub(x_48, x_49);
       const x_51 = lean_usize_land(x_47, x_50);
-      const x_52 = lean_array_uget(x_38, x_51);
+      const x_52 = lean_array_uget_borrowed(x_38, x_51);
       const x_53 = Std_DHashMap_Internal_AssocList_contains__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_2__redArg(x_2, x_52);
       switch (x_53) {
         case 0: {
@@ -2746,7 +2759,7 @@ function Std_DHashMap_Internal_Raw_x8320__Const_getD__at__LeanJs_DemoStress_word
     const x_15 = 1n;
     const x_16 = lean_usize_sub(x_14, x_15);
     const x_17 = lean_usize_land(x_13, x_16);
-    const x_18 = lean_array_uget(x_4, x_17);
+    const x_18 = lean_array_uget_borrowed(x_4, x_17);
     return { __tc: 1, f: Std_DHashMap_Internal_AssocList_getD__at__Std_DHashMap_Internal_Raw_x8320__Const_getD__at__LeanJs_DemoStress_wordCount_spec_0_spec_0__redArg__tc, a: [x_2, x_3, x_18] };
   }
 }
@@ -3733,7 +3746,7 @@ function _private_Init_Data_Array_Basic_0_Array_foldrMUnsafe_fold__at__List_fold
       case 0: {
         const x_6 = 1n;
         const x_7 = lean_usize_sub(x_2, x_6);
-        const x_8 = lean_array_uget(x_1, x_7);
+        const x_8 = lean_array_uget_borrowed(x_1, x_7);
         const x_9 = LeanJs_DemoStress_showRes__closed_3();
         const x_10 = lean_string_append(x_8, x_9);
         const x_11 = lean_string_append(x_10, x_4);
@@ -4605,7 +4618,7 @@ function LeanJs_DemoStress_sieveLoop__tc(x_1, x_2) {
             continue;
           }
           case 1: {
-            const x_12 = lean_array_uget(x_1, x_2);
+            const x_12 = lean_array_fget_borrowed(x_1, x_2);
             const x_13 = x_12;
             switch (x_13) {
               case 0: {
@@ -4670,7 +4683,7 @@ function List_filterTR_loop__at__LeanJs_DemoStress_primesUpTo_spec_1__tc(x_1, x_
                 continue;
               }
               case 1: {
-                const x_11 = lean_array_uget(x_1, x_6);
+                const x_11 = lean_array_fget_borrowed(x_1, x_6);
                 const x_12 = x_11;
                 switch (x_12) {
                   case 0: {
@@ -4714,7 +4727,7 @@ function List_filterTR_loop__at__LeanJs_DemoStress_primesUpTo_spec_1__tc(x_1, x_
                 continue;
               }
               case 1: {
-                const x_20 = lean_array_uget(x_1, x_15);
+                const x_20 = lean_array_fget_borrowed(x_1, x_15);
                 const x_21 = x_20;
                 switch (x_21) {
                   case 0: {
