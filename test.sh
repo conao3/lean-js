@@ -146,3 +146,9 @@ if diff -q /tmp/lean-stress2.out /tmp/ts-stress2.out >/dev/null; then
 else
   echo "STRESS2-DIFF-TEST FAIL"; diff /tmp/lean-stress2.out /tmp/ts-stress2.out || true; exit 1
 fi
+
+# Property-based fuzz: seeded-reproducible random vectors (numeric wrap edges,
+# large Nats, multibyte strings, varied lists/arrays), each diffed between the
+# native oracle and node. A fixed seed keeps CI reproducible; nightly loops over
+# more seeds with `./fuzz.sh <seed> <N>`.
+./fuzz.sh 1 2000

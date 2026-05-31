@@ -5,6 +5,7 @@ import LeanJs.DemoIO
 import LeanJs.DemoInit
 import LeanJs.DemoStress
 import LeanJs.DemoStress2
+import LeanJs.Fuzz
 import LeanTodo.Basic
 
 open Lean Lean.IR
@@ -56,7 +57,9 @@ def rootNames : Array Name := #[
   `LeanTodo.TodoList.add,
   `LeanTodo.TodoList.toggle,
   `LeanTodo.TodoList.remove,
-  `LeanTodo.TodoList.step
+  `LeanTodo.TodoList.step,
+  `LeanJs.Fuzz.fNat, `LeanJs.Fuzz.fInt, `LeanJs.Fuzz.fU32, `LeanJs.Fuzz.fU8,
+  `LeanJs.Fuzz.fStr, `LeanJs.Fuzz.fListNat, `LeanJs.Fuzz.fArrNat
 ]
 
 def main (args : List String) : IO Unit := do
@@ -68,7 +71,7 @@ def main (args : List String) : IO Unit := do
     #[{ module := `LeanJs.Demo }, { module := `LeanJs.DemoHO },
       { module := `LeanJs.DemoIO }, { module := `LeanJs.DemoInit },
       { module := `LeanJs.DemoStress }, { module := `LeanJs.DemoStress2 },
-      { module := `LeanTodo.Basic }] {}
+      { module := `LeanJs.Fuzz }, { module := `LeanTodo.Basic }] {}
     (loadExts := true)
   let prelude ← IO.FS.readFile preludePath
   let decls := LeanJs.collectTransitive env rootNames
