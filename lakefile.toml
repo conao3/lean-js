@@ -12,3 +12,31 @@ name = "LeanJs"
 name = "lean-js"
 root = "Main"
 supportInterpreter = true
+
+# Native C-backend oracle programs. `lake build` routes each `root` through
+# leanc, emitting .lake/build/bin/<name>, so the diff-test compares lean-js TS
+# against the real backend's compiled semantics (TCO, bignum, libm) instead of
+# the `lean --run` interpreter, which overflows the same way naive JS does.
+[[lean_exe]]
+name = "oracle-fns"
+root = "expected"
+
+[[lean_exe]]
+name = "oracle-io"
+root = "OracleIo"
+
+[[lean_exe]]
+name = "oracle-stdin"
+root = "OracleStdin"
+
+[[lean_exe]]
+name = "oracle-err"
+root = "OracleErr"
+
+[[lean_exe]]
+name = "oracle-panic"
+root = "OraclePanic"
+
+[[lean_exe]]
+name = "oracle-init"
+root = "OracleInit"
