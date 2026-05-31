@@ -42,6 +42,7 @@ def rootNames : Array Name := #[
   `LeanJs.DemoHO.applyAdders, `LeanJs.DemoHO.currySplit,
   `LeanJs.DemoHO.optSeq, `LeanJs.DemoHO.exSeq, `LeanJs.DemoHO.fmapList,
   `LeanJs.DemoHO.safeDivStr, `LeanJs.DemoHO.hmDemo,
+  `LeanJs.DemoHO.cpsCount, `LeanJs.DemoHO.cpsSum,
   `LeanTodo.TodoList.add,
   `LeanTodo.TodoList.toggle,
   `LeanTodo.TodoList.remove,

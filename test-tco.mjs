@@ -25,8 +25,20 @@ for (const c of wantCores) {
 }
 if (!structOk) { console.error('acyclic-chain core check FAILED'); process.exit(1); }
 
-const fn = new Function(src + `\nreturn { LeanJs_Demo_parityEven, LeanJs_Demo_parityOdd, LeanJs_Demo_cycle3, LeanJs_Demo_pingN, LeanJs_Demo_chainHead };`);
-const { LeanJs_Demo_parityEven: parityEven, LeanJs_Demo_parityOdd: parityOdd, LeanJs_Demo_cycle3: cycle3, LeanJs_Demo_pingN: pingN, LeanJs_Demo_chainHead: chainHead } = fn();
+// Closure-boundary tail calls: cpsLoop applies its `step` closure in tail
+// position (an `.ap`, not a `.fap`), and the closure is `runStep`, so the loop
+// drives a deep tail-`.ap` chain; cpsSum applies a continuation in tail
+// position. The apply-thunk (`__tc:2`, unrolled by the same lean_trampoline)
+// must flatten both into constant stack. This is STRICTLY MORE ROBUST than the
+// native C backend, which does NOT trampoline closure-boundary tail calls and
+// stack-overflows on these around N~1e5; hence the deep N lives only here and
+// the diff-test (oracle-fns) checks a native-safe N.
+const wantApplyThunk = src.includes('__tc: 2');
+console.log(`apply-thunk emitted (tail .ap) ${wantApplyThunk ? 'PASS' : 'FAIL (no __tc:2; tail .ap not trampolined)'}`);
+if (!wantApplyThunk) { console.error('tail-ap trampoline check FAILED'); process.exit(1); }
+
+const fn = new Function(src + `\nreturn { LeanJs_Demo_parityEven, LeanJs_Demo_parityOdd, LeanJs_Demo_cycle3, LeanJs_Demo_pingN, LeanJs_Demo_chainHead, LeanJs_DemoHO_cpsCount, LeanJs_DemoHO_cpsSum };`);
+const { LeanJs_Demo_parityEven: parityEven, LeanJs_Demo_parityOdd: parityOdd, LeanJs_Demo_cycle3: cycle3, LeanJs_Demo_pingN: pingN, LeanJs_Demo_chainHead: chainHead, LeanJs_DemoHO_cpsCount: cpsCount, LeanJs_DemoHO_cpsSum: cpsSum } = fn();
 
 const N = 1000000n;
 const checks = [
@@ -37,6 +49,10 @@ const checks = [
   // pingN self-loops N times; each step drives the cross-function tail edge
   // viaB -> viaA through the trampoline. acc starts 0, +1 per step -> N.
   ['pingN', pingN(N, 0n), N],
+  // cpsCount: runStep applies its step closure in tail position N times -> N.
+  ['cpsCount', cpsCount(N), N],
+  // cpsSum: continuation applied in tail position; sum 1..N = N*(N+1)/2.
+  ['cpsSum', cpsSum(N), N * (N + 1n) / 2n],
 ];
 
 let ok = true;
@@ -46,4 +62,4 @@ for (const [name, got, want] of checks) {
   console.log(`${name}(${N}) = ${got} ${pass ? 'PASS' : `FAIL (want ${want})`}`);
 }
 if (!ok) { console.error('TCO deep-recursion check FAILED'); process.exit(1); }
-console.log('TCO-DEEP PASS: no stack overflow at N=1000000');
+console.log('TCO-DEEP PASS: no stack overflow at N=1000000 (incl. closure-boundary tail .ap)');

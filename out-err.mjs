@@ -71,7 +71,14 @@ const lean_ctor_set_usize = (x, o, v) =>
 // frame is consumed per tail step. Ordinary return values (ctors, bigints,
 // numbers, strings, arrays, closures) never carry `__tc`, so they pass through.
 function lean_trampoline(t) {
-  while (t && typeof t === 'object' && t.__tc === 1) { t = t.f(...t.a); }
+  while (t && typeof t === 'object') {
+    if (t.__tc === 1) { t = t.f(...t.a); continue; }
+    // `__tc:2` is a tail-position closure application (emitted for a tail `.ap`):
+    // bounce it through lean_apply, which itself returns a `__tc:1`/`__tc:2` thunk
+    // for its final saturating step, so the apply chain unrolls in constant stack.
+    if (t.__tc === 2) { t = lean_apply(t.clo, t.a); continue; }
+    break;
+  }
   return t;
 }
 
@@ -86,13 +93,20 @@ function lean_closure(fn, arity, args) {
   return { fn, arity, args };
 }
 
+// Returns a `__tc:1` thunk for the FINAL saturating worker call instead of
+// calling it directly, so when reached through the trampoline (a tail `.ap`'s
+// `__tc:2` thunk, or the wrapped non-tail site below) the driver makes the call
+// in constant stack — flattening CPS / continuation tail loops. Intermediate
+// over-application steps must force the result NOW to know how to re-apply the
+// leftover args; that forcing is bounded by the static curry depth, not by the
+// loop iteration count, so it does not grow the stack per iteration.
 function lean_apply(clo, more) {
   // Bare JS function: treat as a fully-applied call (IR wraps fn values in pap,
   // but FS.Stream fields and other prelude closures are bare functions).
-  if (typeof clo === 'function') return clo(...more);
+  if (typeof clo === 'function') return { __tc: 1, f: clo, a: more };
   // A closure without a recorded arity (legacy/erased) falls back to a single
   // concat-and-call; arity-bearing closures use the full three-way dispatch.
-  if (typeof clo.arity !== 'number') return clo.fn(...clo.args.concat(more));
+  if (typeof clo.arity !== 'number') return { __tc: 1, f: clo.fn, a: clo.args.concat(more) };
   let cur = clo;
   let i = 0;
   while (i < more.length) {
@@ -102,12 +116,12 @@ function lean_apply(clo, more) {
       return lean_closure(cur.fn, cur.arity, cur.args.concat(more.slice(i)));
     }
     const callArgs = cur.args.concat(more.slice(i, i + need));
-    const res = cur.fn(...callArgs);
     i += need;
-    if (i === more.length) return res;
+    if (i === more.length) return { __tc: 1, f: cur.fn, a: callArgs };
+    const res = lean_trampoline({ __tc: 1, f: cur.fn, a: callArgs });
+    if (typeof res === 'function') return { __tc: 1, f: res, a: more.slice(i) };
+    if (typeof res.arity !== 'number') return { __tc: 1, f: res.fn, a: res.args.concat(more.slice(i)) };
     cur = res;
-    if (typeof cur === 'function') return cur(...more.slice(i));
-    if (typeof cur.arity !== 'number') return cur.fn(...cur.args.concat(more.slice(i)));
   }
   return cur;
 }
@@ -791,8 +805,7 @@ function IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0__tc(x_1)
   while (true) {
     const x_3 = lean_get_stdout();
     const x_4 = x_3.fields[4];
-    const x_5 = lean_apply(x_4, [x_1, undefined]);
-    return x_5;
+    return { __tc: 2, clo: x_4, a: [x_1, undefined] };
   }
 }
 function IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0(x_1) {

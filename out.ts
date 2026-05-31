@@ -71,7 +71,14 @@ const lean_ctor_set_usize = (x, o, v) =>
 // frame is consumed per tail step. Ordinary return values (ctors, bigints,
 // numbers, strings, arrays, closures) never carry `__tc`, so they pass through.
 function lean_trampoline(t) {
-  while (t && typeof t === 'object' && t.__tc === 1) { t = t.f(...t.a); }
+  while (t && typeof t === 'object') {
+    if (t.__tc === 1) { t = t.f(...t.a); continue; }
+    // `__tc:2` is a tail-position closure application (emitted for a tail `.ap`):
+    // bounce it through lean_apply, which itself returns a `__tc:1`/`__tc:2` thunk
+    // for its final saturating step, so the apply chain unrolls in constant stack.
+    if (t.__tc === 2) { t = lean_apply(t.clo, t.a); continue; }
+    break;
+  }
   return t;
 }
 
@@ -86,13 +93,20 @@ function lean_closure(fn, arity, args) {
   return { fn, arity, args };
 }
 
+// Returns a `__tc:1` thunk for the FINAL saturating worker call instead of
+// calling it directly, so when reached through the trampoline (a tail `.ap`'s
+// `__tc:2` thunk, or the wrapped non-tail site below) the driver makes the call
+// in constant stack — flattening CPS / continuation tail loops. Intermediate
+// over-application steps must force the result NOW to know how to re-apply the
+// leftover args; that forcing is bounded by the static curry depth, not by the
+// loop iteration count, so it does not grow the stack per iteration.
 function lean_apply(clo, more) {
   // Bare JS function: treat as a fully-applied call (IR wraps fn values in pap,
   // but FS.Stream fields and other prelude closures are bare functions).
-  if (typeof clo === 'function') return clo(...more);
+  if (typeof clo === 'function') return { __tc: 1, f: clo, a: more };
   // A closure without a recorded arity (legacy/erased) falls back to a single
   // concat-and-call; arity-bearing closures use the full three-way dispatch.
-  if (typeof clo.arity !== 'number') return clo.fn(...clo.args.concat(more));
+  if (typeof clo.arity !== 'number') return { __tc: 1, f: clo.fn, a: clo.args.concat(more) };
   let cur = clo;
   let i = 0;
   while (i < more.length) {
@@ -102,12 +116,12 @@ function lean_apply(clo, more) {
       return lean_closure(cur.fn, cur.arity, cur.args.concat(more.slice(i)));
     }
     const callArgs = cur.args.concat(more.slice(i, i + need));
-    const res = cur.fn(...callArgs);
     i += need;
-    if (i === more.length) return res;
+    if (i === more.length) return { __tc: 1, f: cur.fn, a: callArgs };
+    const res = lean_trampoline({ __tc: 1, f: cur.fn, a: callArgs });
+    if (typeof res === 'function') return { __tc: 1, f: res, a: more.slice(i) };
+    if (typeof res.arity !== 'number') return { __tc: 1, f: res.fn, a: res.args.concat(more.slice(i)) };
     cur = res;
-    if (typeof cur === 'function') return cur(...more.slice(i));
-    if (typeof cur.arity !== 'number') return cur.fn(...cur.args.concat(more.slice(i)));
   }
   return cur;
 }
@@ -1237,7 +1251,7 @@ function Array_range__lam_0__boxed(x_1) {
 }
 
 function Array_range__closed_0() {
-  const x_1 = lean_closure(Array_range__lam_0__boxed, 1, []);
+  const x_1 = lean_closure(Array_range__lam_0__boxed__tc, 1, []);
   return x_1;
 }
 
@@ -1256,7 +1270,7 @@ function _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg__tc(x_1, x_2, x_
         const x_8 = (x_4 > x_7 ? x_4 - x_7 : 0n);
         const x_9 = (x_1 > x_8 ? x_1 - x_8 : 0n);
         const x_10 = (x_9 > x_7 ? x_9 - x_7 : 0n);
-        const x_11 = lean_apply(x_2, [x_10]);
+        const x_11 = lean_trampoline(lean_apply(x_2, [x_10]));
         const x_12 = lean_array_push(x_3, x_11);
         const __t_1 = x_1;
         const __t_2 = x_2;
@@ -1928,15 +1942,14 @@ function LeanJs_DemoHO_hofApply__lam_0__boxed(x_1) {
 }
 
 function LeanJs_DemoHO_hofApply__closed_0() {
-  const x_1 = lean_closure(LeanJs_DemoHO_hofApply__lam_0__boxed, 1, []);
+  const x_1 = lean_closure(LeanJs_DemoHO_hofApply__lam_0__boxed__tc, 1, []);
   return x_1;
 }
 
 function LeanJs_DemoHO_applyTwice__tc(x_1, x_2) {
   while (true) {
-    const x_3 = lean_apply(x_1, [x_2]);
-    const x_4 = lean_apply(x_1, [x_3]);
-    return x_4;
+    const x_3 = lean_trampoline(lean_apply(x_1, [x_2]));
+    return { __tc: 2, clo: x_1, a: [x_3] };
   }
 }
 function LeanJs_DemoHO_applyTwice(x_1, x_2) {
@@ -2188,7 +2201,7 @@ function LeanJs_DemoHO_arrMapLam(x_1) {
 
 function LeanJs_DemoHO_applyAdders__closed_2() {
   const x_1 = 100n;
-  const x_2 = lean_closure(LeanJs_DemoHO_applyAdders__lam_0__boxed, 2, [x_1]);
+  const x_2 = lean_closure(LeanJs_DemoHO_applyAdders__lam_0__boxed__tc, 2, [x_1]);
   return x_2;
 }
 
@@ -2201,7 +2214,7 @@ function LeanJs_DemoHO_applyAdders__closed_3() {
 
 function LeanJs_DemoHO_applyAdders__closed_1() {
   const x_1 = 10n;
-  const x_2 = lean_closure(LeanJs_DemoHO_applyAdders__lam_0__boxed, 2, [x_1]);
+  const x_2 = lean_closure(LeanJs_DemoHO_applyAdders__lam_0__boxed__tc, 2, [x_1]);
   return x_2;
 }
 
@@ -2233,7 +2246,7 @@ function LeanJs_DemoHO_applyAdders__lam_0__boxed(x_1, x_2) {
 
 function LeanJs_DemoHO_applyAdders__closed_0() {
   const x_1 = 1n;
-  const x_2 = lean_closure(LeanJs_DemoHO_applyAdders__lam_0__boxed, 2, [x_1]);
+  const x_2 = lean_closure(LeanJs_DemoHO_applyAdders__lam_0__boxed__tc, 2, [x_1]);
   return x_2;
 }
 
@@ -2256,7 +2269,7 @@ function List_mapTR_loop__at__LeanJs_DemoHO_applyAdders_spec_0__tc(x_1, x_2, x_3
           case 0: {
             const x_6 = x_2.fields[0];
             const x_7 = x_2.fields[1];
-            const x_8 = lean_apply(x_6, [x_1]);
+            const x_8 = lean_trampoline(lean_apply(x_6, [x_1]));
             x_2.fields[1] = x_3;
             x_2.fields[0] = x_8;
             const __t_1 = x_1;
@@ -2270,7 +2283,7 @@ function List_mapTR_loop__at__LeanJs_DemoHO_applyAdders_spec_0__tc(x_1, x_2, x_3
           case 1: {
             const x_10 = x_2.fields[0];
             const x_11 = x_2.fields[1];
-            const x_12 = lean_apply(x_10, [x_1]);
+            const x_12 = lean_trampoline(lean_apply(x_10, [x_1]));
             const x_13 = lean_ctor(1, 2, 0, 0, x_12, x_3);
             const __t_1 = x_1;
             const __t_2 = x_11;
@@ -2910,8 +2923,6 @@ function Nat_digitChar(x_1) {
   }
 }
 
-// extern Nat_sub -> runtime prelude
-
 function Nat_toDigitsCore__tc(x_1, x_2, x_3, x_4) {
   while (true) {
     const x_5 = 0n;
@@ -3520,6 +3531,132 @@ function LeanJs_DemoHO_hmDemo() {
   const x_3 = LeanJs_DemoHO_hmDemo__closed_6();
   const x_4 = (x_3 + x_2);
   return x_4;
+}
+
+function LeanJs_DemoHO_runStep__lam_0__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = 1n;
+    const x_4 = (x_2 + x_3);
+    return { __tc: 1, f: LeanJs_DemoHO_runStep__tc, a: [x_1, x_4] };
+  }
+}
+function LeanJs_DemoHO_runStep__lam_0(x_1, x_2) {
+  return lean_trampoline(LeanJs_DemoHO_runStep__lam_0__tc(x_1, x_2));
+}
+
+function LeanJs_DemoHO_runStep__lam_0__boxed__tc(x_1, x_2) {
+  while (true) {
+    return { __tc: 1, f: LeanJs_DemoHO_runStep__lam_0__tc, a: [x_1, x_2] };
+  }
+}
+function LeanJs_DemoHO_runStep__lam_0__boxed(x_1, x_2) {
+  return lean_trampoline(LeanJs_DemoHO_runStep__lam_0__boxed__tc(x_1, x_2));
+}
+
+function LeanJs_DemoHO_cpsLoop__tc(x_1, x_2, x_3) {
+  while (true) {
+    const x_4 = 0n;
+    const x_5 = lean_nat_dec_eq(x_2, x_4);
+    switch (x_5) {
+      case 1: {
+        return x_3;
+      }
+      case 0: {
+        const x_6 = 1n;
+        const x_7 = (x_2 > x_6 ? x_2 - x_6 : 0n);
+        return { __tc: 2, clo: x_1, a: [x_7, x_3] };
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function LeanJs_DemoHO_cpsLoop(x_1, x_2, x_3) {
+  return lean_trampoline(LeanJs_DemoHO_cpsLoop__tc(x_1, x_2, x_3));
+}
+
+function LeanJs_DemoHO_runStep__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = lean_closure(LeanJs_DemoHO_runStep__lam_0__boxed__tc, 2, []);
+    return { __tc: 1, f: LeanJs_DemoHO_cpsLoop__tc, a: [x_3, x_1, x_2] };
+  }
+}
+function LeanJs_DemoHO_runStep(x_1, x_2) {
+  return lean_trampoline(LeanJs_DemoHO_runStep__tc(x_1, x_2));
+}
+
+function LeanJs_DemoHO_cpsCount__tc(x_1) {
+  while (true) {
+    const x_2 = 0n;
+    return { __tc: 1, f: LeanJs_DemoHO_runStep__tc, a: [x_1, x_2] };
+  }
+}
+function LeanJs_DemoHO_cpsCount(x_1) {
+  return lean_trampoline(LeanJs_DemoHO_cpsCount__tc(x_1));
+}
+
+function LeanJs_DemoHO_cpsSum__lam_0__tc(x_1) {
+  while (true) {
+    return x_1;
+  }
+}
+function LeanJs_DemoHO_cpsSum__lam_0(x_1) {
+  return lean_trampoline(LeanJs_DemoHO_cpsSum__lam_0__tc(x_1));
+}
+
+function LeanJs_DemoHO_cpsSum__lam_0__boxed__tc(x_1) {
+  while (true) {
+    return { __tc: 1, f: LeanJs_DemoHO_cpsSum__lam_0__tc, a: [x_1] };
+  }
+}
+function LeanJs_DemoHO_cpsSum__lam_0__boxed(x_1) {
+  return lean_trampoline(LeanJs_DemoHO_cpsSum__lam_0__boxed__tc(x_1));
+}
+
+function LeanJs_DemoHO_cpsSum__closed_0() {
+  const x_1 = lean_closure(LeanJs_DemoHO_cpsSum__lam_0__boxed__tc, 1, []);
+  return x_1;
+}
+
+// extern Nat_sub -> runtime prelude
+
+function LeanJs_DemoHO_cpsSumK__tc(x_1, x_2, x_3) {
+  while (true) {
+    const x_4 = 0n;
+    const x_5 = lean_nat_dec_eq(x_1, x_4);
+    switch (x_5) {
+      case 1: {
+        return { __tc: 2, clo: x_3, a: [x_2] };
+      }
+      case 0: {
+        const x_7 = 1n;
+        const x_8 = (x_1 > x_7 ? x_1 - x_7 : 0n);
+        const x_9 = (x_2 + x_8);
+        const x_10 = (x_9 + x_7);
+        const __t_1 = x_8;
+        const __t_2 = x_10;
+        const __t_3 = x_3;
+        x_1 = __t_1;
+        x_2 = __t_2;
+        x_3 = __t_3;
+        continue;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function LeanJs_DemoHO_cpsSumK(x_1, x_2, x_3) {
+  return lean_trampoline(LeanJs_DemoHO_cpsSumK__tc(x_1, x_2, x_3));
+}
+
+function LeanJs_DemoHO_cpsSum__tc(x_1) {
+  while (true) {
+    const x_2 = LeanJs_DemoHO_cpsSum__closed_0();
+    const x_3 = 0n;
+    return { __tc: 1, f: LeanJs_DemoHO_cpsSumK__tc, a: [x_1, x_3, x_2] };
+  }
+}
+function LeanJs_DemoHO_cpsSum(x_1) {
+  return lean_trampoline(LeanJs_DemoHO_cpsSum__tc(x_1));
 }
 
 // extern Nat_add -> runtime prelude

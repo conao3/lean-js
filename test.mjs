@@ -29,6 +29,7 @@ const exports = [
   'LeanJs_DemoHO_listFoldlLam', 'LeanJs_DemoHO_arrMapLam', 'LeanJs_DemoHO_applyAdders',
   'LeanJs_DemoHO_currySplit', 'LeanJs_DemoHO_optSeq', 'LeanJs_DemoHO_exSeq',
   'LeanJs_DemoHO_fmapList', 'LeanJs_DemoHO_safeDivStr', 'LeanJs_DemoHO_hmDemo',
+  'LeanJs_DemoHO_cpsCount', 'LeanJs_DemoHO_cpsSum',
   'LeanTodo_TodoList_add', 'LeanTodo_TodoList_toggle',
   'LeanTodo_TodoList_remove', 'LeanTodo_TodoList_step',
 ];
@@ -102,6 +103,8 @@ const {
   LeanJs_DemoHO_fmapList: fmapList,
   LeanJs_DemoHO_safeDivStr: safeDivStr,
   LeanJs_DemoHO_hmDemo: hmDemo,
+  LeanJs_DemoHO_cpsCount: cpsCount,
+  LeanJs_DemoHO_cpsSum: cpsSum,
   LeanTodo_TodoList_add: add,
   LeanTodo_TodoList_toggle: toggle,
   LeanTodo_TodoList_remove: remove,
@@ -261,6 +264,8 @@ console.log(`fmapList = ${showLst(fmapList(lst2list([1n, 2n, 3n])))}`);
 console.log(`safeDiv 10 2 = ${safeDivStr(10n, 2n)}`);
 console.log(`safeDiv 10 0 = ${safeDivStr(10n, 0n)}`);
 console.log(`hmDemo = ${hmDemo()}`);
+console.log(`cpsCount = ${cpsCount(50000n)}`);
+console.log(`cpsSum = ${cpsSum(50000n)}`);
 console.log(`chainHead 10 = ${chainHead(10n)}`);
 console.log(`pingN 5 0 = ${pingN(5n, 0n)}`);
 

@@ -49,6 +49,28 @@ def safeDiv (a b : Nat) : Except String Nat :=
 def safeDivStr (a b : Nat) : String :=
   match safeDiv a b with | .ok v => s!"ok {v}" | .error e => s!"err {e}"
 
+-- C6 closure-boundary tail calls: a worker passed an indirect "step" function it
+-- applies in tail position. `runWith` applies its `f` argument in tail position
+-- (an `.ap`, not a statically-known `.fap`), and `f` here is a self-recursive
+-- closure, so the loop drives a deep tail `.ap` chain. The non-trampolined apply
+-- path stacks one JS frame per step and overflows; the apply-thunk flattens it.
+partial def cpsLoop (f : Nat → Nat → Nat) (n acc : Nat) : Nat :=
+  match n with
+  | 0 => acc
+  | m+1 => f m acc
+partial def runStep (n acc : Nat) : Nat :=
+  cpsLoop (fun m a => runStep m (a + 1)) n acc
+def cpsCount (n : Nat) : Nat := runStep n 0
+
+-- Continuation-passing accumulator: the tail position is `k v` (a closure
+-- application). Each recursion extends the continuation, then the final `k` call
+-- unwinds the whole chain — a deep tail `.ap`.
+partial def cpsSumK (n acc : Nat) (k : Nat → Nat) : Nat :=
+  match n with
+  | 0 => k acc
+  | m+1 => cpsSumK m (acc + m + 1) k
+def cpsSum (n : Nat) : Nat := cpsSumK n 0 (fun v => v)
+
 -- C4 Std.HashMap: insert/find/size pulls in hashing externs and bucket ctors.
 def hmDemo : Nat :=
   let m : Std.HashMap Nat Nat := (Std.HashMap.emptyWithCapacity.insert 1 10).insert 2 20

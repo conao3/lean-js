@@ -30,6 +30,12 @@ structure EmitState where
       `.fap c []` use sites — mirroring EmitC, which emits a C global and assigns
       `lean_io_result_get_value(res)` to it. -/
   initGlobals : Std.HashSet Name := {}
+  /-- Names that have a `__tc` core (thunk targets). A `.pap` over such a worker
+      records the core (`tcRef`) as the closure's fn, so `lean_apply` returns a
+      `__tc` thunk naming the core that the single outer `lean_trampoline` unrolls
+      — instead of naming the public wrapper, whose own nested `lean_trampoline`
+      would re-grow the JS stack once per tail-`.ap` step. -/
+  cores : Std.HashSet Name := {}
 
 abbrev EmitM := StateM EmitState
 
@@ -67,6 +73,9 @@ def funRef (c : FunId) : String := Id.run do
       -- `_` so it cannot merge with adjacent digits/letters.
       acc := acc ++ "_x" ++ toString ch.toNat ++ "_"
   return acc
+
+/-- Trampoline core suffix: `funRef` of a thunk-returning core. -/
+def tcRef (c : FunId) : String := funRef c ++ "__tc"
 
 /-! ## Extern → prelude-symbol single source of truth (analogue of EmitC)
 
@@ -550,7 +559,8 @@ def sbyteOffset (_n : Nat) (offset : Nat) : String := toString offset
     `u32`/`u64`/`usize`) are plain JS numbers, object `Nat` literals are
     `bigint`. -/
 def emitExpr (externMap : Std.HashMap Name String) (arityMap : Std.HashMap Name Nat := {})
-    (initGlobals : Std.HashSet Name := {}) (ty : IRType := .object) : IR.Expr → String
+    (initGlobals : Std.HashSet Name := {}) (cores : Std.HashSet Name := {})
+    (ty : IRType := .object) : IR.Expr → String
   | .ctor i ys      => ctorLit i ys
   | .reset _ _      => "null"          -- GC: reuse token unused
   | .reuse _ i _ ys => ctorLit i ys    -- GC: identical to a fresh ctor
@@ -575,12 +585,17 @@ def emitExpr (externMap : Std.HashMap Name String) (arityMap : Std.HashMap Name 
     -- Record the worker's FULL arity so `lean_apply` can branch exact/under/over.
     -- An uncollected callee or extern has no arity entry; emit a closure with no
     -- arity (concat-and-call fallback), which is correct for the exact case only.
+    let fnRef := if cores.contains c then tcRef c else funRef c
     match arityMap[c]? with
-    | some n => s!"lean_closure({funRef c}, {n}, [{args}])"
-    | none   => "{ fn: " ++ funRef c ++ ", args: [" ++ args ++ "] }"
+    | some n => s!"lean_closure({fnRef}, {n}, [{args}])"
+    | none   => "{ fn: " ++ fnRef ++ ", args: [" ++ args ++ "] }"
   | .ap x ys        =>
+    -- Non-tail application: force the result. `lean_apply` returns a thunk for
+    -- its final saturating call, so drive it through the trampoline here (the
+    -- tail-position `.ap` instead returns the `__tc:2` thunk directly, letting
+    -- the enclosing core's wrapper unroll the apply chain in constant stack).
     let args := String.intercalate ", " (ys.toList.map argToJs)
-    s!"lean_apply({varName x}, [{args}])"
+    s!"lean_trampoline(lean_apply({varName x}, [{args}]))"
   | .box _ x        => varName x        -- GC: identity
   | .unbox x        => varName x        -- GC: identity
   | .lit (.num v)   =>
@@ -610,9 +625,18 @@ partial def retsVar (x : VarId) : FnBody → Bool
   | .inc _ _ _ _ b | .dec _ _ _ _ b | .del _ b => retsVar x b
   | _ => false
 
-partial def matchTailCall : FnBody → Option (FunId × Array Arg)
+/-- A matched tail call: a direct `.fap` to a named callee (loopable/thunkable
+    if the callee has a `__tc` core), or a `.ap` applying a closure value in tail
+    position (always emitted as a `__tc:2` thunk the wrapper unrolls). -/
+inductive TailCall where
+  | fap (c : FunId) (args : Array Arg)
+  | ap  (x : VarId) (args : Array Arg)
+
+partial def matchTailCall : FnBody → Option TailCall
   | .vdecl x _ (.fap c args) k =>
-      if retsVar x k then some (c, args) else none
+      if retsVar x k then some (.fap c args) else none
+  | .vdecl x _ (.ap fx args) k =>
+      if retsVar x k then some (.ap fx args) else none
   | .vdecl _ _ _ b | .set _ _ _ b | .uset _ _ _ b | .sset _ _ _ _ _ b
   | .setTag _ _ b | .inc _ _ _ _ b | .dec _ _ _ _ b | .del _ b =>
       matchTailCall b
@@ -623,9 +647,12 @@ partial def matchTailCall : FnBody → Option (FunId × Array Arg)
 partial def tailCallTargets : FnBody → Array FunId
   | b => Id.run do
     let mut acc : Array FunId := #[]
+    -- Only direct `.fap` callees join the thunk-target set; a tail `.ap` has no
+    -- statically-known callee, so it must not add a name to `computeCoreTargets`
+    -- (there is no `__tc` core to point a thunk at). `hasTailAp` handles those.
     match matchTailCall b with
-    | some (c, _) => acc := acc.push c
-    | none => pure ()
+    | some (.fap c _) => acc := acc.push c
+    | _ => pure ()
     match b with
     | .case _ _ _ alts => for alt in alts do acc := acc ++ tailCallTargets alt.body
     | .jdecl _ _ v k => acc := acc ++ tailCallTargets v ++ tailCallTargets k
@@ -636,6 +663,20 @@ partial def tailCallTargets : FnBody → Array FunId
 /-- Does the body anywhere self-tail-call (so the self-loop is needed)? -/
 partial def hasSelfTailCall (self : FunId) (b : FnBody) : Bool :=
   (tailCallTargets b).any (· == self)
+
+/-- Is there a tail-position `.ap` (closure application) anywhere in the body?
+    Such a function needs a `__tc` core + wrapper so the apply-thunk it returns
+    gets unrolled by `lean_trampoline`, flattening CPS / continuation loops. -/
+partial def hasTailAp : FnBody → Bool
+  | b => Id.run do
+    match matchTailCall b with
+    | some (.ap ..) => return true
+    | _ => pure ()
+    match b with
+    | .case _ _ _ alts => return alts.any (fun alt => hasTailAp alt.body)
+    | .jdecl _ _ v k => return hasTailAp v || hasTailAp k
+    | .ret _ | .jmp _ _ | .unreachable => return false
+    | other => return !other.isTerminal && hasTailAp other.body
 
 /-- The set of callee names a decl's body tail-calls, including itself. -/
 def declTailEdges (d : Decl) : Array FunId :=
@@ -648,9 +689,6 @@ def declTailEdges (d : Decl) : Array FunId :=
     lexically inside the surrounding `while`). -/
 abbrev JpEnv := Std.HashMap Nat (Array Param × FnBody)
 
-/-- Trampoline core suffix: `funRef` of a thunk-returning core. -/
-def tcRef (c : FunId) : String := funRef c ++ "__tc"
-
 mutual
 
 /-- `self` is the function being emitted; `scc` is the thunk-target set (names
@@ -661,11 +699,12 @@ partial def emitFnBodyLoop (self : FunId) (scc : Std.HashSet Name)
     (params : Array Param) (jps : JpEnv) : FnBody → EmitM Unit
   | b => do
     match matchTailCall b with
-    | some (c, _) =>
+    | some (.fap c _) =>
       if c == self || scc.contains c then
         emitPrefixThenTail self scc params jps b
       else
         emitNonTail self scc params jps b
+    | some (.ap ..) => emitPrefixThenTail self scc params jps b
     | none => emitNonTail self scc params jps b
 
 /-- Emit a body whose head is not a (loopable/thunkable) tail call. -/
@@ -673,7 +712,7 @@ partial def emitNonTail (self : FunId) (scc : Std.HashSet Name)
     (params : Array Param) (jps : JpEnv) : FnBody → EmitM Unit
   | .vdecl x ty e k => do
     let st ← get
-    line s!"const {varName x} = {emitExpr st.externMap st.arityMap st.initGlobals ty e};"
+    line s!"const {varName x} = {emitExpr st.externMap st.arityMap st.initGlobals st.cores ty e};"
     emitFnBodyLoop self scc params jps k
   | .jdecl j xs v k =>
     emitFnBodyLoop self scc params (jps.insert j.idx (xs, v)) k
@@ -737,11 +776,22 @@ partial def emitPrefixThenTail (self : FunId) (scc : Std.HashSet Name)
         line ("return { __tc: 1, f: " ++ tcRef c ++ ", a: [" ++ args ++ "] };")
     else
       let st ← get
-      line s!"const {varName x} = {emitExpr st.externMap st.arityMap st.initGlobals ty (.fap c cargs)};"
+      line s!"const {varName x} = {emitExpr st.externMap st.arityMap st.initGlobals st.cores ty (.fap c cargs)};"
+      emitFnBodyLoop self scc params jps k
+  | .vdecl x ty (.ap fx aargs) k => do
+    if retsVar x k then
+      -- Tail-position closure application: return a `__tc:2` apply-thunk the
+      -- wrapper's `lean_trampoline` unrolls, instead of forcing `lean_apply`
+      -- here (which would stack a JS frame per CPS / continuation step).
+      let args := String.intercalate ", " (aargs.toList.map argToJs)
+      line ("return { __tc: 2, clo: " ++ varName fx ++ ", a: [" ++ args ++ "] };")
+    else
+      let st ← get
+      line s!"const {varName x} = {emitExpr st.externMap st.arityMap st.initGlobals st.cores ty (.ap fx aargs)};"
       emitFnBodyLoop self scc params jps k
   | .vdecl x ty e k => do
     let st ← get
-    line s!"const {varName x} = {emitExpr st.externMap st.arityMap st.initGlobals ty e};"
+    line s!"const {varName x} = {emitExpr st.externMap st.arityMap st.initGlobals st.cores ty e};"
     emitPrefixThenTail self scc params jps k
   | .set x i y k => do
     line s!"{varName x}.fields[{i}] = {argToJs y};"
@@ -780,7 +830,7 @@ end
 partial def emitFnBody : FnBody → EmitM Unit
   | .vdecl x ty e b => do
     let st ← get
-    line s!"const {varName x} = {emitExpr st.externMap st.arityMap st.initGlobals ty e};"
+    line s!"const {varName x} = {emitExpr st.externMap st.arityMap st.initGlobals st.cores ty e};"
     emitFnBody b
   | .jdecl j xs v b => do
     let params := String.intercalate ", " (xs.toList.map (fun p => varName p.x))
@@ -867,7 +917,23 @@ def needsCore (cores : Std.HashSet Name) (d : Decl) : Bool :=
     cores.contains d.name
       || hasSelfTailCall d.name b
       || (tailCallTargets b).any cores.contains
+      || hasTailAp b
   | .extern .. => false
+
+/-- Every name that is emitted with a `__tc` core + wrapper (i.e. `needsCore`).
+    A `.pap` over such a worker must store the core (`tcRef`) in the closure, so
+    `lean_apply` thunks to the core that the single outer `lean_trampoline`
+    unrolls — pointing at the public wrapper instead would nest a fresh
+    `lean_trampoline` per applied tail step and re-grow the JS stack. This is a
+    superset of `computeCoreTargets`: a worker reached only through `.pap` (never
+    a direct tail edge) is not a thunk target yet still gets a core (e.g. via
+    `hasTailAp`/`hasSelfTailCall`). -/
+def computeEmittedCores (decls : Array Decl) : Std.HashSet Name := Id.run do
+  let targets := computeCoreTargets decls
+  let mut acc : Std.HashSet Name := {}
+  for d in decls do
+    if needsCore targets d then acc := acc.insert d.name
+  return acc
 
 /-- Emit a top-level `Decl` as a TS function. `cores` is the set of names that
     have a `__tc` core (thunk targets); a tail call to a member returns a thunk
@@ -1031,11 +1097,12 @@ def renderChecked (env : Environment) (decls : Array Decl) : Except String Strin
         ++ String.intercalate "\n" lines)
   let arityMap := buildArityMap decls
   let cores := computeCoreTargets decls
+  let emittedCores := computeEmittedCores decls
   let act : EmitM Unit := do
     for d in decls do
       emitDeclWith cores d
       line ""
-  let (_, st) := act.run { externMap, arityMap }
+  let (_, st) := act.run { externMap, arityMap, cores := emittedCores }
   return .ok st.out
 
 /-- Backwards-compatible pure renderer (no link check): used by callers that
@@ -1043,11 +1110,12 @@ def renderChecked (env : Environment) (decls : Array Decl) : Except String Strin
 def render (decls : Array Decl) : String := Id.run do
   let arityMap := buildArityMap decls
   let cores := computeCoreTargets decls
+  let emittedCores := computeEmittedCores decls
   let act : EmitM Unit := do
     for d in decls do
       emitDeclWith cores d
       line ""
-  let (_, st) := act.run { arityMap }
+  let (_, st) := act.run { arityMap, cores := emittedCores }
   return st.out
 
 /-- Collect transitively from roots and render a self-contained module body. -/
@@ -1161,6 +1229,7 @@ def renderProgramChecked (env : Environment) (mainName : Name) : Except String S
         ++ String.intercalate "\n" lines)
   let arityMap := buildArityMap decls
   let cores := computeCoreTargets decls
+  let emittedCores := computeEmittedCores decls
   let act : EmitM Unit := do
     for d in decls do
       emitDeclWith cores d
@@ -1173,7 +1242,7 @@ def renderProgramChecked (env : Environment) (mainName : Name) : Except String S
     match decls.find? (fun d => d.name == mainName) with
     | some d => emitMainEntry env d
     | none   => pure ()
-  let (_, st) := act.run { externMap, arityMap, initGlobals }
+  let (_, st) := act.run { externMap, arityMap, initGlobals, cores := emittedCores }
   return .ok st.out
 
 end LeanJs

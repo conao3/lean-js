@@ -247,6 +247,13 @@ def main : IO Unit := do
   IO.println s!"safeDiv 10 2 = {safeDivStr 10 2}"
   IO.println s!"safeDiv 10 0 = {safeDivStr 10 0}"
   IO.println s!"hmDemo = {hmDemo}"
+  -- Closure-boundary tail calls (DemoHO.cpsCount via runStep/cpsLoop applies its
+  -- step closure in tail position; cpsSum applies a continuation in tail
+  -- position). At this N both the native C backend and lean-js agree; the deep
+  -- N=1e6 no-overflow check is node-side in test-tco.mjs (the C backend overflows
+  -- there because it does not trampoline closure-boundary tail calls).
+  IO.println s!"cpsCount = {cpsCount 50000}"
+  IO.println s!"cpsSum = {cpsSum 50000}"
   -- Acyclic cross-function tail chain (small-N value diff; deep no-overflow
   -- check lives node-side in test-tco.mjs).
   IO.println s!"chainHead 10 = {chainHead 10}"
