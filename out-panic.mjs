@@ -701,8 +701,12 @@ const lean_array_get_size = (a) => BigInt(a.length);
 const lean_array_fget = (a, i) => a[Number(i)];
 // Array.get!Internal (extern lean_array_get): the C signature passes the
 // Inhabited default FIRST, then the array, then the index (a[i]! lowers here).
+// Out of bounds routes through lean_array_get_panic, which calls lean_panic_fn
+// with "Error: index out of bounds" -- it prints that message to stderr (subject
+// to LEAN_BACKTRACE) and returns the Inhabited default, just like panic!.
 const lean_array_get = (dflt, a, i) => {
-  const idx = Number(i); return idx >= 0 && idx < a.length ? a[idx] : dflt;
+  const idx = Number(i);
+  return idx >= 0 && idx < a.length ? a[idx] : lean_panic_fn(dflt, 'Error: index out of bounds');
 };
 // Array.get!InternalBorrowed (extern lean_array_get_borrowed): identical
 // signature and semantics to lean_array_get; the only C-level difference is the
@@ -1301,6 +1305,82 @@ function LeanJs_DemoIO_panicMain__closed_7() {
   return lean_trampoline(LeanJs_DemoIO_panicMain__closed_7__tc());
 }
 
+function LeanJs_DemoIO_panicMain__closed_9__tc() {
+  while (true) {
+    const x_1 = LeanJs_DemoIO_panicMain__closed_7();
+    return { __tc: 1, f: Nat_reprFast__tc, a: [x_1] };
+  }
+}
+function LeanJs_DemoIO_panicMain__closed_9() {
+  return lean_trampoline(LeanJs_DemoIO_panicMain__closed_9__tc());
+}
+
+function LeanJs_DemoIO_panicMain__closed_8() {
+  const x_1 = "head! [] = ";
+  return x_1;
+}
+
+function LeanJs_DemoIO_panicMain__closed_10() {
+  const x_1 = LeanJs_DemoIO_panicMain__closed_9();
+  const x_2 = LeanJs_DemoIO_panicMain__closed_8();
+  const x_3 = lean_string_append(x_2, x_1);
+  return x_3;
+}
+
+function LeanJs_DemoIO_panicMain__closed_15() {
+  const x_1 = LeanJs_DemoIO_panicMain__closed_14();
+  const x_2 = lean_array_get_size(x_1);
+  return x_2;
+}
+
+function LeanJs_DemoIO_panicMain__closed_16() {
+  const x_1 = 5n;
+  const x_2 = LeanJs_DemoIO_panicMain__closed_15();
+  const x_3 = (x_2 + x_1);
+  return x_3;
+}
+
+// extern Array_mkEmpty -> runtime prelude
+
+function LeanJs_DemoIO_panicMain__closed_11() {
+  const x_1 = 3n;
+  const x_2 = [];
+  return x_2;
+}
+
+function LeanJs_DemoIO_panicMain__closed_12() {
+  const x_1 = 10n;
+  const x_2 = LeanJs_DemoIO_panicMain__closed_11();
+  const x_3 = lean_array_push(x_2, x_1);
+  return x_3;
+}
+
+function LeanJs_DemoIO_panicMain__closed_13() {
+  const x_1 = 20n;
+  const x_2 = LeanJs_DemoIO_panicMain__closed_12();
+  const x_3 = lean_array_push(x_2, x_1);
+  return x_3;
+}
+
+// extern Array_push -> runtime prelude
+
+function LeanJs_DemoIO_panicMain__closed_14() {
+  const x_1 = 30n;
+  const x_2 = LeanJs_DemoIO_panicMain__closed_13();
+  const x_3 = lean_array_push(x_2, x_1);
+  return x_3;
+}
+
+// extern Array_get_x33_Internal -> runtime prelude
+
+function LeanJs_DemoIO_panicMain__closed_17() {
+  const x_1 = LeanJs_DemoIO_panicMain__closed_16();
+  const x_2 = LeanJs_DemoIO_panicMain__closed_14();
+  const x_3 = 0n;
+  const x_4 = lean_array_get(x_3, x_2, x_1);
+  return x_4;
+}
+
 function List_range_loop__tc(x_1, x_2) {
   while (true) {
     const x_3 = 0n;
@@ -1809,31 +1889,31 @@ function Nat_reprFast(x_1) {
   return lean_trampoline(Nat_reprFast__tc(x_1));
 }
 
-function LeanJs_DemoIO_panicMain__closed_9__tc() {
+function LeanJs_DemoIO_panicMain__closed_19__tc() {
   while (true) {
-    const x_1 = LeanJs_DemoIO_panicMain__closed_7();
+    const x_1 = LeanJs_DemoIO_panicMain__closed_17();
     return { __tc: 1, f: Nat_reprFast__tc, a: [x_1] };
   }
 }
-function LeanJs_DemoIO_panicMain__closed_9() {
-  return lean_trampoline(LeanJs_DemoIO_panicMain__closed_9__tc());
+function LeanJs_DemoIO_panicMain__closed_19() {
+  return lean_trampoline(LeanJs_DemoIO_panicMain__closed_19__tc());
 }
 
-function LeanJs_DemoIO_panicMain__closed_8() {
-  const x_1 = "head! [] = ";
+function LeanJs_DemoIO_panicMain__closed_18() {
+  const x_1 = "a[oob]! = ";
   return x_1;
 }
 
 // extern String_append -> runtime prelude
 
-function LeanJs_DemoIO_panicMain__closed_10() {
-  const x_1 = LeanJs_DemoIO_panicMain__closed_9();
-  const x_2 = LeanJs_DemoIO_panicMain__closed_8();
+function LeanJs_DemoIO_panicMain__closed_20() {
+  const x_1 = LeanJs_DemoIO_panicMain__closed_19();
+  const x_2 = LeanJs_DemoIO_panicMain__closed_18();
   const x_3 = lean_string_append(x_2, x_1);
   return x_3;
 }
 
-function LeanJs_DemoIO_panicMain__closed_11() {
+function LeanJs_DemoIO_panicMain__closed_21() {
   const x_1 = "after panic";
   return x_1;
 }
@@ -1878,8 +1958,18 @@ function LeanJs_DemoIO_panicMain__tc() {
             const x_7 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_6, undefined);
             switch (lean_tag(x_7)) {
               case 0: {
-                const x_8 = LeanJs_DemoIO_panicMain__closed_11();
-                return { __tc: 1, f: IO_println__at__LeanJs_DemoIO_main_spec_0__tc, a: [x_8, undefined] };
+                const x_8 = LeanJs_DemoIO_panicMain__closed_20();
+                const x_9 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_8, undefined);
+                switch (lean_tag(x_9)) {
+                  case 0: {
+                    const x_10 = LeanJs_DemoIO_panicMain__closed_21();
+                    return { __tc: 1, f: IO_println__at__LeanJs_DemoIO_main_spec_0__tc, a: [x_10, undefined] };
+                  }
+                  case 1: {
+                    return x_9;
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               case 1: {
                 return x_7;

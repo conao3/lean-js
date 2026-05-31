@@ -701,8 +701,12 @@ const lean_array_get_size = (a) => BigInt(a.length);
 const lean_array_fget = (a, i) => a[Number(i)];
 // Array.get!Internal (extern lean_array_get): the C signature passes the
 // Inhabited default FIRST, then the array, then the index (a[i]! lowers here).
+// Out of bounds routes through lean_array_get_panic, which calls lean_panic_fn
+// with "Error: index out of bounds" -- it prints that message to stderr (subject
+// to LEAN_BACKTRACE) and returns the Inhabited default, just like panic!.
 const lean_array_get = (dflt, a, i) => {
-  const idx = Number(i); return idx >= 0 && idx < a.length ? a[idx] : dflt;
+  const idx = Number(i);
+  return idx >= 0 && idx < a.length ? a[idx] : lean_panic_fn(dflt, 'Error: index out of bounds');
 };
 // Array.get!InternalBorrowed (extern lean_array_get_borrowed): identical
 // signature and semantics to lean_array_get; the only C-level difference is the

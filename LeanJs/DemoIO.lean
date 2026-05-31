@@ -92,6 +92,9 @@ def panicMain : IO Unit := do
   IO.println s!"clampPos(-5) = {d}"
   let h := ([] : List Nat).head!
   IO.println s!"head! [] = {h}"
+  let a : Array Nat := #[10, 20, 30]
+  let oob := a[a.size + 5]!
+  IO.println s!"a[oob]! = {oob}"
   IO.println "after panic"
 
 end LeanJs.DemoIO
