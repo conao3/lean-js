@@ -1,4 +1,4 @@
-# lean2ts (proof of concept)
+# lean-js (proof of concept)
 
 A Lean-to-TypeScript backend that mirrors Lean's C backend (`Lean.Compiler.IR.EmitC`),
 driven by `Lean.Compiler.IR`. From the IR `Decl` of a Lean function it emits an
@@ -10,7 +10,7 @@ execution.
 1. `def double` / `def mkShifted` are defined in `Main.lean`; elaboration triggers
    `Lean.compileDecl`, so their IR lands in the environment.
 2. `Lean.IR.findEnvDecl env name` returns the traversable `Lean.IR.Decl`.
-3. The emitter (`namespace Lean2ts` in `Main.lean`) walks `FnBody` / `Expr` and
+3. The emitter (`namespace LeanJs` in `Main.lean`) walks `FnBody` / `Expr` and
    emits TS, mirroring `EmitC`'s match arms.
 
 ### Key simplification: GC target

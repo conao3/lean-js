@@ -1,4 +1,4 @@
-// ---- lean2ts runtime prelude (minimal) ----
+// ---- lean-js runtime prelude (minimal) ----
 function lean_apply(clo, more) {
   if (typeof clo === 'function') return clo(...more);
   const all = clo.args.concat(more);

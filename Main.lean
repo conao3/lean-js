@@ -2,13 +2,13 @@ import Lean.Compiler.IR
 
 open Lean Lean.IR
 
-/-! # lean2ts: a Lean IR -> TypeScript backend (PoC), mirroring EmitC.
+/-! # lean-js: a Lean IR -> TypeScript backend (PoC), mirroring EmitC.
 
 We obtain the IR `Decl` via `Lean.IR.findEnvDecl`, then walk `FnBody`/`Expr`
 and emit TypeScript. Reference-counting nodes (inc/dec/del/reset/reuse) are
 omitted because the JS engine has a tracing GC. -/
 
-namespace Lean2ts
+namespace LeanJs
 
 /-- Emission state: a buffer of output lines and an indent level. -/
 structure EmitState where
@@ -19,7 +19,7 @@ abbrev EmitM := StateM EmitState
 
 def line (s : String) : EmitM Unit := do
   let st ← get
-  let pad := String.mk (List.replicate (st.indent * 2) ' ')
+  let pad := String.ofList (List.replicate (st.indent * 2) ' ')
   set { st with out := st.out ++ pad ++ s ++ "\n" }
 
 def withIndent (act : EmitM Unit) : EmitM Unit := do
@@ -172,7 +172,7 @@ def render (decls : Array Decl) : String := Id.run do
   let (_, st) := act.run {}
   return st.out
 
-end Lean2ts
+end LeanJs
 
 -- ===========================================================================
 -- Target functions to compile. Defining them here triggers Lean.compileDecl
@@ -204,7 +204,7 @@ def collectDecls (env : Environment) (names : Array Name) : Array Decl := Id.run
   return acc
 
 def runtimePrelude : String :=
-"// ---- lean2ts runtime prelude (minimal) ----
+"// ---- lean-js runtime prelude (minimal) ----
 function lean_apply(clo, more) {
   if (typeof clo === 'function') return clo(...more);
   const all = clo.args.concat(more);
@@ -221,7 +221,7 @@ run_meta do
     IO.println s!"// --- IR for {d.name} ---"
     IO.println (toString d)
   IO.println "// ================ GENERATED TS ================"
-  IO.println (Lean2ts.render decls)
+  IO.println (LeanJs.render decls)
 
 def main (args : List String) : IO Unit := do
   -- Args: output path; default ./out.ts
@@ -230,6 +230,6 @@ def main (args : List String) : IO Unit := do
   let env ← importModules #[{ module := `Main }] {} (loadExts := true)
   let names := #[`double, `mkShifted]
   let decls := collectDecls env names
-  let ts := runtimePrelude ++ "\n" ++ Lean2ts.render decls
+  let ts := runtimePrelude ++ "\n" ++ LeanJs.render decls
   IO.FS.writeFile outPath ts
   IO.println s!"wrote {decls.size} decls to {outPath}"

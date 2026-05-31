@@ -1,7 +1,7 @@
-name = "lean2ts"
-defaultTargets = ["lean2ts"]
+name = "lean-js"
+defaultTargets = ["lean-js"]
 
 [[lean_exe]]
-name = "lean2ts"
+name = "lean-js"
 root = "Main"
 supportInterpreter = true

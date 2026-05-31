@@ -3,7 +3,7 @@
 # Usage: nix develop ../lean-todo-app --command bash -c "cd $(pwd) && ./test.sh"
 set -euo pipefail
 lake build
-lake exe lean2ts out.ts
+lake exe lean-js out.ts
 lake env lean --run expected.lean | grep -E 'double|mkShifted' > /tmp/lean.out
 node test.mjs > /tmp/ts.out
 echo "=== LEAN (expected) ==="; cat /tmp/lean.out
