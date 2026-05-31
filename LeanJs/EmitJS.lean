@@ -24,6 +24,12 @@ structure EmitState where
       (extern, or a callee whose decl was not collected) gets no arity and falls
       back to concat-and-call. -/
   arityMap : Std.HashMap Name Nat := {}
+  /-- 0-param globals backed by an `initialize ... ← ...` init fn (IR body `⊥`,
+      `getInitFnNameFor? = some`). These are emitted as a mutable `let` slot (not
+      a `function`), assigned by the init thunk, and referenced WITHOUT `()` at
+      `.fap c []` use sites — mirroring EmitC, which emits a C global and assigns
+      `lean_io_result_get_value(res)` to it. -/
+  initGlobals : Std.HashSet Name := {}
 
 abbrev EmitM := StateM EmitState
 
@@ -542,7 +548,7 @@ def sbyteOffset (_n : Nat) (offset : Nat) : String := toString offset
     `u32`/`u64`/`usize`) are plain JS numbers, object `Nat` literals are
     `bigint`. -/
 def emitExpr (externMap : Std.HashMap Name String) (arityMap : Std.HashMap Name Nat := {})
-    (ty : IRType := .object) : IR.Expr → String
+    (initGlobals : Std.HashSet Name := {}) (ty : IRType := .object) : IR.Expr → String
   | .ctor i ys      => ctorLit i ys
   | .reset _ _      => "null"          -- GC: reuse token unused
   | .reuse _ i _ ys => ctorLit i ys    -- GC: identical to a fresh ctor
@@ -550,6 +556,10 @@ def emitExpr (externMap : Std.HashMap Name String) (arityMap : Std.HashMap Name 
   | .uproj i x      => s!"{varName x}.fields[{i}]"
   | .sproj n offset x => s!"lean_ctor_get_{sscalarSuffix ty}({varName x}, {sbyteOffset n offset})"
   | .fap c ys       =>
+    -- An init-backed value global is a mutable slot, not a function: reference it
+    -- bare (no `()`), exactly as EmitC reads the C global directly.
+    if initGlobals.contains c && ys.isEmpty then funRef c
+    else
     match emitKnownFap externMap c ys with
     | some s => s
     | none   =>
@@ -661,7 +671,7 @@ partial def emitNonTail (self : FunId) (scc : Std.HashSet Name)
     (params : Array Param) (jps : JpEnv) : FnBody → EmitM Unit
   | .vdecl x ty e k => do
     let st ← get
-    line s!"const {varName x} = {emitExpr st.externMap st.arityMap ty e};"
+    line s!"const {varName x} = {emitExpr st.externMap st.arityMap st.initGlobals ty e};"
     emitFnBodyLoop self scc params jps k
   | .jdecl j xs v k =>
     emitFnBodyLoop self scc params (jps.insert j.idx (xs, v)) k
@@ -725,11 +735,11 @@ partial def emitPrefixThenTail (self : FunId) (scc : Std.HashSet Name)
         line ("return { __tc: 1, f: " ++ tcRef c ++ ", a: [" ++ args ++ "] };")
     else
       let st ← get
-      line s!"const {varName x} = {emitExpr st.externMap st.arityMap ty (.fap c cargs)};"
+      line s!"const {varName x} = {emitExpr st.externMap st.arityMap st.initGlobals ty (.fap c cargs)};"
       emitFnBodyLoop self scc params jps k
   | .vdecl x ty e k => do
     let st ← get
-    line s!"const {varName x} = {emitExpr st.externMap st.arityMap ty e};"
+    line s!"const {varName x} = {emitExpr st.externMap st.arityMap st.initGlobals ty e};"
     emitPrefixThenTail self scc params jps k
   | .set x i y k => do
     line s!"{varName x}.fields[{i}] = {argToJs y};"
@@ -768,7 +778,7 @@ end
 partial def emitFnBody : FnBody → EmitM Unit
   | .vdecl x ty e b => do
     let st ← get
-    line s!"const {varName x} = {emitExpr st.externMap st.arityMap ty e};"
+    line s!"const {varName x} = {emitExpr st.externMap st.arityMap st.initGlobals ty e};"
     emitFnBody b
   | .jdecl j xs v b => do
     let params := String.intercalate ", " (xs.toList.map (fun p => varName p.x))
@@ -863,6 +873,12 @@ def needsCore (cores : Std.HashSet Name) (d : Decl) : Bool :=
     tail chains run in constant JS stack. -/
 def emitDeclWith (cores : Std.HashSet Name) : Decl → EmitM Unit
   | d@(.fdecl f xs _ body _) => do
+    -- An init-backed value global (`initialize x ← ...`) has a `⊥` IR body and is
+    -- never called; emit it as a mutable slot the init thunk assigns, referenced
+    -- bare at use sites (the `.fap c []` path checks `initGlobals`).
+    if (← get).initGlobals.contains f then
+      line s!"let {funRef f} = null;"
+      return
     let params := xs.toList.filter (fun p => !p.ty.isErased && !p.ty.isVoid)
     let paramStr := String.intercalate ", " (params.map (fun p => varName p.x))
     if needsCore cores d then
@@ -1076,27 +1092,65 @@ def emitMainEntry (env : Environment) (d : Decl) : EmitM Unit := do
     environment, not the runtime program, exactly as EmitC guards them behind
     `if (builtin)`. EmitC runs decl inits in reverse decl order; `decls` is
     callee-first so the reverse is caller-first. -/
-def emitInitRegistrations (env : Environment) (decls : Array Decl) : EmitM Unit := do
-  for d in decls.reverse do
-    match getInitFnNameFor? env d.name with
-    | some initFn =>
-      -- skip pure builtin (compiler-time) inits; only runtime program inits run
-      unless isIOUnitBuiltinInitFn env d.name do
-        if isIOUnitInitFn env d.name then
-          -- @[init action] returning IO Unit: run for effect, no global binding.
-          line ("lean_register_init(() => " ++ funRef initFn ++ "());")
-        else
-          -- nullary global with an init fn: bind the io_result value to the global.
-          line ("lean_register_init(() => { const __r = " ++ funRef initFn
-            ++ "(); if (lean_io_result_is_ok(__r)) { " ++ funRef d.name
-            ++ " = lean_io_result_get_value(__r); } return __r; });")
-    | none => pure ()
+def emitInitRegistrations (env : Environment) (initNames : Array Name) : EmitM Unit := do
+  -- `initNames` is in declaration order; `lean_run_init` runs thunks in
+  -- registration order, matching Lean's per-module declaration-order init chain.
+  for n in initNames do
+    -- skip pure builtin (compiler-time) inits; only runtime program inits run
+    if isIOUnitBuiltinInitFn env n then
+      pure ()
+    -- EmitC branch order: `isIOUnitInitFn` FIRST. A bare `@[init]` action (the
+    -- decl IS the init fn, `getInitFnNameFor? = none`) runs for effect.
+    else if isIOUnitInitFn env n then
+      line ("lean_register_init(() => " ++ funRef n ++ "());")
+    -- A value global with a separate init fn: run it and bind the io_result value
+    -- to the global slot (assignment, not a call).
+    else
+      match getInitFnNameFor? env n with
+      | some initFn =>
+        line ("lean_register_init(() => { const __r = " ++ funRef initFn
+          ++ "(); if (lean_io_result_is_ok(__r)) { " ++ funRef n
+          ++ " = lean_io_result_get_value(__r); } return __r; });")
+      | none => pure ()
+
+/-- Init decls to add to a program's collection beyond what `main` reaches: every
+    regular (non-builtin) init action / init-fn-backed global declared in the same
+    module as `mainName`. EmitC iterates ALL module decls for init; we scope to the
+    program's module so stdlib `builtin_initialize`s are not pulled in. Returns the
+    extra roots to collect (init actions + the init fns of value globals) and the
+    set of value-global names (emitted as mutable slots, referenced bare). -/
+def collectInitDecls (env : Environment) (mainName : Name)
+    : Array Name × Std.HashSet Name × Array Name := Id.run do
+  let some progMod := env.getModuleIdxFor? mainName | (#[], {}, #[])
+  -- The regular `@[init]`/`initialize` attribute records one entry per init decl
+  -- in the module: `(declName, initFn)` for a value global, `(declName, anon)` for
+  -- a bare `@[init]` action. `getDecls` only lists current-compilation decls, so
+  -- imported init metadata is read from the attribute's module entries (in
+  -- declaration order, which drives the init-chain run order).
+  let entries := regularInitAttr.ext.getModuleEntries env progMod
+  let mut roots : Array Name := #[]
+  let mut globals : Std.HashSet Name := {}
+  let mut initNames : Array Name := #[]
+  for (n, initFn) in entries do
+    initNames := initNames.push n
+    if initFn == Name.anonymous then
+      -- bare `@[init]` action: the decl itself is the init fn; collect its body.
+      roots := roots.push n
+    else
+      -- value global: collect the global decl AND its separate init fn.
+      roots := roots.push n
+      roots := roots.push initFn
+      globals := globals.insert n
+  return (roots, globals, initNames)
 
 /-- Render a runnable program from a `main` root: the transitive function
     declarations plus the entry that invokes `main`. Fails loud on an unmapped
     extern (link check) before emitting, like `renderChecked`. -/
 def renderProgramChecked (env : Environment) (mainName : Name) : Except String String := Id.run do
-  let decls := collectTransitive env #[mainName]
+  -- Seed collection with `main` AND the module's init actions / value-global init
+  -- fns, which `main` does not transitively reach but must still run before it.
+  let (initRoots, initGlobals, initNames) := collectInitDecls env mainName
+  let decls := collectTransitive env (#[mainName] ++ initRoots)
   let (externMap, unresolved) := buildExternMap env decls
   if !unresolved.isEmpty then
     let lines := unresolved.toList.map (fun (n, s) => s!"  {n} -> {s}")
@@ -1109,18 +1163,15 @@ def renderProgramChecked (env : Environment) (mainName : Name) : Except String S
     for d in decls do
       emitDeclWith cores d
       line ""
-    -- Module-init chain (analogue of EmitC.emitInitFn / emitDeclInit). For each
-    -- reached decl carrying an `@[init]` / `builtin_initialize` init fn, register
-    -- a thunk that runs the init action and binds its result to the decl's global
-    -- (the init fn itself is collected as an ordinary decl). `decls` is
-    -- callee-first; EmitC runs decl inits in reverse decl order, i.e. caller-first
-    -- here, so we iterate the reverse. Pure closed-term globals are emitted as
-    -- lazily-called zero-arg functions elsewhere, so they need no registration.
-    emitInitRegistrations env decls
+    -- Module-init chain (analogue of EmitC.emitInitFn / emitDeclInit). Register a
+    -- thunk per reached `@[init]` action / value-global init fn; `lean_run_init`
+    -- runs them (in registration order) before `main`. `decls` is callee-first;
+    -- EmitC runs decl inits in declaration order, so we iterate the reverse.
+    emitInitRegistrations env initNames
     match decls.find? (fun d => d.name == mainName) with
     | some d => emitMainEntry env d
     | none   => pure ()
-  let (_, st) := act.run { externMap, arityMap }
+  let (_, st) := act.run { externMap, arityMap, initGlobals }
   return .ok st.out
 
 end LeanJs

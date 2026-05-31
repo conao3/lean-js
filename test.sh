@@ -88,3 +88,16 @@ else
   echo "--- stderr diff ---"; diff /tmp/lean-panic.err /tmp/ts-panic.err || true
   exit 1
 fi
+
+# Init program: an `@[init]` action chain (banners, run before main in decl
+# order) plus an `initialize` value global (bound at startup, read/mutated by
+# main). Diff stdout against `lean --run` to prove the module-init chain runs.
+lake env lean --run expected-init.lean > /tmp/lean-init.out 2>&1
+node out-init.mjs > /tmp/ts-init.out 2>&1
+echo "=== INIT LEAN ==="; cat /tmp/lean-init.out
+echo "=== INIT node ===";  cat /tmp/ts-init.out
+if diff -q /tmp/lean-init.out /tmp/ts-init.out >/dev/null; then
+  echo "INIT-DIFF-TEST PASS: stdout identical"
+else
+  echo "INIT-DIFF-TEST FAIL"; diff /tmp/lean-init.out /tmp/ts-init.out || true; exit 1
+fi
