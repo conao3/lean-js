@@ -19,6 +19,13 @@ def fU8 (a b : UInt8) : String :=
 def fStr (s : String) : String :=
   s!"{s.length}|{s.utf8ByteSize}|{s.toList.length}|{s.toUTF8.size}|{s.toUpper.length}"
 
+-- String hash + UTF-8 round-trip: locks the MurmurHash64A String.hash and the
+-- ByteArray<->String bridge against random multibyte payloads.
+def fHash (s : String) : String :=
+  let ba := s.toUTF8
+  let back := String.fromUTF8! ba
+  s!"{(hash s).toNat}|{ba.size}|{decide (back == s)}"
+
 def fListNat (xs : List Nat) : String :=
   s!"{xs.foldl (·+·) 0}|{xs.length}|{(xs.reverse).foldl (fun a x => a*31+x) 0}|{(xs.filter (· % 2 == 0)).length}"
 

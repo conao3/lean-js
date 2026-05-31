@@ -13,6 +13,7 @@ partial def loop (h : IO.FS.Stream) : IO Unit := do
     | ["U32", a, b] => pure s!"U32\t{fU32 a.toNat!.toUInt32 b.toNat!.toUInt32}"
     | ["U8", a, b] => pure s!"U8\t{fU8 a.toNat!.toUInt8 b.toNat!.toUInt8}"
     | ["STR", s] => pure s!"STR\t{fStr (unescape s)}"
+    | ["HASH", s] => pure s!"HASH\t{fHash (unescape s)}"
     | "LNAT" :: rest => pure s!"LNAT\t{fListNat (parseNats rest)}"
     | "ANAT" :: rest => pure s!"ANAT\t{fArrNat (Array.mk (parseNats rest))}"
     | _ => pure s!"ERR\t{line}"

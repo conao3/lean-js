@@ -26,6 +26,7 @@ lines.push('U32\t4294967295\t1', 'U32\t0\t0', 'U8\t0\t1', 'U8\t255\t255', 'U8\t2
 lines.push('INT\t-1\t1', 'INT\t-7\t2', 'INT\t7\t-2', 'INT\t-7\t-2', 'INT\t9223372036854775808\t-1');
 lines.push('STR\t', 'STR\ta', 'STR\t' + esc('é'), 'STR\t' + esc('世界'),
   'STR\t' + esc('\u{1F600}combiníng'), 'STR\t' + esc('a\tb'));
+lines.push('HASH\t', 'HASH\ta', 'HASH\t' + esc('abcdefgh'), 'HASH\t' + esc('hello world'));
 lines.push('LNAT\t', 'LNAT\t5', 'LNAT\t1\t2\t3\t4\t5');
 lines.push('ANAT\t', 'ANAT\t9', 'ANAT\t10\t20\t30');
 
@@ -57,7 +58,9 @@ for (let i = 0; i < N; i++) {
   } else if (r === 3) {
     lines.push(`U8\t${ri(300)}\t${ri(300)}`);
   } else if (r === 4) {
-    lines.push(`STR\t${esc(randStr())}`);
+    const s = esc(randStr());
+    lines.push(`STR\t${s}`);
+    lines.push(`HASH\t${s}`);
   } else if (r === 5) {
     const k = ri(12); const els = [];
     for (let j = 0; j < k; j++) els.push(ri(100000));

@@ -3843,8 +3843,6 @@ function LeanJs_Fuzz_fInt__closed_1() {
   return x_1;
 }
 
-// extern String_Internal_append -> runtime prelude
-
 function LeanJs_Fuzz_fInt(x_1, x_2) {
   const block_22 = (x_3, x_4, x_5) => {
     const x_6 = lean_string_append(x_3, x_5);
@@ -4118,10 +4116,6 @@ function LeanJs_Fuzz_fU8(x_1, x_2) {
 
 // extern String_toList -> runtime prelude
 
-// extern String_toUTF8 -> runtime prelude
-
-// extern ByteArray_size -> runtime prelude
-
 // extern String_Pos_set -> runtime prelude
 
 function Char_utf8Size__closed_0() {
@@ -4283,6 +4277,160 @@ function LeanJs_Fuzz_fStr(x_1) {
   const x_23 = Nat_reprFast(x_22);
   const x_24 = lean_string_append(x_19, x_23);
   return x_24;
+}
+
+// extern String_toUTF8 -> runtime prelude
+
+// extern String_hash -> runtime prelude
+
+// extern UInt64_toNat -> runtime prelude
+
+// extern ByteArray_size -> runtime prelude
+
+// extern String_decEq -> runtime prelude
+
+function LeanJs_Fuzz_fHash__closed_0() {
+  const x_1 = "false";
+  return x_1;
+}
+
+function LeanJs_Fuzz_fHash__closed_1() {
+  const x_1 = "true";
+  return x_1;
+}
+
+// extern ByteArray_validateUTF8 -> runtime prelude
+
+function LeanJs_Fuzz_fHash__closed_4() {
+  const x_1 = "invalid UTF-8 string";
+  return x_1;
+}
+
+function LeanJs_Fuzz_fHash__closed_3() {
+  const x_1 = "String.fromUTF8!";
+  return x_1;
+}
+
+function LeanJs_Fuzz_fHash__closed_2() {
+  const x_1 = "Init.Data.String.Basic";
+  return x_1;
+}
+
+function mkPanicMessage__closed_0() {
+  const x_1 = "PANIC at ";
+  return x_1;
+}
+
+function mkPanicMessageWithDecl__closed_0() {
+  const x_1 = " ";
+  return x_1;
+}
+
+function mkPanicMessage__closed_1() {
+  const x_1 = ":";
+  return x_1;
+}
+
+function mkPanicMessage__closed_2() {
+  const x_1 = ": ";
+  return x_1;
+}
+
+// extern String_Internal_append -> runtime prelude
+
+function mkPanicMessageWithDecl__tc(x_1, x_2, x_3, x_4, x_5) {
+  while (true) {
+    const x_6 = mkPanicMessage__closed_0();
+    const x_7 = lean_string_append(x_6, x_2);
+    const x_8 = mkPanicMessageWithDecl__closed_0();
+    const x_9 = lean_string_append(x_7, x_8);
+    const x_10 = lean_string_append(x_9, x_1);
+    const x_11 = mkPanicMessage__closed_1();
+    const x_12 = lean_string_append(x_10, x_11);
+    const x_13 = Nat_reprFast(x_3);
+    const x_14 = lean_string_append(x_12, x_13);
+    const x_15 = lean_string_append(x_14, x_11);
+    const x_16 = Nat_reprFast(x_4);
+    const x_17 = lean_string_append(x_15, x_16);
+    const x_18 = mkPanicMessage__closed_2();
+    const x_19 = lean_string_append(x_17, x_18);
+    const x_20 = lean_string_append(x_19, x_5);
+    return x_20;
+  }
+}
+function mkPanicMessageWithDecl(x_1, x_2, x_3, x_4, x_5) {
+  return lean_trampoline(mkPanicMessageWithDecl__tc(x_1, x_2, x_3, x_4, x_5));
+}
+
+function LeanJs_Fuzz_fHash__closed_5__tc() {
+  while (true) {
+    const x_1 = LeanJs_Fuzz_fHash__closed_4();
+    const x_2 = 46n;
+    const x_3 = 193n;
+    const x_4 = LeanJs_Fuzz_fHash__closed_3();
+    const x_5 = LeanJs_Fuzz_fHash__closed_2();
+    return { __tc: 1, f: mkPanicMessageWithDecl__tc, a: [x_5, x_4, x_3, x_2, x_1] };
+  }
+}
+function LeanJs_Fuzz_fHash__closed_5() {
+  return lean_trampoline(LeanJs_Fuzz_fHash__closed_5__tc());
+}
+
+function panic__at__System_Uri_UriEscape_decodeUri_spec_1__closed_0() {
+  const x_1 = "";
+  return x_1;
+}
+
+// extern panicCore -> runtime prelude
+
+function panic__at__System_Uri_UriEscape_decodeUri_spec_1(x_1) {
+  const x_2 = panic__at__System_Uri_UriEscape_decodeUri_spec_1__closed_0();
+  const x_3 = lean_panic_fn(x_2, x_1);
+  return x_3;
+}
+
+// extern String_ofByteArray -> runtime prelude
+
+function LeanJs_Fuzz_fHash(x_1) {
+  const x_2 = lean_string_to_utf8(x_1);
+  const block_18 = (x_3) => {
+    const x_4 = lean_string_hash(x_1);
+    const x_5 = lean_uint64_to_nat(x_4);
+    const x_6 = Nat_reprFast(x_5);
+    const x_7 = LeanJs_Fuzz_fNat__closed_0();
+    const x_8 = lean_string_append(x_6, x_7);
+    const x_9 = lean_byte_array_size(x_2);
+    const x_10 = Nat_reprFast(x_9);
+    const x_11 = lean_string_append(x_8, x_10);
+    const x_12 = lean_string_append(x_11, x_7);
+    const x_13 = lean_string_dec_eq(x_3, x_1);
+    switch (x_13) {
+      case 0: {
+        const x_14 = LeanJs_Fuzz_fHash__closed_0();
+        const x_15 = lean_string_append(x_12, x_14);
+        return x_15;
+      }
+      case 1: {
+        const x_16 = LeanJs_Fuzz_fHash__closed_1();
+        const x_17 = lean_string_append(x_12, x_16);
+        return x_17;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  };
+  const x_19 = lean_string_validate_utf8(x_2);
+  switch (x_19) {
+    case 0: {
+      const x_20 = LeanJs_Fuzz_fHash__closed_5();
+      const x_21 = panic__at__System_Uri_UriEscape_decodeUri_spec_1(x_20);
+      return block_18(x_21);
+    }
+    case 1: {
+      const x_22 = lean_string_from_utf8_unchecked(x_2);
+      return block_18(x_22);
+    }
+    default: { throw new Error("no matching case"); }
+  }
 }
 
 function List_foldl__at__LeanJs_Fuzz_fListNat_spec_0__tc(x_1, x_2) {
@@ -5059,8 +5207,8 @@ function _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Fu
 function LeanJs_Fuzz_fArrNat(x_1) {
   const block_12 = (x_2, x_3, x_4) => {
     const x_5 = Nat_reprFast(x_4);
-    const x_6 = lean_string_append(x_2, x_5);
-    const x_7 = lean_string_append(x_6, x_3);
+    const x_6 = lean_string_append(x_3, x_5);
+    const x_7 = lean_string_append(x_6, x_2);
     const x_8 = lean_array_to_list(x_1);
     const x_9 = List_lengthTR__redArg(x_8);
     const x_10 = Nat_reprFast(x_9);
@@ -5083,7 +5231,7 @@ function LeanJs_Fuzz_fArrNat(x_1) {
     const x_26 = lean_nat_dec_lt(x_13, x_25);
     switch (x_26) {
       case 0: {
-        return block_12(x_21, x_17, x_13);
+        return block_12(x_17, x_21, x_13);
       }
       case 1: {
         const x_27 = lean_nat_dec_le(x_25, x_25);
@@ -5091,12 +5239,12 @@ function LeanJs_Fuzz_fArrNat(x_1) {
           case 0: {
             switch (x_26) {
               case 0: {
-                return block_12(x_21, x_17, x_13);
+                return block_12(x_17, x_21, x_13);
               }
               case 1: {
                 const x_28 = lean_usize_of_nat(x_25);
                 const x_29 = _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Fuzz_fArrNat_spec_1(x_24, x_23, x_28, x_13);
-                return block_12(x_21, x_17, x_29);
+                return block_12(x_17, x_21, x_29);
               }
               default: { throw new Error("no matching case"); }
             }
@@ -5104,7 +5252,7 @@ function LeanJs_Fuzz_fArrNat(x_1) {
           case 1: {
             const x_30 = lean_usize_of_nat(x_25);
             const x_31 = _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Fuzz_fArrNat_spec_1(x_24, x_23, x_30, x_13);
-            return block_12(x_21, x_17, x_31);
+            return block_12(x_17, x_21, x_31);
           }
           default: { throw new Error("no matching case"); }
         }

@@ -60,7 +60,7 @@ def rootNames : Array Name := #[
   `LeanTodo.TodoList.remove,
   `LeanTodo.TodoList.step,
   `LeanJs.Fuzz.fNat, `LeanJs.Fuzz.fInt, `LeanJs.Fuzz.fU32, `LeanJs.Fuzz.fU8,
-  `LeanJs.Fuzz.fStr, `LeanJs.Fuzz.fListNat, `LeanJs.Fuzz.fArrNat
+  `LeanJs.Fuzz.fStr, `LeanJs.Fuzz.fHash, `LeanJs.Fuzz.fListNat, `LeanJs.Fuzz.fArrNat
 ]
 
 def main (args : List String) : IO Unit := do

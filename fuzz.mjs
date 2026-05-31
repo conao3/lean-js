@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 const src = readFileSync(new URL('./out.ts', import.meta.url), 'utf8');
 const exports = [
   'LeanJs_Fuzz_fNat', 'LeanJs_Fuzz_fInt', 'LeanJs_Fuzz_fU32', 'LeanJs_Fuzz_fU8',
-  'LeanJs_Fuzz_fStr', 'LeanJs_Fuzz_fListNat', 'LeanJs_Fuzz_fArrNat',
+  'LeanJs_Fuzz_fStr', 'LeanJs_Fuzz_fHash', 'LeanJs_Fuzz_fListNat', 'LeanJs_Fuzz_fArrNat',
 ];
 const fn = new Function(src + `\nreturn { ${exports.join(', ')} };`);
 const m = fn();
@@ -23,6 +23,7 @@ for (const line of lines) {
     case 'U32': out.push(`U32\t${m.LeanJs_Fuzz_fU32(Number(p[1]) >>> 0, Number(p[2]) >>> 0)}`); break;
     case 'U8': out.push(`U8\t${m.LeanJs_Fuzz_fU8(Number(p[1]) & 255, Number(p[2]) & 255)}`); break;
     case 'STR': out.push(`STR\t${m.LeanJs_Fuzz_fStr(unesc(p[1] ?? ''))}`); break;
+    case 'HASH': out.push(`HASH\t${m.LeanJs_Fuzz_fHash(unesc(p[1] ?? ''))}`); break;
     case 'LNAT': out.push(`LNAT\t${m.LeanJs_Fuzz_fListNat(mkList(p.slice(1).filter((x) => x).map(BigInt)))}`); break;
     case 'ANAT': out.push(`ANAT\t${m.LeanJs_Fuzz_fArrNat(p.slice(1).filter((x) => x).map(BigInt))}`); break;
     default: out.push(`ERR\t${line}`); break;
