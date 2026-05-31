@@ -224,6 +224,91 @@ const lean_string_mk = (lst) => {
   return out;
 };
 
+// ---- String: UTF-8 byte-position layer (String.Pos == UTF-8 byte offset) ----
+// Lean indexes the raw UTF-8 byte buffer, not JS UTF-16 units. Positions are
+// byte offsets (bigint). We cache an encoded view per string.
+const _utf8enc = new TextEncoder();
+const _utf8dec = new TextDecoder('utf-8', { fatal: false });
+const _utf8cache = new WeakMap();
+const _bytesOf = (s) => {
+  if (typeof s !== 'object') {
+    const b = _utf8enc.encode(s);
+    return b;
+  }
+  return s;
+};
+const lean_string_bytes = (s) => _utf8enc.encode(s);
+// utf8Size of a code point (matches Char.utf8Size).
+const lean_char_utf8_size = (c) =>
+  c <= 0x7f ? 1n : c <= 0x7ff ? 2n : c <= 0xffff ? 3n : 4n;
+// byteLen of the UTF-8 sequence whose first byte is b.
+const _u8seqLen = (b) => (b < 0x80 ? 1 : b < 0xe0 ? 2 : b < 0xf0 ? 3 : 4);
+const _u8isFirst = (b) => (b & 0xc0) !== 0x80;
+const _decodeAt = (bytes, i) => {
+  const c0 = bytes[i];
+  if (c0 < 0x80) return [c0, 1];
+  if (c0 < 0xe0) return [((c0 & 0x1f) << 6) | (bytes[i + 1] & 0x3f), 2];
+  if (c0 < 0xf0)
+    return [((c0 & 0x0f) << 12) | ((bytes[i + 1] & 0x3f) << 6) | (bytes[i + 2] & 0x3f), 3];
+  return [((c0 & 0x07) << 18) | ((bytes[i + 1] & 0x3f) << 12) |
+          ((bytes[i + 2] & 0x3f) << 6) | (bytes[i + 3] & 0x3f), 4];
+};
+// String.utf8ByteSize / rawEndPos.byteIdx
+const lean_string_utf8_byte_size = (s) => BigInt(_utf8enc.encode(s).length);
+// String.get : char at byte pos p, or 'A' (U+0041) if mid-char / out of range.
+const lean_string_utf8_get = (s, p) => {
+  const b = _utf8enc.encode(s), i = Number(p);
+  if (i < 0 || i >= b.length || !_u8isFirst(b[i])) return 0x41;
+  return _decodeAt(b, i)[0];
+};
+// String.get! : same value (panics in Lean on bad pos; here returns default).
+const lean_string_utf8_get_bang = lean_string_utf8_get;
+// String.get? : some codepoint (tag 1) or none (tag 0).
+const lean_string_utf8_get_opt = (s, p) => {
+  const b = _utf8enc.encode(s), i = Number(p);
+  if (i < 0 || i >= b.length || !_u8isFirst(b[i])) return 0;
+  return { tag: 1, fields: [_decodeAt(b, i)[0]] };
+};
+// String.next : advance byte offset by the char's UTF-8 size (1 at end/invalid).
+const lean_string_utf8_next = (s, p) =>
+  p + lean_char_utf8_size(lean_string_utf8_get(s, p));
+// String.prev : start byte of the char before p; prev(0)=0.
+const lean_string_utf8_prev = (s, p) => {
+  const b = _utf8enc.encode(s);
+  let i = Number(p);
+  if (i <= 0) return 0n;
+  if (i > b.length) return BigInt(i - 1);
+  i -= 1;
+  while (i > 0 && !_u8isFirst(b[i])) i -= 1;
+  return BigInt(i);
+};
+// String.atEnd : byteIdx >= utf8ByteSize.
+const lean_string_utf8_at_end = (s, p) =>
+  L_bool(Number(p) >= _utf8enc.encode(s).length);
+// String.extract : copy bytes [b, e); "" if b>=e; e clamps to end.
+const lean_string_utf8_extract = (s, lo, hi) => {
+  const bytes = _utf8enc.encode(s);
+  let a = Number(lo), z = Number(hi);
+  if (a >= z) return '';
+  if (z > bytes.length) z = bytes.length;
+  if (a > z) a = z;
+  return _utf8dec.decode(bytes.slice(a, z));
+};
+// String.posOf : byte pos of first occurrence of c, else utf8ByteSize.
+const lean_string_utf8_pos_of = (s, c) => {
+  const b = _utf8enc.encode(s);
+  for (let i = 0; i < b.length; ) {
+    const [cp, n] = _decodeAt(b, i);
+    if (cp === c) return BigInt(i);
+    i += n;
+  }
+  return BigInt(b.length);
+};
+const lean_string_contains = (s, c) =>
+  L_bool(Number(lean_string_utf8_pos_of(s, c)) !== _utf8enc.encode(s).length);
+// String.get_byte : raw byte at offset.
+const lean_string_get_byte = (s, p) => _utf8enc.encode(s)[Number(p)];
+
 // ---- Array: JS array. get is bounds-checked w/ default; push mutates. ----
 const lean_array_get_size = (a) => BigInt(a.length);
 const lean_array_fget = (a, i) => a[Number(i)];

@@ -54,4 +54,16 @@ def intNeg (a : Int) : Int := -a
 /-- A Float computation exercising add/mul/div. -/
 def floatCalc (a b : Float) : Float := (a + b) * 2.0 / b
 
+/-- UTF-8 byte semantics over a multibyte string. `length` counts code points,
+    `utf8ByteSize` counts bytes; `get`/`next` index byte offsets. -/
+def strLen (s : String) : Nat := s.length
+def strBytes (s : String) : Nat := s.utf8ByteSize
+def strGet0 (s : String) : Char := String.Pos.Raw.get s ⟨0⟩
+/-- Char at the byte offset reached by advancing once from 0 (skips a multibyte
+    char's bytes), proving positions are byte offsets not code-point indices. -/
+def strGet1 (s : String) : Char := String.Pos.Raw.get s (String.Pos.Raw.next s ⟨0⟩)
+/-- Extract bytes [lo, hi) by raw byte offset. -/
+def strExtract (s : String) (lo hi : Nat) : String :=
+  String.Pos.Raw.extract s ⟨lo⟩ ⟨hi⟩
+
 end LeanJs.Demo

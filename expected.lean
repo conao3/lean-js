@@ -39,6 +39,12 @@ def intEdiv (a b : Int) : Int := a / b
 def intEmod (a b : Int) : Int := a % b
 def intNeg (a : Int) : Int := -a
 def floatCalc (a b : Float) : Float := (a + b) * 2.0 / b
+def strLen (s : String) : Nat := s.length
+def strBytes (s : String) : Nat := s.utf8ByteSize
+def strGet0 (s : String) : Char := String.Pos.Raw.get s ⟨0⟩
+def strGet1 (s : String) : Char := String.Pos.Raw.get s (String.Pos.Raw.next s ⟨0⟩)
+def strExtract (s : String) (lo hi : Nat) : String :=
+  String.Pos.Raw.extract s ⟨lo⟩ ⟨hi⟩
 
 def showTodo (t : Todo) : String :=
   let mark := if t.done then "x" else " "
@@ -83,6 +89,13 @@ def main : IO Unit := do
   IO.println s!"intEmod2 = {intEmod 12 (-7)}"
   IO.println s!"intNeg = {intNeg 42}"
   IO.println s!"floatCalc = {floatCalc 3.0 4.0}"
+  let jp := "あいう"
+  IO.println s!"strLen = {strLen jp}"
+  IO.println s!"strBytes = {strBytes jp}"
+  IO.println s!"strGet0 = {strGet0 jp}"
+  IO.println s!"strGet1 = {strGet1 jp}"
+  IO.println s!"strExtract03 = {strExtract jp 0 3}"
+  IO.println s!"strExtract39 = {strExtract jp 3 9}"
   -- TodoList sequence: add, add, add, toggle, remove
   let l0 := TodoList.empty
   let l1 := l0.add "buy milk"

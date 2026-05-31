@@ -9,6 +9,8 @@ const exports = [
   'LeanJs_Demo_u32wrap', 'LeanJs_Demo_u8wrap',
   'LeanJs_Demo_intEdiv', 'LeanJs_Demo_intEmod', 'LeanJs_Demo_intNeg',
   'LeanJs_Demo_floatCalc',
+  'LeanJs_Demo_strLen', 'LeanJs_Demo_strBytes', 'LeanJs_Demo_strGet0',
+  'LeanJs_Demo_strGet1', 'LeanJs_Demo_strExtract',
   'LeanTodo_TodoList_add', 'LeanTodo_TodoList_toggle',
   'LeanTodo_TodoList_remove', 'LeanTodo_TodoList_step',
 ];
@@ -27,6 +29,11 @@ const {
   LeanJs_Demo_intEmod: intEmod,
   LeanJs_Demo_intNeg: intNeg,
   LeanJs_Demo_floatCalc: floatCalc,
+  LeanJs_Demo_strLen: strLen,
+  LeanJs_Demo_strBytes: strBytes,
+  LeanJs_Demo_strGet0: strGet0,
+  LeanJs_Demo_strGet1: strGet1,
+  LeanJs_Demo_strExtract: strExtract,
   LeanTodo_TodoList_add: add,
   LeanTodo_TodoList_toggle: toggle,
   LeanTodo_TodoList_remove: remove,
@@ -78,6 +85,15 @@ console.log(`intEdiv2 = ${intEdiv(12n, -7n)}`);
 console.log(`intEmod2 = ${intEmod(12n, -7n)}`);
 console.log(`intNeg = ${intNeg(42n)}`);
 console.log(`floatCalc = ${leanFloatToString(floatCalc(3.0, 4.0))}`);
+
+// ---- String UTF-8 byte semantics over a multibyte (Japanese) string ----
+const jp = 'あいう'; // each char is 3 UTF-8 bytes; length=3 code points, 9 bytes
+console.log(`strLen = ${strLen(jp)}`);
+console.log(`strBytes = ${strBytes(jp)}`);
+console.log(`strGet0 = ${String.fromCodePoint(strGet0(jp))}`);
+console.log(`strGet1 = ${String.fromCodePoint(strGet1(jp))}`);
+console.log(`strExtract03 = ${strExtract(jp, 0n, 3n)}`);
+console.log(`strExtract39 = ${strExtract(jp, 3n, 9n)}`);
 
 // ---- TodoList JS model ----
 // List: nil = 0, cons = { tag:1, fields:[head, tail] }
