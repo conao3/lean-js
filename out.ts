@@ -161,6 +161,36 @@ const lean_uint32_add = _u32.add, lean_uint32_sub = _u32.sub, lean_uint32_mul = 
 const lean_uint64_of_nat = _u64.ofNat, lean_uint64_add = _u64.add, lean_uint64_sub = _u64.sub, lean_uint64_mul = _u64.mul, lean_uint64_div = _u64.div, lean_uint64_mod = _u64.mod, lean_uint64_land = _u64.land, lean_uint64_lor = _u64.lor, lean_uint64_xor = _u64.xor, lean_uint64_complement = _u64.complement, lean_uint64_neg = _u64.neg, lean_uint64_shift_left = _u64.shiftLeft, lean_uint64_shift_right = _u64.shiftRight, lean_uint64_dec_eq = _u64.decEq, lean_uint64_dec_lt = _u64.decLt, lean_uint64_dec_le = _u64.decLe, lean_uint64_to_nat = _u64.toNat;
 const lean_usize_of_nat = _usz.ofNat, lean_usize_add = _usz.add, lean_usize_sub = _usz.sub, lean_usize_mul = _usz.mul, lean_usize_div = _usz.div, lean_usize_mod = _usz.mod, lean_usize_land = _usz.land, lean_usize_lor = _usz.lor, lean_usize_xor = _usz.xor, lean_usize_complement = _usz.complement, lean_usize_neg = _usz.neg, lean_usize_shift_left = _usz.shiftLeft, lean_usize_shift_right = _usz.shiftRight, lean_usize_dec_eq = _usz.decEq, lean_usize_dec_lt = _usz.decLt, lean_usize_dec_le = _usz.decLe, lean_usize_to_nat = _usz.toNat;
 
+// ---- Signed fixed-width ints Int8/16/32/64/ISize (BigInt + asIntN) ----
+// Uniform bigint representation across all widths (avoids number/bigint mixing).
+// Two's-complement wrap on construction and every op. div truncates toward zero
+// and (MIN/-1) wraps to MIN (no trap); mod takes the sign of the dividend;
+// div-by-zero -> 0, mod-by-zero -> lhs (total, like Int). shiftRight is
+// arithmetic (sign-extending); shift amount is masked by width. complement = ~.
+const _mkSInt = (bits) => {
+  const B = BigInt(bits);
+  const w = (x) => BigInt.asIntN(bits, x);
+  const sh = (b) => ((b % B) + B) % B;
+  return {
+    ofInt: w, ofNat: w, toInt: (x) => x,
+    add: (a, b) => w(a + b), sub: (a, b) => w(a - b), mul: (a, b) => w(a * b),
+    neg: (a) => w(-a),
+    div: (a, b) => (b === 0n ? 0n : w(a / b)),
+    mod: (a, b) => (b === 0n ? a : w(a % b)),
+    land: (a, b) => w(a & b), lor: (a, b) => w(a | b), xor: (a, b) => w(a ^ b),
+    complement: (a) => w(~a),
+    shiftLeft: (a, b) => w(a << sh(b)),
+    shiftRight: (a, b) => w(a >> sh(b)),
+    decEq: (a, b) => L_bool(a === b), decLt: (a, b) => L_bool(a < b), decLe: (a, b) => L_bool(a <= b),
+  };
+};
+const _i8 = _mkSInt(8), _i16 = _mkSInt(16), _i32 = _mkSInt(32), _i64 = _mkSInt(64), _isz = _mkSInt(64);
+const lean_int8_of_int = _i8.ofInt, lean_int8_of_nat = _i8.ofNat, lean_int8_to_int = _i8.toInt, lean_int8_add = _i8.add, lean_int8_sub = _i8.sub, lean_int8_mul = _i8.mul, lean_int8_div = _i8.div, lean_int8_mod = _i8.mod, lean_int8_neg = _i8.neg, lean_int8_land = _i8.land, lean_int8_lor = _i8.lor, lean_int8_xor = _i8.xor, lean_int8_complement = _i8.complement, lean_int8_shift_left = _i8.shiftLeft, lean_int8_shift_right = _i8.shiftRight, lean_int8_dec_eq = _i8.decEq, lean_int8_dec_lt = _i8.decLt, lean_int8_dec_le = _i8.decLe;
+const lean_int16_of_int = _i16.ofInt, lean_int16_of_nat = _i16.ofNat, lean_int16_to_int = _i16.toInt, lean_int16_add = _i16.add, lean_int16_sub = _i16.sub, lean_int16_mul = _i16.mul, lean_int16_div = _i16.div, lean_int16_mod = _i16.mod, lean_int16_neg = _i16.neg, lean_int16_land = _i16.land, lean_int16_lor = _i16.lor, lean_int16_xor = _i16.xor, lean_int16_complement = _i16.complement, lean_int16_shift_left = _i16.shiftLeft, lean_int16_shift_right = _i16.shiftRight, lean_int16_dec_eq = _i16.decEq, lean_int16_dec_lt = _i16.decLt, lean_int16_dec_le = _i16.decLe;
+const lean_int32_of_int = _i32.ofInt, lean_int32_of_nat = _i32.ofNat, lean_int32_to_int = _i32.toInt, lean_int32_add = _i32.add, lean_int32_sub = _i32.sub, lean_int32_mul = _i32.mul, lean_int32_div = _i32.div, lean_int32_mod = _i32.mod, lean_int32_neg = _i32.neg, lean_int32_land = _i32.land, lean_int32_lor = _i32.lor, lean_int32_xor = _i32.xor, lean_int32_complement = _i32.complement, lean_int32_shift_left = _i32.shiftLeft, lean_int32_shift_right = _i32.shiftRight, lean_int32_dec_eq = _i32.decEq, lean_int32_dec_lt = _i32.decLt, lean_int32_dec_le = _i32.decLe;
+const lean_int64_of_int = _i64.ofInt, lean_int64_of_nat = _i64.ofNat, lean_int64_to_int_sint = _i64.toInt, lean_int64_add = _i64.add, lean_int64_sub = _i64.sub, lean_int64_mul = _i64.mul, lean_int64_div = _i64.div, lean_int64_mod = _i64.mod, lean_int64_neg = _i64.neg, lean_int64_land = _i64.land, lean_int64_lor = _i64.lor, lean_int64_xor = _i64.xor, lean_int64_complement = _i64.complement, lean_int64_shift_left = _i64.shiftLeft, lean_int64_shift_right = _i64.shiftRight, lean_int64_dec_eq = _i64.decEq, lean_int64_dec_lt = _i64.decLt, lean_int64_dec_le = _i64.decLe;
+const lean_isize_of_int = _isz.ofInt, lean_isize_of_nat = _isz.ofNat, lean_isize_to_int_sint = _isz.toInt, lean_isize_add = _isz.add, lean_isize_sub = _isz.sub, lean_isize_mul = _isz.mul, lean_isize_div = _isz.div, lean_isize_mod = _isz.mod, lean_isize_neg = _isz.neg, lean_isize_land = _isz.land, lean_isize_lor = _isz.lor, lean_isize_xor = _isz.xor, lean_isize_complement = _isz.complement, lean_isize_shift_left = _isz.shiftLeft, lean_isize_shift_right = _isz.shiftRight, lean_isize_dec_eq = _isz.decEq, lean_isize_dec_lt = _isz.decLt, lean_isize_dec_le = _isz.decLe;
+
 // ---- Float (IEEE 754 binary64 == JS number). IEEE div-by-zero (Inf/NaN). ----
 const lean_float_add = (a, b) => a + b;
 const lean_float_sub = (a, b) => a - b;
@@ -1343,6 +1373,76 @@ function LeanJs_Demo_m3a(x_1) {
 
 function LeanJs_Demo_cycle3(x_1) {
   const x_2 = LeanJs_Demo_m3a(x_1);
+  return x_2;
+}
+
+// extern Int8_add -> runtime prelude
+
+function LeanJs_Demo_i8wrap(x_1, x_2) {
+  const x_3 = lean_int8_add(x_1, x_2);
+  return x_3;
+}
+
+// extern Int8_neg -> runtime prelude
+
+function LeanJs_Demo_i8neg(x_1) {
+  const x_2 = lean_int8_neg(x_1);
+  return x_2;
+}
+
+// extern Int8_div -> runtime prelude
+
+function LeanJs_Demo_i8div(x_1, x_2) {
+  const x_3 = lean_int8_div(x_1, x_2);
+  return x_3;
+}
+
+// extern Int8_mod -> runtime prelude
+
+function LeanJs_Demo_i8mod(x_1, x_2) {
+  const x_3 = lean_int8_mod(x_1, x_2);
+  return x_3;
+}
+
+// extern Int8_shiftRight -> runtime prelude
+
+function LeanJs_Demo_i8shr(x_1, x_2) {
+  const x_3 = lean_int8_shift_right(x_1, x_2);
+  return x_3;
+}
+
+// extern Int16_mul -> runtime prelude
+
+function LeanJs_Demo_i16wrap(x_1, x_2) {
+  const x_3 = lean_int16_mul(x_1, x_2);
+  return x_3;
+}
+
+// extern Int32_add -> runtime prelude
+
+function LeanJs_Demo_i32wrap(x_1, x_2) {
+  const x_3 = lean_int32_add(x_1, x_2);
+  return x_3;
+}
+
+// extern Int64_mul -> runtime prelude
+
+function LeanJs_Demo_i64mul(x_1, x_2) {
+  const x_3 = lean_int64_mul(x_1, x_2);
+  return x_3;
+}
+
+// extern Int8_toInt -> runtime prelude
+
+function LeanJs_Demo_i8toInt(x_1) {
+  const x_2 = lean_int8_to_int(x_1);
+  return x_2;
+}
+
+// extern Int32_toInt -> runtime prelude
+
+function LeanJs_Demo_i32toInt(x_1) {
+  const x_2 = lean_int32_to_int(x_1);
   return x_2;
 }
 

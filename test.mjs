@@ -16,6 +16,9 @@ const exports = [
   'LeanJs_Demo_listSum', 'LeanJs_Demo_listLen', 'LeanJs_Demo_listRev',
   'LeanJs_Demo_listMapSum',
   'LeanJs_Demo_parityEven', 'LeanJs_Demo_parityOdd', 'LeanJs_Demo_cycle3',
+  'LeanJs_Demo_i8wrap', 'LeanJs_Demo_i8neg', 'LeanJs_Demo_i8div', 'LeanJs_Demo_i8mod',
+  'LeanJs_Demo_i8shr', 'LeanJs_Demo_i16wrap', 'LeanJs_Demo_i32wrap', 'LeanJs_Demo_i64mul',
+  'LeanJs_Demo_i8toInt', 'LeanJs_Demo_i32toInt',
   'LeanTodo_TodoList_add', 'LeanTodo_TodoList_toggle',
   'LeanTodo_TodoList_remove', 'LeanTodo_TodoList_step',
 ];
@@ -51,6 +54,16 @@ const {
   LeanJs_Demo_parityEven: parityEven,
   LeanJs_Demo_parityOdd: parityOdd,
   LeanJs_Demo_cycle3: cycle3,
+  LeanJs_Demo_i8wrap: i8wrap,
+  LeanJs_Demo_i8neg: i8neg,
+  LeanJs_Demo_i8div: i8div,
+  LeanJs_Demo_i8mod: i8mod,
+  LeanJs_Demo_i8shr: i8shr,
+  LeanJs_Demo_i16wrap: i16wrap,
+  LeanJs_Demo_i32wrap: i32wrap,
+  LeanJs_Demo_i64mul: i64mul,
+  LeanJs_Demo_i8toInt: i8toInt,
+  LeanJs_Demo_i32toInt: i32toInt,
   LeanTodo_TodoList_add: add,
   LeanTodo_TodoList_toggle: toggle,
   LeanTodo_TodoList_remove: remove,
@@ -147,6 +160,20 @@ console.log(`cycle3 0 = ${cycle3(0n)}`);
 console.log(`cycle3 1 = ${cycle3(1n)}`);
 console.log(`cycle3 2 = ${cycle3(2n)}`);
 console.log(`cycle3 3000 = ${cycle3(3000n)}`);
+
+// ---- Signed fixed-width ints (bigint repr; values equal their .toInt) ----
+console.log(`i8wrap = ${i8wrap(127n, 1n)}`);
+console.log(`i8neg = ${i8neg(-128n)}`);
+console.log(`i8div = ${i8div(-128n, -1n)}`);
+console.log(`i8div0 = ${i8div(5n, 0n)}`);
+console.log(`i8mod = ${i8mod(-7n, 2n)}`);
+console.log(`i8mod2 = ${i8mod(7n, -2n)}`);
+console.log(`i8shr = ${i8shr(-8n, 1n)}`);
+console.log(`i16wrap = ${i16wrap(256n, 256n)}`);
+console.log(`i32wrap = ${i32wrap(2147483647n, 1n)}`);
+console.log(`i64mul = ${i64mul(4294967296n, 4294967296n)}`);
+console.log(`i8toInt = ${i8toInt(-5n)}`);
+console.log(`i32toInt = ${i32toInt(-100n)}`);
 
 // ---- TodoList JS model ----
 // List: nil = 0, cons = { tag:1, fields:[head, tail] }

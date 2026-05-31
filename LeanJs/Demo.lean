@@ -105,4 +105,15 @@ end
 
 def cycle3 (n : Nat) : Nat := m3a n
 
+def i8wrap (a b : Int8) : Int8 := a + b
+def i8neg (a : Int8) : Int8 := -a
+def i8div (a b : Int8) : Int8 := a / b
+def i8mod (a b : Int8) : Int8 := a % b
+def i8shr (a : Int8) (n : Int8) : Int8 := a >>> n
+def i16wrap (a b : Int16) : Int16 := a * b
+def i32wrap (a b : Int32) : Int32 := a + b
+def i64mul (a b : Int64) : Int64 := a * b
+def i8toInt (a : Int8) : Int := a.toInt
+def i32toInt (a : Int32) : Int := a.toInt
+
 end LeanJs.Demo

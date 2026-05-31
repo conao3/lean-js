@@ -77,6 +77,16 @@ mutual
     | n+1 => m3a n
 end
 def cycle3 (n : Nat) : Nat := m3a n
+def i8wrap (a b : Int8) : Int8 := a + b
+def i8neg (a : Int8) : Int8 := -a
+def i8div (a b : Int8) : Int8 := a / b
+def i8mod (a b : Int8) : Int8 := a % b
+def i8shr (a : Int8) (n : Int8) : Int8 := a >>> n
+def i16wrap (a b : Int16) : Int16 := a * b
+def i32wrap (a b : Int32) : Int32 := a + b
+def i64mul (a b : Int64) : Int64 := a * b
+def i8toInt (a : Int8) : Int := a.toInt
+def i32toInt (a : Int32) : Int := a.toInt
 
 def showTodo (t : Todo) : String :=
   let mark := if t.done then "x" else " "
@@ -151,6 +161,19 @@ def main : IO Unit := do
   IO.println s!"cycle3 1 = {cycle3 1}"
   IO.println s!"cycle3 2 = {cycle3 2}"
   IO.println s!"cycle3 3000 = {cycle3 3000}"
+  -- Signed fixed-width ints: two's-complement wrap, trunc div, dividend-sign mod.
+  IO.println s!"i8wrap = {(i8wrap 127 1).toInt}"
+  IO.println s!"i8neg = {(i8neg (-128)).toInt}"
+  IO.println s!"i8div = {(i8div (-128) (-1)).toInt}"
+  IO.println s!"i8div0 = {(i8div 5 0).toInt}"
+  IO.println s!"i8mod = {(i8mod (-7) 2).toInt}"
+  IO.println s!"i8mod2 = {(i8mod 7 (-2)).toInt}"
+  IO.println s!"i8shr = {(i8shr (-8) 1).toInt}"
+  IO.println s!"i16wrap = {(i16wrap 256 256).toInt}"
+  IO.println s!"i32wrap = {(i32wrap 2147483647 1).toInt}"
+  IO.println s!"i64mul = {(i64mul 4294967296 4294967296).toInt}"
+  IO.println s!"i8toInt = {i8toInt (-5)}"
+  IO.println s!"i32toInt = {i32toInt (-100)}"
   -- TodoList sequence: add, add, add, toggle, remove
   let l0 := TodoList.empty
   let l1 := l0.add "buy milk"
