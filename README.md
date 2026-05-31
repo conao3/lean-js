@@ -1,59 +1,72 @@
 # lean-js (proof of concept)
 
 A Lean-to-TypeScript backend that mirrors Lean's C backend (`Lean.Compiler.IR.EmitC`),
-driven by `Lean.Compiler.IR`. From the IR `Decl` of a Lean function it emits an
-equivalent TypeScript/JavaScript function, then diff-tests it against Lean's own
-execution.
+driven by `Lean.Compiler.IR`. From the IR `Decl` of a Lean function it transitively
+collects every IR dependency, emits an equivalent self-contained TypeScript module,
+then diff-tests it against Lean's own execution.
+
+## Layout
+
+- `LeanJs/EmitJS.lean` — the emitter library (`lean_lib LeanJs`): IR walk, transitive
+  decl collection, self-tail-call loop lowering, extern mapping.
+- `LeanJs/Demo.lean`   — demo target functions (double / mkShifted / sumTo / fact).
+- `Main.lean`          — thin CLI (`lean_exe lean-js`): imports targets, collects from
+  root names, writes `prelude.ts` + generated code to `out.ts`.
+- `prelude.ts`         — hand-written runtime (Nat/Int/String/Array/List/Bool/Char).
+- `expected.lean`      — Lean reference execution.
+- `test.mjs` / `test.sh` — diff-test harness (Lean `#eval` vs `node`).
 
 ## How it works
 
-1. `def double` / `def mkShifted` are defined in `Main.lean`; elaboration triggers
-   `Lean.compileDecl`, so their IR lands in the environment.
-2. `Lean.IR.findEnvDecl env name` returns the traversable `Lean.IR.Decl`.
-3. The emitter (`namespace LeanJs` in `Main.lean`) walks `FnBody` / `Expr` and
-   emits TS, mirroring `EmitC`'s match arms.
+1. Target functions are defined in library modules so their IR is persisted in the
+   `.olean` and visible to `Lean.IR.findEnvDecl`.
+2. From a set of root names, `LeanJs.collectTransitive` does a worklist DFS over
+   `findEnvDecl`, walking `fap`/`pap` callees; `.fdecl` are emitted as TS functions,
+   `.extern` map to the prelude, `none` (e.g. `Nat.rec`) is the boundary. Output is
+   ordered callee-before-caller.
+3. The emitter walks `FnBody` / `Expr`, mirroring `EmitC`'s match arms.
 
-### Key simplification: GC target
+### GC target
 
 The JS engine has a tracing GC, so all Lean reference-counting nodes are no-ops:
 
-- `FnBody.inc` / `dec` / `del`            -> emit nothing
-- `Expr.reset`                            -> `null` (unused reuse token)
-- `Expr.reuse`                            -> a fresh ctor allocation (== `Expr.ctor`)
-- `Expr.box` / `unbox`                    -> identity
-- `Expr.isShared`                         -> `0` (Bool.false; nothing is "shared")
+- `FnBody.inc` / `dec` / `del`  -> emit nothing
+- `Expr.reset`                  -> `null` (unused reuse token)
+- `Expr.reuse`                  -> a fresh ctor allocation (== `Expr.ctor`)
+- `Expr.box` / `unbox`          -> identity
+- `Expr.isShared`               -> `1` ("always shared"), forcing the compiler's
+  exclusivity branch to take the copying path; in-place `set`/`reuse` would corrupt
+  shared JS references since there is no refcount.
 
 ### Object / value model
 
-- `Nat` -> `bigint` (arbitrary precision; no UInt32 boundary needed)
-- ctor with fields -> `{ tag: cidx, fields: [...] }`
-- nullary ctor / enum -> the integer `cidx` (mirrors `lean_box(cidx)`)
-- `proj i x` -> `x.fields[i]`; `ctor` set -> `x.fields[i] = y`
-- `Nat.add/sub/mul/...` externs -> inlined bigint ops (truncated sub, etc.)
-- `case` on scalar -> `switch (x)`; on object -> `switch (x.tag)`
-- join points -> local arrow-function closures; `jmp` -> `return j(args)`
+- `Nat` / `Int` -> `bigint`; scalar literals (`u8`/`u32`/...) -> plain JS number.
+- ctor with fields -> `{ tag: cidx, fields: [...] }`; nullary ctor / enum -> `cidx`.
+  `lean_tag(x)` recovers the tag for both forms (mirrors `lean_obj_tag` on a boxed
+  scalar).
+- `Bool` -> scalar `0`/`1`; extern `decEq`/`decLt`/`decLe` return `0`/`1` so the
+  emitted `switch` matches.
+- `String` -> JS string with code-point semantics; `proj`/`set` -> `x.fields[i]`.
+- `case` on scalar -> `switch (x)`; on object -> `switch (lean_tag(x))`.
+- self-tail-recursion -> `while (true)` loop with staged param rebind + `continue`
+  (join points inlined so `continue` stays lexically inside the loop).
 
 ## Run the diff-test
 
 ```
-nix develop ../lean-todo-app --command bash -c "cd $(pwd) && ./test.sh"
+nix develop . --command bash -c "./test.sh"
 ```
 
-Expected output: all 6 cases (3 `double`, 3 `mkShifted`) identical between Lean
-`#eval` and `node`, ending in `DIFF-TEST PASS`.
+Covers `double`, `mkShifted`, `sumTo` (incl. `100000`, exercising TCO), `fact`, and a
+multi-step `LeanTodo.TodoList` sequence (add / toggle / remove / step over a 3-element
+list). All cases must be identical between Lean and `node`, ending in `DIFF-TEST PASS`.
 
-## Files
+## Status / remaining gaps vs EmitC
 
-- `Main.lean`    — emitter + target defs + `run_meta` dump + `main` (writes `out.ts`)
-- `out.ts`       — generated TypeScript (committed for inspection)
-- `expected.lean`— Lean reference execution
-- `test.mjs`     — runs `out.ts` under node with the same inputs
-- `test.sh`      — end-to-end diff-test
-
-## Status / limitations (PoC scope)
-
-Works end-to-end for `double` (Nat arithmetic) and `mkShifted` (ctor / proj /
-record return, including the in-place-mutation branch under `isShared`). Not yet
-handled: closures/`pap`/`ap` beyond a minimal runtime, `String` codepoint/byte
-semantics, tail-call `while(true)` wrapping, and automatic transitive emission of
-helper decls. The emitter only emits explicitly-named decls.
+- Externs cover Nat/Int/String/Array/List/Bool/Char basics; UTF-8 byte-offset `String`
+  position externs, `Float`, full `UInt`/`USize` families, and `IO` are not yet mapped.
+- TCO handles self-`fap` tail recursion; mutual tail recursion and join-point tail
+  edges across functions are not loop-ified.
+- `sproj`/`uproj`/`sset`/`uset` index the same `fields[]` as object projections;
+  correct for the exercised ctors, fragile for ctors mixing pointer and packed-scalar
+  fields at colliding indices.

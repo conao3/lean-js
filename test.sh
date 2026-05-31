@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Diff-test: regenerate out.ts, run Lean #eval vs generated TS via node.
-# Usage: nix develop ../lean-todo-app --command bash -c "cd $(pwd) && ./test.sh"
+# Diff-test: regenerate out.ts, run Lean reference vs generated TS via node.
+# Usage: nix develop . --command bash -c "./test.sh"
 set -euo pipefail
 lake build
-lake exe lean-js out.ts
-lake env lean --run expected.lean | grep -E 'double|mkShifted' > /tmp/lean.out
+lake exe lean-js out.ts prelude.ts
+lake env lean --run expected.lean > /tmp/lean.out
 node test.mjs > /tmp/ts.out
 echo "=== LEAN (expected) ==="; cat /tmp/lean.out
 echo "=== TS (node) ===";      cat /tmp/ts.out
