@@ -1,0 +1,7 @@
+name = "lean2ts"
+defaultTargets = ["lean2ts"]
+
+[[lean_exe]]
+name = "lean2ts"
+root = "Main"
+supportInterpreter = true
