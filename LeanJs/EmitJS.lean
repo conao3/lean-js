@@ -248,6 +248,8 @@ def emitKnownFap (c : FunId) (ys : Array Arg) : Option String :=
   | `Float32.decLe => call "lean_float32_decLe"
   | `Float32.toFloat => call "lean_float32_to_float"
   | `Float32.sqrt => call "lean_float32_sqrt" | `Float32.abs => call "lean_float32_abs"
+  | `Float.toString => call "lean_float_to_string"
+  | `Float32.toString => call "lean_float32_to_string"
   -- Char
   | `Char.ofNat       => call "lean_uint32_of_nat"
   | `Char.toNat       => call "lean_char_to_nat"

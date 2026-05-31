@@ -116,4 +116,7 @@ def i64mul (a b : Int64) : Int64 := a * b
 def i8toInt (a : Int8) : Int := a.toInt
 def i32toInt (a : Int32) : Int := a.toInt
 
+def floatStr (x : Float) : String := toString x
+def float32Str (x : Float32) : String := toString x
+
 end LeanJs.Demo

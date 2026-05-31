@@ -30,6 +30,7 @@ def rootNames : Array Name := #[
   `LeanJs.Demo.i8wrap, `LeanJs.Demo.i8neg, `LeanJs.Demo.i8div, `LeanJs.Demo.i8mod,
   `LeanJs.Demo.i8shr, `LeanJs.Demo.i16wrap, `LeanJs.Demo.i32wrap, `LeanJs.Demo.i64mul,
   `LeanJs.Demo.i8toInt, `LeanJs.Demo.i32toInt,
+  `LeanJs.Demo.floatStr, `LeanJs.Demo.float32Str,
   `LeanTodo.TodoList.add,
   `LeanTodo.TodoList.toggle,
   `LeanTodo.TodoList.remove,

@@ -237,6 +237,21 @@ const lean_float32_decLt = (a, b) => L_bool(_f(a) < _f(b));
 const lean_float32_decLe = (a, b) => L_bool(_f(a) <= _f(b));
 const lean_float32_to_float = (a) => _f(a);
 const lean_float_to_float32 = (a) => _f(a);
+
+// ---- Float.toString / Float32.toString : C `%f` (6 fixed decimals) ----
+// Matches Lean: NaN -> "NaN"; +/-inf -> "inf"/"-inf"; sign of -0.0 preserved;
+// |x| >= 1e21 falls back to the exact integer digits (JS toFixed would give
+// exponential there). Float32 first rounds to binary32, then prints like Float.
+const lean_float_to_string = (x) => {
+  if (Number.isNaN(x)) return 'NaN';
+  if (x === Infinity) return 'inf';
+  if (x === -Infinity) return '-inf';
+  const neg = x < 0 || Object.is(x, -0);
+  const a = Math.abs(x);
+  const s = a < 1e21 ? a.toFixed(6) : (BigInt(a).toString() + '.000000');
+  return neg ? '-' + s : s;
+};
+const lean_float32_to_string = (x) => lean_float_to_string(Math.fround(x));
 const lean_float32_sqrt = (a) => _f(Math.sqrt(_f(a)));
 const lean_float32_abs = (a) => _f(Math.abs(_f(a)));
 
@@ -1443,6 +1458,20 @@ function LeanJs_Demo_i8toInt(x_1) {
 
 function LeanJs_Demo_i32toInt(x_1) {
   const x_2 = lean_int32_to_int(x_1);
+  return x_2;
+}
+
+// extern Float_toString -> runtime prelude
+
+function LeanJs_Demo_floatStr(x_1) {
+  const x_2 = lean_float_to_string(x_1);
+  return x_2;
+}
+
+// extern Float32_toString -> runtime prelude
+
+function LeanJs_Demo_float32Str(x_1) {
+  const x_2 = lean_float32_to_string(x_1);
   return x_2;
 }
 

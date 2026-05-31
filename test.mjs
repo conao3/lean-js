@@ -19,6 +19,7 @@ const exports = [
   'LeanJs_Demo_i8wrap', 'LeanJs_Demo_i8neg', 'LeanJs_Demo_i8div', 'LeanJs_Demo_i8mod',
   'LeanJs_Demo_i8shr', 'LeanJs_Demo_i16wrap', 'LeanJs_Demo_i32wrap', 'LeanJs_Demo_i64mul',
   'LeanJs_Demo_i8toInt', 'LeanJs_Demo_i32toInt',
+  'LeanJs_Demo_floatStr', 'LeanJs_Demo_float32Str',
   'LeanTodo_TodoList_add', 'LeanTodo_TodoList_toggle',
   'LeanTodo_TodoList_remove', 'LeanTodo_TodoList_step',
 ];
@@ -64,14 +65,17 @@ const {
   LeanJs_Demo_i64mul: i64mul,
   LeanJs_Demo_i8toInt: i8toInt,
   LeanJs_Demo_i32toInt: i32toInt,
+  LeanJs_Demo_floatStr: floatStr,
+  LeanJs_Demo_float32Str: float32Str,
   LeanTodo_TodoList_add: add,
   LeanTodo_TodoList_toggle: toggle,
   LeanTodo_TodoList_remove: remove,
   LeanTodo_TodoList_step: step,
 } = m;
 
-// Lean's Float.toString uses C `%f` (fixed 6 decimal places).
-const leanFloatToString = (x) => x.toFixed(6);
+// Lean's Float.toString uses C `%f` (6 decimals); route through the generated
+// floatStr so the harness exercises the real prelude renderer (NaN/Inf/-0.0).
+const leanFloatToString = (x) => floatStr(x);
 
 // Point = { tag:0, fields:[x,y] }
 const P = (x, y) => ({ tag: 0, fields: [x, y] });
@@ -174,6 +178,20 @@ console.log(`i32wrap = ${i32wrap(2147483647n, 1n)}`);
 console.log(`i64mul = ${i64mul(4294967296n, 4294967296n)}`);
 console.log(`i8toInt = ${i8toInt(-5n)}`);
 console.log(`i32toInt = ${i32toInt(-100n)}`);
+
+// ---- Float / Float32 toString edge cases ----
+console.log(`fstr0 = ${floatStr(0.0)}`);
+console.log(`fstrPi = ${floatStr(3.14)}`);
+console.log(`fstrNeg0 = ${floatStr(-0.0)}`);
+console.log(`fstrInf = ${floatStr(1.0 / 0.0)}`);
+console.log(`fstrNInf = ${floatStr(-1.0 / 0.0)}`);
+console.log(`fstrNaN = ${floatStr(0.0 / 0.0)}`);
+console.log(`fstrBig = ${floatStr(123456789.123456789)}`);
+console.log(`fstr1e20 = ${floatStr(1e20)}`);
+console.log(`fstr1e21 = ${floatStr(1e21)}`);
+console.log(`fstrNeg = ${floatStr(-2.5)}`);
+console.log(`f32str = ${float32Str(16777217.0)}`);
+console.log(`f32strPi = ${float32Str(3.14)}`);
 
 // ---- TodoList JS model ----
 // List: nil = 0, cons = { tag:1, fields:[head, tail] }

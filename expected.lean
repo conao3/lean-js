@@ -87,6 +87,8 @@ def i32wrap (a b : Int32) : Int32 := a + b
 def i64mul (a b : Int64) : Int64 := a * b
 def i8toInt (a : Int8) : Int := a.toInt
 def i32toInt (a : Int32) : Int := a.toInt
+def floatStr (x : Float) : String := toString x
+def float32Str (x : Float32) : String := toString x
 
 def showTodo (t : Todo) : String :=
   let mark := if t.done then "x" else " "
@@ -174,6 +176,19 @@ def main : IO Unit := do
   IO.println s!"i64mul = {(i64mul 4294967296 4294967296).toInt}"
   IO.println s!"i8toInt = {i8toInt (-5)}"
   IO.println s!"i32toInt = {i32toInt (-100)}"
+  -- Float.toString edge cases: NaN, +/-inf, -0.0, finite rounding, 1e21 boundary.
+  IO.println s!"fstr0 = {floatStr 0.0}"
+  IO.println s!"fstrPi = {floatStr 3.14}"
+  IO.println s!"fstrNeg0 = {floatStr (-0.0)}"
+  IO.println s!"fstrInf = {floatStr (1.0/0.0)}"
+  IO.println s!"fstrNInf = {floatStr (-1.0/0.0)}"
+  IO.println s!"fstrNaN = {floatStr (0.0/0.0)}"
+  IO.println s!"fstrBig = {floatStr 123456789.123456789}"
+  IO.println s!"fstr1e20 = {floatStr 1e20}"
+  IO.println s!"fstr1e21 = {floatStr 1e21}"
+  IO.println s!"fstrNeg = {floatStr (-2.5)}"
+  IO.println s!"f32str = {float32Str 16777217.0}"
+  IO.println s!"f32strPi = {float32Str 3.14}"
   -- TodoList sequence: add, add, add, toggle, remove
   let l0 := TodoList.empty
   let l1 := l0.add "buy milk"
