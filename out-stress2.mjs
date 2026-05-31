@@ -434,7 +434,41 @@ const lean_string_append = (a, b) => a + b;
 const lean_string_push = (s, c) => s + String.fromCodePoint(c);
 const lean_string_dec_eq = (a, b) => L_bool(a === b);
 const lean_string_isempty = (s) => L_bool(s.length === 0);
-const lean_string_hash = (s) => { let h = 0n; for (const c of s) { h = (h * 31n + BigInt(c.codePointAt(0))) & 0xffffffffffffffffn; } return h; };
+// String.hash (extern lean_string_hash): MurmurHash64A over the UTF-8 bytes
+// with seed 11, transcribed from the runtime's hash_str so bucket layout (and
+// thus HashMap/HashSet iteration order) is bit-identical to the native backend.
+const _MURMUR_M = 0xc6a4a7935bd1e995n;
+const _MURMUR_R = 47n;
+const _wrap64 = (x) => BigInt.asUintN(64, x);
+// mixHash (extern lean_uint64_mix_hash): the runtime's lean_uint64_mix_hash,
+// used by Hashable for Prod/Option/Array/List and pointer hashing. Bit-exact.
+const lean_uint64_mix_hash = (h, k) => {
+  const m = _MURMUR_M, r = _MURMUR_R;
+  k = _wrap64(k * m); k ^= k >> r; k ^= m;
+  h ^= k; h = _wrap64(h * m);
+  return _wrap64(h);
+};
+const lean_string_hash = (s) => {
+  const b = _utf8enc.encode(s), len = b.length, m = _MURMUR_M, r = _MURMUR_R;
+  let h = _wrap64(11n ^ _wrap64(BigInt(len) * m));
+  const nblocks = (len / 8) | 0;
+  for (let i = 0; i < nblocks; i++) {
+    let k = 0n;
+    for (let j = 0; j < 8; j++) k |= BigInt(b[i * 8 + j]) << BigInt(8 * j);
+    k = _wrap64(k * m); k ^= k >> r; k = _wrap64(k * m);
+    h ^= k; h = _wrap64(h * m);
+  }
+  const t = nblocks * 8, rem = len & 7;
+  if (rem >= 7) h ^= BigInt(b[t + 6]) << 48n;
+  if (rem >= 6) h ^= BigInt(b[t + 5]) << 40n;
+  if (rem >= 5) h ^= BigInt(b[t + 4]) << 32n;
+  if (rem >= 4) h ^= BigInt(b[t + 3]) << 24n;
+  if (rem >= 3) h ^= BigInt(b[t + 2]) << 16n;
+  if (rem >= 2) h ^= BigInt(b[t + 1]) << 8n;
+  if (rem >= 1) { h ^= BigInt(b[t]); h = _wrap64(h * m); }
+  h ^= h >> r; h = _wrap64(h * m); h ^= h >> r;
+  return _wrap64(h);
+};
 // String.data / String.toList -> List Char (code points): tag 0 = nil, tag 1 = cons{head,tail}
 const lean_string_data = (s) =>
   [...s].reduceRight((tl, ch) => ({ tag: 1, fields: [ch.codePointAt(0), tl] }), 0);

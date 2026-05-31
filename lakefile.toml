@@ -52,3 +52,7 @@ root = "OracleStress2"
 [[lean_exe]]
 name = "oracle-fuzz"
 root = "OracleFuzz"
+
+[[lean_exe]]
+name = "oracle-stress3"
+root = "OracleStress3"

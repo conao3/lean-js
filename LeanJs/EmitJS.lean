@@ -234,6 +234,7 @@ def preludeSymbols : Std.HashSet String := Std.HashSet.ofList [
   -- String
   "lean_string_length", "lean_string_append", "lean_string_push", "lean_string_dec_eq",
   "lean_string_data", "lean_string_mk", "lean_string_isempty", "lean_string_hash",
+  "lean_uint64_mix_hash",
   "lean_string_utf8_byte_size", "lean_string_utf8_get", "lean_string_utf8_get_bang",
   "lean_string_utf8_get_opt", "lean_string_utf8_next", "lean_string_utf8_prev",
   "lean_string_utf8_at_end", "lean_string_utf8_extract", "lean_string_utf8_pos_of",
