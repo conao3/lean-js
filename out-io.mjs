@@ -55,6 +55,15 @@ const lean_ctor_set_u32 = (x, o, v) => x.sdata.setUint32(o, Number(v) >>> 0, tru
 const lean_ctor_set_u64 = (x, o, v) => x.sdata.setBigUint64(o, BigInt.asUintN(64, v), true);
 const lean_ctor_set_f64 = (x, o, v) => x.sdata.setFloat64(o, v, true);
 const lean_ctor_set_f32 = (x, o, v) => x.sdata.setFloat32(o, Math.fround(v), true);
+// Packed USize scalar: width follows WORD_BITS (the pointer width), not a literal
+// 64 — a 32-bit profile reads/writes 4 bytes. (In practice usize fields use the
+// word-indexed uproj/uset path, not sproj/sset, so this is a defensive fallback.)
+const lean_ctor_get_usize = (x, o) =>
+  WORD_BITS === 64 ? x.sdata.getBigUint64(o, true) : BigInt(x.sdata.getUint32(o, true));
+const lean_ctor_set_usize = (x, o, v) =>
+  WORD_BITS === 64
+    ? x.sdata.setBigUint64(o, BigInt.asUintN(64, BigInt(v)), true)
+    : x.sdata.setUint32(o, Number(BigInt.asUintN(32, BigInt(v))) >>> 0, true);
 
 // ---- trampoline driver for mutual / cross-function tail calls ----
 // A trampolined core returns a thunk { __tc:1, f, a:[args] } at an SCC-internal
@@ -152,8 +161,14 @@ const _mkUIntBig = (bits) => {
     toNat: (a) => m(a),
   };
 };
+// USize / pointer width. The C runtime's size_t == sizeof(void*) (8 on 64-bit,
+// 4 on 32-bit), and usize ctor slots / the packed-usize accessor width are
+// derived from it. lean-js targets a 64-bit-like host (BigInt for 64-bit), so
+// WORD_BITS defaults to 64; route every usize-width decision through this single
+// constant so a 32-bit profile is a one-line change.
+const WORD_BITS = 64;
 const _u8 = _mkUIntNum(8), _u16 = _mkUIntNum(16), _u32 = _mkUIntNum(32);
-const _u64 = _mkUIntBig(64), _usz = _mkUIntBig(64);
+const _u64 = _mkUIntBig(64), _usz = _mkUIntBig(WORD_BITS);
 
 const lean_uint8_of_nat = _u8.ofNat, lean_uint8_add = _u8.add, lean_uint8_sub = _u8.sub, lean_uint8_mul = _u8.mul, lean_uint8_div = _u8.div, lean_uint8_mod = _u8.mod, lean_uint8_land = _u8.land, lean_uint8_lor = _u8.lor, lean_uint8_xor = _u8.xor, lean_uint8_complement = _u8.complement, lean_uint8_neg = _u8.neg, lean_uint8_shift_left = _u8.shiftLeft, lean_uint8_shift_right = _u8.shiftRight, lean_uint8_dec_eq = _u8.decEq, lean_uint8_dec_lt = _u8.decLt, lean_uint8_dec_le = _u8.decLe, lean_uint8_to_nat = _u8.toNat;
 const lean_uint16_of_nat = _u16.ofNat, lean_uint16_add = _u16.add, lean_uint16_sub = _u16.sub, lean_uint16_mul = _u16.mul, lean_uint16_div = _u16.div, lean_uint16_mod = _u16.mod, lean_uint16_land = _u16.land, lean_uint16_lor = _u16.lor, lean_uint16_xor = _u16.xor, lean_uint16_complement = _u16.complement, lean_uint16_neg = _u16.neg, lean_uint16_shift_left = _u16.shiftLeft, lean_uint16_shift_right = _u16.shiftRight, lean_uint16_dec_eq = _u16.decEq, lean_uint16_dec_lt = _u16.decLt, lean_uint16_dec_le = _u16.decLe, lean_uint16_to_nat = _u16.toNat;
@@ -172,7 +187,13 @@ const _mkSInt = (bits) => {
   const w = (x) => BigInt.asIntN(bits, x);
   const sh = (b) => ((b % B) + B) % B;
   return {
-    ofInt: w, ofNat: w, toInt: (x) => x,
+    // toInt reinterprets the raw stored bit pattern as a signed two's-complement
+    // Int. A packed signed field is stored/read through the UNSIGNED DataView
+    // path (sproj/sset only know uintN at Lean 4.29.1 — no signed IRType), so a
+    // negative Int8 like -5 arrives here as the unsigned byte 251 (a JS number);
+    // BigInt.asIntN recovers -5. Already-signed bigint inputs are idempotent in
+    // range, so the same boundary works for normal Int8 arithmetic values too.
+    ofInt: w, ofNat: w, toInt: (x) => w(BigInt(x)),
     add: (a, b) => w(a + b), sub: (a, b) => w(a - b), mul: (a, b) => w(a * b),
     neg: (a) => w(-a),
     div: (a, b) => (b === 0n ? 0n : w(a / b)),

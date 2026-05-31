@@ -90,6 +90,26 @@ def i32toInt (a : Int32) : Int := a.toInt
 def floatStr (x : Float) : String := toString x
 def float32Str (x : Float32) : String := toString x
 
+structure SPack where
+  label : Nat
+  a : Int8
+  b : Int16
+  c : Int32
+  e : Int64
+  f : Float
+  g : Float32
+def mkSPack (label : Nat) (a : Int8) (b : Int16) (c : Int32) (e : Int64)
+    (f : Float) (g : Float32) : SPack :=
+  { label, a, b, c, e, f, g }
+def spackA (s : SPack) : Int8  := s.a
+def spackB (s : SPack) : Int16 := s.b
+def spackC (s : SPack) : Int32 := s.c
+def spackE (s : SPack) : Int64 := s.e
+def spackF (s : SPack) : Float := s.f
+def spackG (s : SPack) : Float32 := s.g
+def spackSum (s : SPack) : Int :=
+  s.a.toInt + s.b.toInt + s.c.toInt + s.e.toInt
+
 def showTodo (t : Todo) : String :=
   let mark := if t.done then "x" else " "
   s!"{t.id}:{t.title}:{mark}"
@@ -189,6 +209,15 @@ def main : IO Unit := do
   IO.println s!"fstrNeg = {floatStr (-2.5)}"
   IO.println s!"f32str = {float32Str 16777217.0}"
   IO.println s!"f32strPi = {float32Str 3.14}"
+  -- Packed signed-scalar + float ctor fields (region S)
+  let sp := mkSPack 100 (-5) (-300) (-70000) (-5000000000) (-2.5) 1.5
+  IO.println s!"spackA = {(spackA sp).toInt}"
+  IO.println s!"spackB = {(spackB sp).toInt}"
+  IO.println s!"spackC = {(spackC sp).toInt}"
+  IO.println s!"spackE = {(spackE sp).toInt}"
+  IO.println s!"spackF = {floatStr (spackF sp)}"
+  IO.println s!"spackG = {float32Str (spackG sp)}"
+  IO.println s!"spackSum = {spackSum sp}"
   -- TodoList sequence: add, add, add, toggle, remove
   let l0 := TodoList.empty
   let l1 := l0.add "buy milk"

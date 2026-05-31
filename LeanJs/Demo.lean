@@ -119,4 +119,37 @@ def i32toInt (a : Int32) : Int := a.toInt
 def floatStr (x : Float) : String := toString x
 def float32Str (x : Float32) : String := toString x
 
+/-- A ctor packing SIGNED fixed-width scalars (Int8/Int16/Int32/Int64) plus a
+    Float and a Float32 in region S, alongside one object field (`label : Nat`).
+    At Lean 4.29.1 the signed Int* types share the storage IRType of their UInt*
+    counterparts (no signed IRType exists), so the layout pass packs them via the
+    uint8/16/32/64/float/float32 sproj/sset paths; the two's-complement bit
+    pattern is preserved, so reading the same bytes back yields the signed value
+    once reinterpreted at the arithmetic boundary. -/
+structure SPack where
+  label : Nat
+  a : Int8
+  b : Int16
+  c : Int32
+  e : Int64
+  f : Float
+  g : Float32
+
+def mkSPack (label : Nat) (a : Int8) (b : Int16) (c : Int32) (e : Int64)
+    (f : Float) (g : Float32) : SPack :=
+  { label, a, b, c, e, f, g }
+
+/-- Read each packed signed/float field back (sproj), exercising the signed
+    round-trip through the unsigned/float DataView accessors. -/
+def spackA (s : SPack) : Int8  := s.a
+def spackB (s : SPack) : Int16 := s.b
+def spackC (s : SPack) : Int32 := s.c
+def spackE (s : SPack) : Int64 := s.e
+def spackF (s : SPack) : Float := s.f
+def spackG (s : SPack) : Float32 := s.g
+/-- Sum the integer fields back at Int precision: proves the bytes decode to the
+    right signed values (negatives included). -/
+def spackSum (s : SPack) : Int :=
+  s.a.toInt + s.b.toInt + s.c.toInt + s.e.toInt
+
 end LeanJs.Demo

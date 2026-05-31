@@ -20,6 +20,10 @@ const exports = [
   'LeanJs_Demo_i8shr', 'LeanJs_Demo_i16wrap', 'LeanJs_Demo_i32wrap', 'LeanJs_Demo_i64mul',
   'LeanJs_Demo_i8toInt', 'LeanJs_Demo_i32toInt',
   'LeanJs_Demo_floatStr', 'LeanJs_Demo_float32Str',
+  'LeanJs_Demo_mkSPack', 'LeanJs_Demo_spackA', 'LeanJs_Demo_spackB',
+  'LeanJs_Demo_spackC', 'LeanJs_Demo_spackE', 'LeanJs_Demo_spackF',
+  'LeanJs_Demo_spackG', 'LeanJs_Demo_spackSum',
+  'lean_int8_to_int', 'lean_int16_to_int', 'lean_int32_to_int', 'lean_int64_to_int_sint',
   'LeanTodo_TodoList_add', 'LeanTodo_TodoList_toggle',
   'LeanTodo_TodoList_remove', 'LeanTodo_TodoList_step',
 ];
@@ -67,6 +71,18 @@ const {
   LeanJs_Demo_i32toInt: i32toInt,
   LeanJs_Demo_floatStr: floatStr,
   LeanJs_Demo_float32Str: float32Str,
+  LeanJs_Demo_mkSPack: mkSPack,
+  LeanJs_Demo_spackA: spackA,
+  LeanJs_Demo_spackB: spackB,
+  LeanJs_Demo_spackC: spackC,
+  LeanJs_Demo_spackE: spackE,
+  LeanJs_Demo_spackF: spackF,
+  LeanJs_Demo_spackG: spackG,
+  LeanJs_Demo_spackSum: spackSum,
+  lean_int8_to_int: i8ToInt,
+  lean_int16_to_int: i16ToInt,
+  lean_int32_to_int: i32ToInt,
+  lean_int64_to_int_sint: i64ToInt,
   LeanTodo_TodoList_add: add,
   LeanTodo_TodoList_toggle: toggle,
   LeanTodo_TodoList_remove: remove,
@@ -192,6 +208,20 @@ console.log(`fstr1e21 = ${floatStr(1e21)}`);
 console.log(`fstrNeg = ${floatStr(-2.5)}`);
 console.log(`f32str = ${float32Str(16777217.0)}`);
 console.log(`f32strPi = ${float32Str(3.14)}`);
+
+// ---- Packed signed-scalar fields (Int8/16/32/64) + Float/Float32 in region S ----
+// Stored via the unsigned/float DataView setters (no signed IRType at 4.29.1);
+// the signed value is recovered at the toInt boundary (lean_int*_to_int), which
+// is exactly how Lean's compiled code reinterprets the raw uintN bytes. Floats
+// are exact. spackSum returns Int, so it reinterprets all four signed fields.
+const sp = mkSPack(100n, -5n, -300n, -70000n, -5000000000n, -2.5, 1.5);
+console.log(`spackA = ${i8ToInt(spackA(sp))}`);
+console.log(`spackB = ${i16ToInt(spackB(sp))}`);
+console.log(`spackC = ${i32ToInt(spackC(sp))}`);
+console.log(`spackE = ${i64ToInt(spackE(sp))}`);
+console.log(`spackF = ${floatStr(spackF(sp))}`);
+console.log(`spackG = ${float32Str(spackG(sp))}`);
+console.log(`spackSum = ${spackSum(sp)}`);
 
 // ---- TodoList JS model ----
 // List: nil = 0, cons = { tag:1, fields:[head, tail] }

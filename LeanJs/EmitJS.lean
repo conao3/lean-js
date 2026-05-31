@@ -519,7 +519,7 @@ def sscalarSuffix : IRType → String
   | .uint16  => "u16"
   | .uint32  => "u32"
   | .uint64  => "u64"
-  | .usize   => "u64"
+  | .usize   => "usize"   -- width follows WORD_BITS (prelude), not a literal 64
   | .float   => "f64"
   | .float32 => "f32"
   | _        => "u8"
