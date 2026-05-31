@@ -1,8 +1,9 @@
 // ===================== lean-js runtime prelude =====================
 // Representation choices:
 //   Nat  -> bigint (>= 0n)        Int   -> bigint
-//   Bool -> boolean (scalar)      Char  -> number (code point)
-//   String -> JS string (code-point semantics)
+//   UInt8/16/32 -> number         UInt64/USize -> bigint
+//   Float/Float32 -> number       Bool -> scalar 0/1   Char -> number (code point)
+//   String -> JS string; String.Pos is a UTF-8 byte offset
 //   Array<T> -> T[]               List<T> -> tagged ctor objects {tag, fields}
 // Bool is lowered to a scalar (false=0, true=1) matched by the emitted
 // `switch`, so decEq/decLt/decLe and other Bool-returning externs return the

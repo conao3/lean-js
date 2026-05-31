@@ -40,13 +40,20 @@ The JS engine has a tracing GC, so all Lean reference-counting nodes are no-ops:
 
 ### Object / value model
 
-- `Nat` / `Int` -> `bigint`; scalar literals (`u8`/`u32`/...) -> plain JS number.
-- ctor with fields -> `{ tag: cidx, fields: [...] }`; nullary ctor / enum -> `cidx`.
-  `lean_tag(x)` recovers the tag for both forms (mirrors `lean_obj_tag` on a boxed
-  scalar).
+- `Nat` / `Int` / `UInt64` / `USize` -> `bigint`; `u8`/`u16`/`u32`/`Float`/`Float32`
+  -> plain JS number (matching scalar literal emission and `switch`).
+- ctor with fields -> `lean_ctor(cidx, size, usize, ssize, ...objs)` producing
+  `{ tag, fields, sdata }`: object pointers and `USize` slots are word-indexed in
+  `fields` (proj/uproj/set/uset), packed scalars live in a byte-addressed `DataView`
+  `sdata` (sproj/sset), mirroring `lean_alloc_ctor`'s three regions. Nullary ctor /
+  enum -> `cidx`. `lean_tag(x)` recovers the tag for both forms.
 - `Bool` -> scalar `0`/`1`; extern `decEq`/`decLt`/`decLe` return `0`/`1` so the
   emitted `switch` matches.
-- `String` -> JS string with code-point semantics; `proj`/`set` -> `x.fields[i]`.
+- `String` -> JS string; `String.Pos` is a UTF-8 byte offset (`get`/`next`/`prev`/
+  `extract`/`atEnd` index bytes, `utf8ByteSize` counts bytes, `length` counts code
+  points).
+- `Array` -> JS array; setters (`set`/`uset`/`push`/`pop`/`swap`) return a fresh
+  array so the compiler's assumed-unique in-place paths cannot corrupt aliases.
 - `case` on scalar -> `switch (x)`; on object -> `switch (lean_tag(x))`.
 - self-tail-recursion -> `while (true)` loop with staged param rebind + `continue`
   (join points inlined so `continue` stays lexically inside the loop).
@@ -57,16 +64,28 @@ The JS engine has a tracing GC, so all Lean reference-counting nodes are no-ops:
 nix develop . --command bash -c "./test.sh"
 ```
 
-Covers `double`, `mkShifted`, `sumTo` (incl. `100000`, exercising TCO), `fact`, and a
-multi-step `LeanTodo.TodoList` sequence (add / toggle / remove / step over a 3-element
-list). All cases must be identical between Lean and `node`, ending in `DIFF-TEST PASS`.
+Covers `double`, `mkShifted`, `sumTo` (incl. `100000`, exercising TCO), `fact`; a
+`Mixed` ctor mixing a pointer field with packed sub-word scalars; the numeric tower
+(`UInt32`/`UInt8` wrap, `Int` Euclidean div/mod, `Float`); multibyte UTF-8 `String`
+get/next/extract/length/byteSize; `Array` foldl/map/range/getD/append and `List`
+foldl/length/reverse/map; and a multi-step `LeanTodo.TodoList` sequence. All cases
+must be identical between Lean and `node`, ending in `DIFF-TEST PASS`.
+
+## Dependency
+
+`lakefile.toml` requires `lean_todo` at `path = "../lean-todo-app/backend"`, so the
+sibling checkout `conao3/lean-todo-app` must be present alongside this repo for the
+`LeanTodo.Basic` diff-tests to build.
 
 ## Status / remaining gaps vs EmitC
 
-- Externs cover Nat/Int/String/Array/List/Bool/Char basics; UTF-8 byte-offset `String`
-  position externs, `Float`, full `UInt`/`USize` families, and `IO` are not yet mapped.
+- Constructor layout, the numeric tower (`UInt8/16/32/64`, `USize`, `Int` Euclidean
+  div/mod, `Float`/`Float32`), UTF-8 byte-position `String` externs, and common
+  `Array`/`List` operations are mapped. `IO`, `Float`/`Float32` transcendental
+  `toString` formatting, and signed fixed-width ints (`Int8`..`Int64`) are not yet
+  mapped.
 - TCO handles self-`fap` tail recursion; mutual tail recursion and join-point tail
   edges across functions are not loop-ified.
-- `sproj`/`uproj`/`sset`/`uset` index the same `fields[]` as object projections;
-  correct for the exercised ctors, fragile for ctors mixing pointer and packed-scalar
-  fields at colliding indices.
+- `USize` width is hardcoded to 64-bit; a 32-bit target would need `numBits = 32`.
+- `Float.toString` matches Lean's C `%f` (6 decimal places) for finite values; `NaN`
+  / `Inf` formatting is not reconciled.
