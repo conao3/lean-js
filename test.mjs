@@ -25,6 +25,12 @@ const exports = [
   'LeanJs_Demo_spackG', 'LeanJs_Demo_spackSum',
   'lean_int8_to_int', 'lean_int16_to_int', 'lean_int32_to_int', 'lean_int64_to_int_sint',
   'LeanJs_Demo_chainHead', 'LeanJs_Demo_pingN',
+  'LeanJs_Demo_ftan', 'LeanJs_Demo_fasin', 'LeanJs_Demo_facos', 'LeanJs_Demo_fatan',
+  'LeanJs_Demo_fatan2', 'LeanJs_Demo_fsinh', 'LeanJs_Demo_fcosh', 'LeanJs_Demo_ftanh',
+  'LeanJs_Demo_fexp2', 'LeanJs_Demo_flog2', 'LeanJs_Demo_flog10', 'LeanJs_Demo_fcbrt',
+  'LeanJs_Demo_ftoBits', 'LeanJs_Demo_fofBits', 'LeanJs_Demo_ffrExpM', 'LeanJs_Demo_ffrExpE',
+  'LeanJs_Demo_f32tan', 'LeanJs_Demo_f32exp', 'LeanJs_Demo_f32log', 'LeanJs_Demo_f32cbrt',
+  'LeanJs_Demo_f32toBits',
   'LeanJs_DemoHO_hofApply', 'LeanJs_DemoHO_listMapLam', 'LeanJs_DemoHO_listFilterLam',
   'LeanJs_DemoHO_listFoldlLam', 'LeanJs_DemoHO_arrMapLam', 'LeanJs_DemoHO_applyAdders',
   'LeanJs_DemoHO_currySplit', 'LeanJs_DemoHO_optSeq', 'LeanJs_DemoHO_exSeq',
@@ -91,6 +97,27 @@ const {
   lean_int64_to_int_sint: i64ToInt,
   LeanJs_Demo_chainHead: chainHead,
   LeanJs_Demo_pingN: pingN,
+  LeanJs_Demo_ftan: ftan,
+  LeanJs_Demo_fasin: fasin,
+  LeanJs_Demo_facos: facos,
+  LeanJs_Demo_fatan: fatan,
+  LeanJs_Demo_fatan2: fatan2,
+  LeanJs_Demo_fsinh: fsinh,
+  LeanJs_Demo_fcosh: fcosh,
+  LeanJs_Demo_ftanh: ftanh,
+  LeanJs_Demo_fexp2: fexp2,
+  LeanJs_Demo_flog2: flog2,
+  LeanJs_Demo_flog10: flog10,
+  LeanJs_Demo_fcbrt: fcbrt,
+  LeanJs_Demo_ftoBits: ftoBits,
+  LeanJs_Demo_fofBits: fofBits,
+  LeanJs_Demo_ffrExpM: ffrExpM,
+  LeanJs_Demo_ffrExpE: ffrExpE,
+  LeanJs_Demo_f32tan: f32tan,
+  LeanJs_Demo_f32exp: f32exp,
+  LeanJs_Demo_f32log: f32log,
+  LeanJs_Demo_f32cbrt: f32cbrt,
+  LeanJs_Demo_f32toBits: f32toBits,
   LeanJs_DemoHO_hofApply: hofApply,
   LeanJs_DemoHO_listMapLam: listMapLam,
   LeanJs_DemoHO_listFilterLam: listFilterLam,
@@ -268,6 +295,27 @@ console.log(`cpsCount = ${cpsCount(50000n)}`);
 console.log(`cpsSum = ${cpsSum(50000n)}`);
 console.log(`chainHead 10 = ${chainHead(10n)}`);
 console.log(`pingN 5 0 = ${pingN(5n, 0n)}`);
+console.log(`ftan = ${floatStr(ftan(1.0))}`);
+console.log(`fasin = ${floatStr(fasin(0.5))}`);
+console.log(`facos = ${floatStr(facos(0.5))}`);
+console.log(`fatan = ${floatStr(fatan(2.0))}`);
+console.log(`fatan2 = ${floatStr(fatan2(1.0, 2.0))}`);
+console.log(`fsinh = ${floatStr(fsinh(1.0))}`);
+console.log(`fcosh = ${floatStr(fcosh(1.0))}`);
+console.log(`ftanh = ${floatStr(ftanh(1.0))}`);
+console.log(`fexp2 = ${floatStr(fexp2(10.0))}`);
+console.log(`flog2 = ${floatStr(flog2(1024.0))}`);
+console.log(`flog10 = ${floatStr(flog10(1000.0))}`);
+console.log(`fcbrt = ${floatStr(fcbrt(27.0))}`);
+console.log(`ftoBits = ${ftoBits(1.0)}`);
+console.log(`fofBits = ${floatStr(fofBits(4607182418800017408n))}`);
+console.log(`ffrExpM = ${floatStr(ffrExpM(12.0))}`);
+console.log(`ffrExpE = ${ffrExpE(12.0)}`);
+console.log(`f32tan = ${float32Str(f32tan(1.0))}`);
+console.log(`f32exp = ${float32Str(f32exp(2.0))}`);
+console.log(`f32log = ${float32Str(f32log(10.0))}`);
+console.log(`f32cbrt = ${float32Str(f32cbrt(27.0))}`);
+console.log(`f32toBits = ${f32toBits(1.0)}`);
 
 // ---- TodoList JS model ----
 // List: nil = 0, cons = { tag:1, fields:[head, tail] }

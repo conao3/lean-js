@@ -173,4 +173,30 @@ def pingN (n acc : Nat) : Nat :=
   | 0 => acc
   | n+1 => pingN n (viaB acc)
 
+-- Float/Float32 libm transcendentals. Compared through `Float.toString` (C `%f`,
+-- 6 fixed decimals), which absorbs the <=1-ULP JS-Math-vs-libm noise; sqrt and
+-- the arithmetic/comparison ops are IEEE-correctly-rounded (bit-exact). frExp /
+-- ofBits / toBits are EXACT bit reinterpretations and compared as integers.
+def ftan (x : Float) : Float := x.tan
+def fasin (x : Float) : Float := x.asin
+def facos (x : Float) : Float := x.acos
+def fatan (x : Float) : Float := x.atan
+def fatan2 (y x : Float) : Float := Float.atan2 y x
+def fsinh (x : Float) : Float := x.sinh
+def fcosh (x : Float) : Float := x.cosh
+def ftanh (x : Float) : Float := x.tanh
+def fexp2 (x : Float) : Float := x.exp2
+def flog2 (x : Float) : Float := x.log2
+def flog10 (x : Float) : Float := x.log10
+def fcbrt (x : Float) : Float := x.cbrt
+def ftoBits (x : Float) : UInt64 := x.toBits
+def fofBits (b : UInt64) : Float := Float.ofBits b
+def ffrExpM (x : Float) : Float := x.frExp.1
+def ffrExpE (x : Float) : Int := x.frExp.2
+def f32tan (x : Float32) : Float32 := x.tan
+def f32exp (x : Float32) : Float32 := x.exp
+def f32log (x : Float32) : Float32 := x.log
+def f32cbrt (x : Float32) : Float32 := x.cbrt
+def f32toBits (x : Float32) : UInt32 := x.toBits
+
 end LeanJs.Demo

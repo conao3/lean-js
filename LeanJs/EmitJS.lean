@@ -113,7 +113,18 @@ def emitKnownFapSpecialNames : Std.HashSet Name := Std.HashSet.ofList [
   `Array.set, `Array.set!,        -- C lean_array_fset -> prelude lean_array_set (copy)
   `Array.ugetBorrowed, `Array.getInternalBorrowed, -- C *_borrowed -> lean_array_uget
   -- Array empties lowered to the `[]` literal
-  `Array.empty, `Array.mkEmpty, `Array.emptyWithCapacity, `Array.mkArray0
+  `Array.empty, `Array.mkEmpty, `Array.emptyWithCapacity, `Array.mkArray0,
+  -- Float/Float32 libm transcendentals: the resolved C symbol is the BARE libm
+  -- name (`tan`, `atan2`, `sinf`, ...), not in `preludeSymbols`; the explicit arm
+  -- maps it to a `lean_float*_*` prelude impl, so emission is correct.
+  `Float.tan, `Float.asin, `Float.acos, `Float.atan, `Float.atan2,
+  `Float.sinh, `Float.cosh, `Float.tanh, `Float.asinh, `Float.acosh, `Float.atanh,
+  `Float.exp2, `Float.log2, `Float.log10, `Float.cbrt,
+  `Float32.sin, `Float32.cos, `Float32.tan,
+  `Float32.asin, `Float32.acos, `Float32.atan, `Float32.atan2,
+  `Float32.sinh, `Float32.cosh, `Float32.tanh, `Float32.asinh, `Float32.acosh, `Float32.atanh,
+  `Float32.exp, `Float32.exp2, `Float32.log, `Float32.log2, `Float32.log10,
+  `Float32.pow, `Float32.cbrt, `Float32.floor, `Float32.ceil, `Float32.round
 ]
 
 /-- The set of C symbols the runtime prelude (`prelude.ts`) defines. This is the
@@ -193,13 +204,31 @@ def preludeSymbols : Std.HashSet String := Std.HashSet.ofList [
   "lean_float_sqrt", "lean_float_sin", "lean_float_cos", "lean_float_exp", "lean_float_log",
   "lean_float_pow", "lean_float_floor", "lean_float_ceil", "lean_float_abs", "lean_float_round",
   "lean_float_scaleb",
+  "lean_float_tan", "lean_float_asin", "lean_float_acos", "lean_float_atan", "lean_float_atan2",
+  "lean_float_sinh", "lean_float_cosh", "lean_float_tanh",
+  "lean_float_asinh", "lean_float_acosh", "lean_float_atanh",
+  "lean_float_exp2", "lean_float_log2", "lean_float_log10", "lean_float_cbrt",
+  "lean_float_frexp", "lean_float_of_bits", "lean_float_to_bits",
   "lean_float_to_uint8", "lean_float_to_uint16", "lean_float_to_uint32",
   "lean_float_to_uint64", "lean_float_to_usize", "lean_float_to_float32",
   "lean_float_of_scientific", "lean_float_to_string",
   "lean_float32_add", "lean_float32_sub", "lean_float32_mul", "lean_float32_div",
   "lean_float32_negate", "lean_float32_beq", "lean_float32_decLt", "lean_float32_decLe",
   "lean_float32_to_float", "lean_float32_sqrt", "lean_float32_abs", "lean_float32_to_string",
-  "lean_uint64_to_float", "lean_uint32_to_float",
+  "lean_float32_floor", "lean_float32_ceil", "lean_float32_round", "lean_float32_neg",
+  "lean_float32_isnan", "lean_float32_isfinite", "lean_float32_isinf",
+  "lean_float32_sin", "lean_float32_cos", "lean_float32_tan",
+  "lean_float32_asin", "lean_float32_acos", "lean_float32_atan", "lean_float32_atan2",
+  "lean_float32_sinh", "lean_float32_cosh", "lean_float32_tanh",
+  "lean_float32_asinh", "lean_float32_acosh", "lean_float32_atanh",
+  "lean_float32_exp", "lean_float32_exp2", "lean_float32_log", "lean_float32_log2",
+  "lean_float32_log10", "lean_float32_pow", "lean_float32_cbrt",
+  "lean_float32_to_uint8", "lean_float32_to_uint16", "lean_float32_to_uint32",
+  "lean_float32_to_uint64", "lean_float32_to_usize",
+  "lean_float32_of_bits", "lean_float32_to_bits", "lean_float32_scaleb", "lean_float32_frexp",
+  "lean_uint64_to_float", "lean_uint32_to_float", "lean_usize_to_float",
+  "lean_uint8_to_float32", "lean_uint16_to_float32", "lean_uint32_to_float32",
+  "lean_uint64_to_float32", "lean_usize_to_float32",
   -- Char
   "lean_uint32_of_nat", "lean_char_to_nat",
   -- String
@@ -434,8 +463,20 @@ def emitKnownFap (externMap : Std.HashMap Name String) (c : FunId) (ys : Array A
   | `Float.sqrt => call "lean_float_sqrt" | `Float.sin => call "lean_float_sin"
   | `Float.cos => call "lean_float_cos" | `Float.exp => call "lean_float_exp"
   | `Float.log => call "lean_float_log" | `Float.pow => call "lean_float_pow"
+  | `Float.tan => call "lean_float_tan"
+  | `Float.asin => call "lean_float_asin" | `Float.acos => call "lean_float_acos"
+  | `Float.atan => call "lean_float_atan" | `Float.atan2 => call "lean_float_atan2"
+  | `Float.sinh => call "lean_float_sinh" | `Float.cosh => call "lean_float_cosh"
+  | `Float.tanh => call "lean_float_tanh"
+  | `Float.asinh => call "lean_float_asinh" | `Float.acosh => call "lean_float_acosh"
+  | `Float.atanh => call "lean_float_atanh"
+  | `Float.exp2 => call "lean_float_exp2" | `Float.log2 => call "lean_float_log2"
+  | `Float.log10 => call "lean_float_log10" | `Float.cbrt => call "lean_float_cbrt"
+  | `Float.frExp => call "lean_float_frexp"
+  | `Float.ofBits => call "lean_float_of_bits" | `Float.toBits => call "lean_float_to_bits"
   | `Float.floor => call "lean_float_floor" | `Float.ceil => call "lean_float_ceil"
   | `Float.abs => call "lean_float_abs" | `Float.round => call "lean_float_round"
+  | `Float.scaleb => call "lean_float_scaleb"
   | `Float.toUInt8 => call "lean_float_to_uint8" | `Float.toUInt16 => call "lean_float_to_uint16"
   | `Float.toUInt32 => call "lean_float_to_uint32" | `Float.toUInt64 => call "lean_float_to_uint64"
   | `Float.toUSize => call "lean_float_to_usize"
@@ -448,6 +489,31 @@ def emitKnownFap (externMap : Std.HashMap Name String) (c : FunId) (ys : Array A
   | `Float32.decLe => call "lean_float32_decLe"
   | `Float32.toFloat => call "lean_float32_to_float"
   | `Float32.sqrt => call "lean_float32_sqrt" | `Float32.abs => call "lean_float32_abs"
+  | `Float32.sin => call "lean_float32_sin" | `Float32.cos => call "lean_float32_cos"
+  | `Float32.tan => call "lean_float32_tan"
+  | `Float32.asin => call "lean_float32_asin" | `Float32.acos => call "lean_float32_acos"
+  | `Float32.atan => call "lean_float32_atan" | `Float32.atan2 => call "lean_float32_atan2"
+  | `Float32.sinh => call "lean_float32_sinh" | `Float32.cosh => call "lean_float32_cosh"
+  | `Float32.tanh => call "lean_float32_tanh"
+  | `Float32.asinh => call "lean_float32_asinh" | `Float32.acosh => call "lean_float32_acosh"
+  | `Float32.atanh => call "lean_float32_atanh"
+  | `Float32.exp => call "lean_float32_exp" | `Float32.exp2 => call "lean_float32_exp2"
+  | `Float32.log => call "lean_float32_log" | `Float32.log2 => call "lean_float32_log2"
+  | `Float32.log10 => call "lean_float32_log10" | `Float32.pow => call "lean_float32_pow"
+  | `Float32.cbrt => call "lean_float32_cbrt"
+  | `Float32.floor => call "lean_float32_floor" | `Float32.ceil => call "lean_float32_ceil"
+  | `Float32.round => call "lean_float32_round"
+  | `Float32.isNaN => call "lean_float32_isnan" | `Float32.isFinite => call "lean_float32_isfinite"
+  | `Float32.isInf => call "lean_float32_isinf"
+  | `Float32.ofBits => call "lean_float32_of_bits" | `Float32.toBits => call "lean_float32_to_bits"
+  | `Float32.scaleb => call "lean_float32_scaleb" | `Float32.frExp => call "lean_float32_frexp"
+  | `Float32.toUInt8 => call "lean_float32_to_uint8" | `Float32.toUInt16 => call "lean_float32_to_uint16"
+  | `Float32.toUInt32 => call "lean_float32_to_uint32" | `Float32.toUInt64 => call "lean_float32_to_uint64"
+  | `Float32.toUSize => call "lean_float32_to_usize"
+  | `USize.toFloat => call "lean_usize_to_float"
+  | `UInt8.toFloat32 => call "lean_uint8_to_float32" | `UInt16.toFloat32 => call "lean_uint16_to_float32"
+  | `UInt32.toFloat32 => call "lean_uint32_to_float32" | `UInt64.toFloat32 => call "lean_uint64_to_float32"
+  | `USize.toFloat32 => call "lean_usize_to_float32"
   | `Float.toString => call "lean_float_to_string"
   | `Float32.toString => call "lean_float32_to_string"
   -- Char

@@ -1,6 +1,9 @@
 import LeanTodo.Basic
+import LeanJs.Demo
 import LeanJs.DemoHO
 import Std.Data.HashMap
+
+set_option maxRecDepth 4000
 
 open LeanTodo
 open LeanJs.DemoHO
@@ -258,6 +261,29 @@ def main : IO Unit := do
   -- check lives node-side in test-tco.mjs).
   IO.println s!"chainHead 10 = {chainHead 10}"
   IO.println s!"pingN 5 0 = {pingN 5 0}"
+  -- Float/Float32 transcendentals via toString (6-digit, absorbs <=1-ULP noise).
+  IO.println s!"ftan = {floatStr (LeanJs.Demo.ftan 1.0)}"
+  IO.println s!"fasin = {floatStr (LeanJs.Demo.fasin 0.5)}"
+  IO.println s!"facos = {floatStr (LeanJs.Demo.facos 0.5)}"
+  IO.println s!"fatan = {floatStr (LeanJs.Demo.fatan 2.0)}"
+  IO.println s!"fatan2 = {floatStr (LeanJs.Demo.fatan2 1.0 2.0)}"
+  IO.println s!"fsinh = {floatStr (LeanJs.Demo.fsinh 1.0)}"
+  IO.println s!"fcosh = {floatStr (LeanJs.Demo.fcosh 1.0)}"
+  IO.println s!"ftanh = {floatStr (LeanJs.Demo.ftanh 1.0)}"
+  IO.println s!"fexp2 = {floatStr (LeanJs.Demo.fexp2 10.0)}"
+  IO.println s!"flog2 = {floatStr (LeanJs.Demo.flog2 1024.0)}"
+  IO.println s!"flog10 = {floatStr (LeanJs.Demo.flog10 1000.0)}"
+  IO.println s!"fcbrt = {floatStr (LeanJs.Demo.fcbrt 27.0)}"
+  -- frExp / ofBits / toBits are EXACT (integer / round-trip).
+  IO.println s!"ftoBits = {LeanJs.Demo.ftoBits 1.0}"
+  IO.println s!"fofBits = {floatStr (LeanJs.Demo.fofBits 4607182418800017408)}"
+  IO.println s!"ffrExpM = {floatStr (LeanJs.Demo.ffrExpM 12.0)}"
+  IO.println s!"ffrExpE = {LeanJs.Demo.ffrExpE 12.0}"
+  IO.println s!"f32tan = {float32Str (LeanJs.Demo.f32tan 1.0)}"
+  IO.println s!"f32exp = {float32Str (LeanJs.Demo.f32exp 2.0)}"
+  IO.println s!"f32log = {float32Str (LeanJs.Demo.f32log 10.0)}"
+  IO.println s!"f32cbrt = {float32Str (LeanJs.Demo.f32cbrt 27.0)}"
+  IO.println s!"f32toBits = {LeanJs.Demo.f32toBits 1.0}"
   -- TodoList sequence: add, add, add, toggle, remove
   let l0 := TodoList.empty
   let l1 := l0.add "buy milk"

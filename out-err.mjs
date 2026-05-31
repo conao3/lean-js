@@ -299,6 +299,42 @@ const lean_float_exp = Math.exp, lean_float_log = Math.log, lean_float_pow = Mat
 const lean_float_floor = Math.floor, lean_float_ceil = Math.ceil, lean_float_abs = Math.abs;
 const lean_float_round = (a) => Math.sign(a) * Math.round(Math.abs(a));
 const lean_float_scaleb = (x, i) => x * Math.pow(2, Number(i));
+// libm transcendentals. JS Math.* and C libm are each typically <=1 ULP but
+// neither IEEE-754 nor ECMAScript mandates correctly-rounded results for these,
+// so they are NOT guaranteed bit-exact vs the C backend; the diff-test compares
+// through Float.toString (C `%f`, 6 fixed decimals), which absorbs the sub-ULP
+// noise. sqrt/comparisons/+-*//div ARE IEEE-correctly-rounded and bit-exact.
+const lean_float_tan = Math.tan;
+const lean_float_asin = Math.asin, lean_float_acos = Math.acos, lean_float_atan = Math.atan;
+const lean_float_atan2 = Math.atan2;
+const lean_float_sinh = Math.sinh, lean_float_cosh = Math.cosh, lean_float_tanh = Math.tanh;
+const lean_float_asinh = Math.asinh, lean_float_acosh = Math.acosh, lean_float_atanh = Math.atanh;
+const lean_float_exp2 = (a) => Math.pow(2, a);
+const lean_float_log2 = Math.log2, lean_float_log10 = Math.log10;
+const lean_float_cbrt = Math.cbrt;
+// frExp / ofBits / toBits are EXACT bit reinterpretations (DataView), matching
+// the C externs lean_float_frexp / lean_float_of_bits / lean_float_to_bits.
+const _f64buf = new ArrayBuffer(8);
+const _f64dv = new DataView(_f64buf);
+const lean_float_to_bits = (x) => { _f64dv.setFloat64(0, x); return _f64dv.getBigUint64(0); };
+const lean_float_of_bits = (b) => { _f64dv.setBigUint64(0, BigInt.asUintN(64, b)); return _f64dv.getFloat64(0); };
+// Float.frExp x = (m, e) with x = m * 2^e and 0.5 <= |m| < 1 (C frexp). Returns
+// the Lean pair ctor {tag:0, fields:[m, e]} (e is an Int = bigint).
+const lean_float_frexp = (x) => {
+  if (x === 0 || !Number.isFinite(x)) return { tag: 0, fields: [x, 0n] };
+  const b = lean_float_to_bits(x);
+  let e = Number((b >> 52n) & 0x7ffn);
+  let m;
+  if (e === 0) {
+    const sub = x / Math.pow(2, -1074);
+    const fr = lean_float_frexp(sub);
+    return { tag: 0, fields: [fr.fields[0], fr.fields[1] - 1074n] };
+  } else {
+    e -= 1022;
+    m = lean_float_of_bits((b & ~(0x7ffn << 52n)) | (1022n << 52n));
+  }
+  return { tag: 0, fields: [m, BigInt(e)] };
+};
 const lean_float_to_uint = (a, bits) => {
   if (Number.isNaN(a) || a <= 0) return bits <= 32 ? 0 : 0n;
   const max = (1n << BigInt(bits)) - 1n;
@@ -345,6 +381,48 @@ const lean_float_to_string = (x) => {
 const lean_float32_to_string = (x) => lean_float_to_string(Math.fround(x));
 const lean_float32_sqrt = (a) => _f(Math.sqrt(_f(a)));
 const lean_float32_abs = (a) => _f(Math.abs(_f(a)));
+const lean_float32_floor = (a) => _f(Math.floor(_f(a)));
+const lean_float32_ceil = (a) => _f(Math.ceil(_f(a)));
+const lean_float32_round = (a) => _f(Math.sign(_f(a)) * Math.round(Math.abs(_f(a))));
+const lean_float32_neg = lean_float32_negate;
+const lean_float32_isnan = (a) => L_bool(Number.isNaN(_f(a)));
+const lean_float32_isfinite = (a) => L_bool(Number.isFinite(_f(a)));
+const lean_float32_isinf = (a) => { const v = _f(a); return L_bool(v === Infinity || v === -Infinity); };
+// Float32 libm transcendentals: Lean uses the single-precision libm symbols
+// (sinf, ...); the closest JS path is fround(Math.fn(fround x)) (double then
+// narrow), a DIFFERENT rounding path that can differ by >1 ULP at f32 precision,
+// so these are tolerance-only (compared through Float32.toString 6-digit output).
+const _f32 = (fn) => (a) => _f(fn(_f(a)));
+const lean_float32_sin = _f32(Math.sin), lean_float32_cos = _f32(Math.cos), lean_float32_tan = _f32(Math.tan);
+const lean_float32_asin = _f32(Math.asin), lean_float32_acos = _f32(Math.acos), lean_float32_atan = _f32(Math.atan);
+const lean_float32_atan2 = (a, b) => _f(Math.atan2(_f(a), _f(b)));
+const lean_float32_sinh = _f32(Math.sinh), lean_float32_cosh = _f32(Math.cosh), lean_float32_tanh = _f32(Math.tanh);
+const lean_float32_asinh = _f32(Math.asinh), lean_float32_acosh = _f32(Math.acosh), lean_float32_atanh = _f32(Math.atanh);
+const lean_float32_exp = _f32(Math.exp), lean_float32_exp2 = _f32((a) => Math.pow(2, a));
+const lean_float32_log = _f32(Math.log), lean_float32_log2 = _f32(Math.log2), lean_float32_log10 = _f32(Math.log10);
+const lean_float32_pow = (a, b) => _f(Math.pow(_f(a), _f(b)));
+const lean_float32_cbrt = _f32(Math.cbrt);
+const lean_float32_to_uint8 = (a) => lean_float_to_uint(_f(a), 8);
+const lean_float32_to_uint16 = (a) => lean_float_to_uint(_f(a), 16);
+const lean_float32_to_uint32 = (a) => lean_float_to_uint(_f(a), 32);
+const lean_float32_to_uint64 = (a) => lean_float_to_uint(_f(a), 64);
+const lean_float32_to_usize = (a) => lean_float_to_uint(_f(a), 64);
+// Float32 bit reinterpret (EXACT): lean_float32_of_bits / to_bits use UInt32.
+const _f32buf = new ArrayBuffer(4);
+const _f32dv = new DataView(_f32buf);
+const lean_float32_to_bits = (x) => { _f32dv.setFloat32(0, _f(x)); return _f32dv.getUint32(0); };
+const lean_float32_of_bits = (b) => { _f32dv.setUint32(0, Number(BigInt.asUintN(32, BigInt(b)))); return _f32dv.getFloat32(0); };
+const lean_float32_scaleb = (x, i) => _f(_f(x) * Math.pow(2, Number(i)));
+const lean_float32_frexp = (x) => {
+  const fr = lean_float_frexp(_f(x));
+  return { tag: 0, fields: [_f(fr.fields[0]), fr.fields[1]] };
+};
+const lean_uint8_to_float32 = (a) => _f(Number(a));
+const lean_uint16_to_float32 = (a) => _f(Number(a));
+const lean_uint32_to_float32 = (a) => _f(Number(a));
+const lean_uint64_to_float32 = (a) => _f(Number(a));
+const lean_usize_to_float32 = (a) => _f(Number(a));
+const lean_usize_to_float = (a) => Number(a);
 
 // ---- Char ----
 const lean_uint32_of_nat = (n) => Number(n & 0xffffffffn);
