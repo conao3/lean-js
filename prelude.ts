@@ -316,9 +316,34 @@ const lean_array_get = (a, i, dflt) => {
   const idx = Number(i); return idx >= 0 && idx < a.length ? a[idx] : dflt;
 };
 const lean_array_uget = (a, i) => a[Number(i)];
-const lean_array_set = (a, i, v) => { a[Number(i)] = v; return a; };
-const lean_array_push = (a, v) => { a.push(v); return a; };
-const lean_array_pop = (a) => { a.pop(); return a; };
+// Setters return a fresh array (functional), mirroring the ctor reuse/copy
+// model: JS arrays are reference-shared with no refcount, so in-place updates
+// from the compiler's unsafe (assumed-unique) map/foldl paths would corrupt the
+// caller's array. Copying keeps Array semantics pure and aliases intact.
+const lean_array_set = (a, i, v) => { const b = a.slice(); b[Number(i)] = v; return b; };
+const lean_array_push = (a, v) => { const b = a.slice(); b.push(v); return b; };
+const lean_array_pop = (a) => { const b = a.slice(); b.pop(); return b; };
 const lean_array_swap = (a, i, j) => {
-  const x = Number(i), y = Number(j); [a[x], a[y]] = [a[y], a[x]]; return a;
+  const b = a.slice(), x = Number(i), y = Number(j); [b[x], b[y]] = [b[y], b[x]]; return b;
 };
+const lean_array_uset = (a, i, v) => { const b = a.slice(); b[Number(i)] = v; return b; };
+const lean_array_usize = (a) => BigInt(a.length);
+const lean_mk_array = (n, v) => new Array(Number(n)).fill(v);
+// Array.toList -> List (tag 0 = nil, tag 1 = cons{head, tail}).
+const lean_array_to_list = (a) =>
+  a.reduceRight((tl, h) => ({ tag: 1, fields: [h, tl] }), 0);
+
+// ---- Nat extras (bigint) ----
+const lean_nat_log2 = (a) => { let n = a, r = 0n; while (n > 1n) { n >>= 1n; r += 1n; } return r; };
+const lean_nat_shift_left = (a, b) => a << b;
+const lean_nat_shift_right = (a, b) => a >> b;
+const lean_nat_land = (a, b) => a & b;
+const lean_nat_lor = (a, b) => a | b;
+const lean_nat_xor = (a, b) => a ^ b;
+
+// ---- Int / Nat conversions ----
+const lean_int_of_nat = (n) => n;
+const lean_int_to_nat = (i) => (i < 0n ? 0n : i);
+const lean_uint32_of_nat2 = (n) => Number(BigInt.asUintN(32, n));
+const lean_uint64_to_float = (a) => Number(a);
+const lean_uint32_to_float = (a) => Number(a);

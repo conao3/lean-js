@@ -316,12 +316,37 @@ const lean_array_get = (a, i, dflt) => {
   const idx = Number(i); return idx >= 0 && idx < a.length ? a[idx] : dflt;
 };
 const lean_array_uget = (a, i) => a[Number(i)];
-const lean_array_set = (a, i, v) => { a[Number(i)] = v; return a; };
-const lean_array_push = (a, v) => { a.push(v); return a; };
-const lean_array_pop = (a) => { a.pop(); return a; };
+// Setters return a fresh array (functional), mirroring the ctor reuse/copy
+// model: JS arrays are reference-shared with no refcount, so in-place updates
+// from the compiler's unsafe (assumed-unique) map/foldl paths would corrupt the
+// caller's array. Copying keeps Array semantics pure and aliases intact.
+const lean_array_set = (a, i, v) => { const b = a.slice(); b[Number(i)] = v; return b; };
+const lean_array_push = (a, v) => { const b = a.slice(); b.push(v); return b; };
+const lean_array_pop = (a) => { const b = a.slice(); b.pop(); return b; };
 const lean_array_swap = (a, i, j) => {
-  const x = Number(i), y = Number(j); [a[x], a[y]] = [a[y], a[x]]; return a;
+  const b = a.slice(), x = Number(i), y = Number(j); [b[x], b[y]] = [b[y], b[x]]; return b;
 };
+const lean_array_uset = (a, i, v) => { const b = a.slice(); b[Number(i)] = v; return b; };
+const lean_array_usize = (a) => BigInt(a.length);
+const lean_mk_array = (n, v) => new Array(Number(n)).fill(v);
+// Array.toList -> List (tag 0 = nil, tag 1 = cons{head, tail}).
+const lean_array_to_list = (a) =>
+  a.reduceRight((tl, h) => ({ tag: 1, fields: [h, tl] }), 0);
+
+// ---- Nat extras (bigint) ----
+const lean_nat_log2 = (a) => { let n = a, r = 0n; while (n > 1n) { n >>= 1n; r += 1n; } return r; };
+const lean_nat_shift_left = (a, b) => a << b;
+const lean_nat_shift_right = (a, b) => a >> b;
+const lean_nat_land = (a, b) => a & b;
+const lean_nat_lor = (a, b) => a | b;
+const lean_nat_xor = (a, b) => a ^ b;
+
+// ---- Int / Nat conversions ----
+const lean_int_of_nat = (n) => n;
+const lean_int_to_nat = (i) => (i < 0n ? 0n : i);
+const lean_uint32_of_nat2 = (n) => Number(BigInt.asUintN(32, n));
+const lean_uint64_to_float = (a) => Number(a);
+const lean_uint32_to_float = (a) => Number(a);
 
 // ================ GENERATED ================
 
@@ -467,8 +492,6 @@ function LeanJs_Demo_intNeg(x_1) {
 
 // extern Float_add -> runtime prelude
 
-// extern Nat_mul -> runtime prelude
-
 // extern Nat_shiftLeft -> runtime prelude
 
 // extern Nat_pow -> runtime prelude
@@ -477,7 +500,7 @@ function LeanJs_Demo_intNeg(x_1) {
 
 function Float_ofScientific__closed_0() {
   const x_1 = 4n;
-  const x_2 = Int_ofNat(x_1);
+  const x_2 = lean_int_of_nat(x_1);
   return x_2;
 }
 
@@ -495,8 +518,6 @@ function Float_ofScientific__closed_1() {
 
 // extern Nat_log2 -> runtime prelude
 
-// extern Nat_sub -> runtime prelude
-
 // extern Nat_shiftRight -> runtime prelude
 
 // extern UInt64_ofNat -> runtime prelude
@@ -510,14 +531,14 @@ function Float_ofScientific__closed_1() {
 // extern Float_scaleB -> runtime prelude
 
 function Float_ofBinaryScientific(x_1, x_2) {
-  const x_3 = Nat_log2(x_1);
+  const x_3 = lean_nat_log2(x_1);
   const x_4 = 63n;
   const x_5 = (x_3 > x_4 ? x_3 - x_4 : 0n);
-  const x_6 = Nat_shiftRight(x_1, x_5);
+  const x_6 = lean_nat_shift_right(x_1, x_5);
   const x_7 = lean_uint64_of_nat(x_6);
-  const x_8 = Int_ofNat(x_5);
+  const x_8 = lean_int_of_nat(x_5);
   const x_9 = (x_2 + x_8);
-  const x_10 = UInt64_toFloat(x_7);
+  const x_10 = lean_uint64_to_float(x_7);
   const x_11 = Float_scaleB(x_10, x_9);
   return x_11;
 }
@@ -528,25 +549,25 @@ function Float_ofScientific(x_1, x_2, x_3) {
       const x_4 = 5n;
       const x_5 = lean_nat_pow(x_4, x_3);
       const x_6 = (x_1 * x_5);
-      const x_7 = Int_ofNat(x_3);
+      const x_7 = lean_int_of_nat(x_3);
       const x_8 = Float_ofBinaryScientific(x_6, x_7);
       return x_8;
     }
     case 1: {
       const x_9 = 64n;
-      const x_10 = Nat_log2(x_1);
+      const x_10 = lean_nat_log2(x_1);
       const x_11 = (x_9 > x_10 ? x_9 - x_10 : 0n);
       const x_12 = 3n;
       const x_13 = (x_12 * x_3);
       const x_14 = (x_13 + x_11);
-      const x_15 = Nat_shiftLeft(x_1, x_14);
+      const x_15 = lean_nat_shift_left(x_1, x_14);
       const x_16 = 5n;
       const x_17 = lean_nat_pow(x_16, x_3);
       const x_18 = (x_17 === 0n ? 0n : x_15 / x_17);
       const x_19 = Float_ofScientific__closed_1();
-      const x_20 = Int_ofNat(x_3);
+      const x_20 = lean_int_of_nat(x_3);
       const x_21 = (x_19 * x_20);
-      const x_22 = Int_ofNat(x_11);
+      const x_22 = lean_int_of_nat(x_11);
       const x_23 = (x_21 - x_22);
       const x_24 = Float_ofBinaryScientific(x_18, x_23);
       return x_24;
@@ -611,6 +632,433 @@ function LeanJs_Demo_strGet1(x_1) {
 function LeanJs_Demo_strExtract(x_1, x_2, x_3) {
   const x_4 = lean_string_utf8_extract(x_1, x_2, x_3);
   return x_4;
+}
+
+function LeanJs_Demo_arrSum(x_1) {
+  const x_2 = 0n;
+  const x_3 = lean_array_get_size(x_1);
+  const x_4 = lean_nat_dec_lt(x_2, x_3);
+  switch (x_4) {
+    case 0: {
+      return x_2;
+    }
+    case 1: {
+      const x_5 = lean_nat_dec_le(x_3, x_3);
+      switch (x_5) {
+        case 0: {
+          switch (x_4) {
+            case 0: {
+              return x_2;
+            }
+            case 1: {
+              const x_6 = 0n;
+              const x_7 = lean_usize_of_nat(x_3);
+              const x_8 = _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0(x_1, x_6, x_7, x_2);
+              return x_8;
+            }
+            default: { throw new Error("no matching case"); }
+          }
+        }
+        case 1: {
+          const x_9 = 0n;
+          const x_10 = lean_usize_of_nat(x_3);
+          const x_11 = _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0(x_1, x_9, x_10, x_2);
+          return x_11;
+        }
+        default: { throw new Error("no matching case"); }
+      }
+    }
+    default: { throw new Error("no matching case"); }
+  }
+}
+
+// extern Array_usize -> runtime prelude
+
+// extern USize_decLt -> runtime prelude
+
+// extern Array_uget -> runtime prelude
+
+// extern Nat_mul -> runtime prelude
+
+// extern Array_uset -> runtime prelude
+
+function _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_Demo_arrMapSum_spec_0(x_1, x_2, x_3) {
+  while (true) {
+    const x_4 = lean_usize_dec_lt(x_2, x_1);
+    switch (x_4) {
+      case 0: {
+        return x_3;
+      }
+      case 1: {
+        const x_5 = lean_array_uget(x_3, x_2);
+        const x_6 = 0n;
+        const x_7 = lean_array_uset(x_3, x_2, x_6);
+        const x_8 = 2n;
+        const x_9 = (x_5 * x_8);
+        const x_10 = 1n;
+        const x_11 = lean_usize_add(x_2, x_10);
+        const x_12 = lean_array_uset(x_7, x_2, x_9);
+        const __t_1 = x_1;
+        const __t_2 = x_11;
+        const __t_3 = x_12;
+        x_1 = __t_1;
+        x_2 = __t_2;
+        x_3 = __t_3;
+        continue;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0(x_1, x_2, x_3, x_4) {
+  while (true) {
+    const x_5 = lean_usize_dec_eq(x_2, x_3);
+    switch (x_5) {
+      case 0: {
+        const x_6 = lean_array_uget(x_1, x_2);
+        const x_7 = (x_4 + x_6);
+        const x_8 = 1n;
+        const x_9 = lean_usize_add(x_2, x_8);
+        const __t_1 = x_1;
+        const __t_2 = x_9;
+        const __t_3 = x_3;
+        const __t_4 = x_7;
+        x_1 = __t_1;
+        x_2 = __t_2;
+        x_3 = __t_3;
+        x_4 = __t_4;
+        continue;
+      }
+      case 1: {
+        return x_4;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function LeanJs_Demo_arrMapSum(x_1) {
+  const x_2 = 0n;
+  const x_3 = lean_array_usize(x_1);
+  const x_4 = 0n;
+  const x_5 = _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_Demo_arrMapSum_spec_0(x_3, x_4, x_1);
+  const x_6 = lean_array_get_size(x_5);
+  const x_7 = lean_nat_dec_lt(x_2, x_6);
+  switch (x_7) {
+    case 0: {
+      return x_2;
+    }
+    case 1: {
+      const x_8 = lean_nat_dec_le(x_6, x_6);
+      switch (x_8) {
+        case 0: {
+          switch (x_7) {
+            case 0: {
+              return x_2;
+            }
+            case 1: {
+              const x_9 = lean_usize_of_nat(x_6);
+              const x_10 = _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0(x_5, x_4, x_9, x_2);
+              return x_10;
+            }
+            default: { throw new Error("no matching case"); }
+          }
+        }
+        case 1: {
+          const x_11 = lean_usize_of_nat(x_6);
+          const x_12 = _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0(x_5, x_4, x_11, x_2);
+          return x_12;
+        }
+        default: { throw new Error("no matching case"); }
+      }
+    }
+    default: { throw new Error("no matching case"); }
+  }
+}
+
+function Array_range__lam_0(x_1) {
+  return x_1;
+}
+
+function Array_range__lam_0__boxed(x_1) {
+  const x_2 = Array_range__lam_0(x_1);
+  return x_2;
+}
+
+function Array_range__closed_0() {
+  const x_1 = { fn: Array_range__lam_0__boxed, args: [] };
+  return x_1;
+}
+
+// extern Array_emptyWithCapacity -> runtime prelude
+
+// extern Nat_sub -> runtime prelude
+
+function _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg(x_1, x_2, x_3, x_4) {
+  while (true) {
+    const x_5 = 0n;
+    const x_6 = lean_nat_dec_eq(x_4, x_5);
+    switch (x_6) {
+      case 1: {
+        return x_3;
+      }
+      case 0: {
+        const x_7 = 1n;
+        const x_8 = (x_4 > x_7 ? x_4 - x_7 : 0n);
+        const x_9 = (x_1 > x_8 ? x_1 - x_8 : 0n);
+        const x_10 = (x_9 > x_7 ? x_9 - x_7 : 0n);
+        const x_11 = lean_apply(x_2, [x_10]);
+        const x_12 = lean_array_push(x_3, x_11);
+        const __t_1 = x_1;
+        const __t_2 = x_2;
+        const __t_3 = x_12;
+        const __t_4 = x_8;
+        x_1 = __t_1;
+        x_2 = __t_2;
+        x_3 = __t_3;
+        x_4 = __t_4;
+        continue;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function Array_ofFn__redArg(x_1, x_2) {
+  const x_3 = [];
+  const x_4 = _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg(x_1, x_2, x_3, x_1);
+  return x_4;
+}
+
+function Array_range(x_1) {
+  const x_2 = Array_range__closed_0();
+  const x_3 = Array_ofFn__redArg(x_1, x_2);
+  return x_3;
+}
+
+function LeanJs_Demo_arrRange(x_1) {
+  const x_2 = Array_range(x_1);
+  return x_2;
+}
+
+// extern Array_getInternalBorrowed -> runtime prelude
+
+function LeanJs_Demo_arrGetD(x_1, x_2) {
+  const x_3 = lean_array_get_size(x_1);
+  const x_4 = lean_nat_dec_lt(x_2, x_3);
+  switch (x_4) {
+    case 0: {
+      const x_5 = 0n;
+      return x_5;
+    }
+    case 1: {
+      const x_6 = lean_array_uget(x_1, x_2);
+      return x_6;
+    }
+    default: { throw new Error("no matching case"); }
+  }
+}
+
+// extern Array_size -> runtime prelude
+
+// extern Nat_decLt -> runtime prelude
+
+// extern Nat_decLe -> runtime prelude
+
+// extern USize_ofNat -> runtime prelude
+
+// extern USize_decEq -> runtime prelude
+
+// extern Array_ugetBorrowed -> runtime prelude
+
+// extern Array_push -> runtime prelude
+
+// extern USize_add -> runtime prelude
+
+function _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__Array_append_spec_0__redArg(x_1, x_2, x_3, x_4) {
+  while (true) {
+    const x_5 = lean_usize_dec_eq(x_2, x_3);
+    switch (x_5) {
+      case 0: {
+        const x_6 = lean_array_uget(x_1, x_2);
+        const x_7 = lean_array_push(x_4, x_6);
+        const x_8 = 1n;
+        const x_9 = lean_usize_add(x_2, x_8);
+        const __t_1 = x_1;
+        const __t_2 = x_9;
+        const __t_3 = x_3;
+        const __t_4 = x_7;
+        x_1 = __t_1;
+        x_2 = __t_2;
+        x_3 = __t_3;
+        x_4 = __t_4;
+        continue;
+      }
+      case 1: {
+        return x_4;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function Array_append__redArg(x_1, x_2) {
+  const x_3 = 0n;
+  const x_4 = lean_array_get_size(x_2);
+  const x_5 = lean_nat_dec_lt(x_3, x_4);
+  switch (x_5) {
+    case 0: {
+      return x_1;
+    }
+    case 1: {
+      const x_6 = lean_nat_dec_le(x_4, x_4);
+      switch (x_6) {
+        case 0: {
+          switch (x_5) {
+            case 0: {
+              return x_1;
+            }
+            case 1: {
+              const x_7 = 0n;
+              const x_8 = lean_usize_of_nat(x_4);
+              const x_9 = _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__Array_append_spec_0__redArg(x_2, x_7, x_8, x_1);
+              return x_9;
+            }
+            default: { throw new Error("no matching case"); }
+          }
+        }
+        case 1: {
+          const x_10 = 0n;
+          const x_11 = lean_usize_of_nat(x_4);
+          const x_12 = _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__Array_append_spec_0__redArg(x_2, x_10, x_11, x_1);
+          return x_12;
+        }
+        default: { throw new Error("no matching case"); }
+      }
+    }
+    default: { throw new Error("no matching case"); }
+  }
+}
+
+function LeanJs_Demo_arrAppend(x_1, x_2) {
+  const x_3 = Array_append__redArg(x_1, x_2);
+  return x_3;
+}
+
+function LeanJs_Demo_listSum(x_1) {
+  const x_2 = 0n;
+  const x_3 = List_foldl__at__LeanJs_Demo_listSum_spec_0(x_2, x_1);
+  return x_3;
+}
+
+function List_lengthTRAux__redArg(x_1, x_2) {
+  while (true) {
+    switch (lean_tag(x_1)) {
+      case 0: {
+        return x_2;
+      }
+      case 1: {
+        const x_3 = x_1.fields[1];
+        const x_4 = 1n;
+        const x_5 = (x_2 + x_4);
+        const __t_1 = x_3;
+        const __t_2 = x_5;
+        x_1 = __t_1;
+        x_2 = __t_2;
+        continue;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function List_lengthTR__redArg(x_1) {
+  const x_2 = 0n;
+  const x_3 = List_lengthTRAux__redArg(x_1, x_2);
+  return x_3;
+}
+
+function LeanJs_Demo_listLen(x_1) {
+  const x_2 = List_lengthTR__redArg(x_1);
+  return x_2;
+}
+
+function LeanJs_Demo_listRev(x_1) {
+  const x_2 = List_reverse__redArg(x_1);
+  return x_2;
+}
+
+function List_mapTR_loop__at__LeanJs_Demo_listMapSum_spec_0(x_1, x_2) {
+  while (true) {
+    switch (lean_tag(x_1)) {
+      case 0: {
+        const x_3 = List_reverse__redArg(x_2);
+        return x_3;
+      }
+      case 1: {
+        const x_4 = 1;
+        switch (x_4) {
+          case 0: {
+            const x_5 = x_1.fields[0];
+            const x_6 = x_1.fields[1];
+            const x_7 = 1n;
+            const x_8 = (x_5 + x_7);
+            x_1.fields[1] = x_2;
+            x_1.fields[0] = x_8;
+            const __t_1 = x_6;
+            const __t_2 = x_1;
+            x_1 = __t_1;
+            x_2 = __t_2;
+            continue;
+          }
+          case 1: {
+            const x_10 = x_1.fields[0];
+            const x_11 = x_1.fields[1];
+            const x_12 = 1n;
+            const x_13 = (x_10 + x_12);
+            const x_14 = lean_ctor(1, 2, 0, 0, x_13, x_2);
+            const __t_1 = x_11;
+            const __t_2 = x_14;
+            x_1 = __t_1;
+            x_2 = __t_2;
+            continue;
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function List_foldl__at__LeanJs_Demo_listSum_spec_0(x_1, x_2) {
+  while (true) {
+    switch (lean_tag(x_2)) {
+      case 0: {
+        return x_1;
+      }
+      case 1: {
+        const x_3 = x_2.fields[0];
+        const x_4 = x_2.fields[1];
+        const x_5 = (x_1 + x_3);
+        const __t_1 = x_5;
+        const __t_2 = x_4;
+        x_1 = __t_1;
+        x_2 = __t_2;
+        continue;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function LeanJs_Demo_listMapSum(x_1) {
+  const x_2 = 0n;
+  const x_3 = 0;
+  const x_4 = List_mapTR_loop__at__LeanJs_Demo_listMapSum_spec_0(x_1, x_3);
+  const x_5 = List_foldl__at__LeanJs_Demo_listSum_spec_0(x_2, x_4);
+  return x_5;
 }
 
 // extern Nat_add -> runtime prelude

@@ -66,4 +66,17 @@ def strGet1 (s : String) : Char := String.Pos.Raw.get s (String.Pos.Raw.next s �
 def strExtract (s : String) (lo hi : Nat) : String :=
   String.Pos.Raw.extract s ⟨lo⟩ ⟨hi⟩
 
+/-- Array building and querying. -/
+def arrSum (xs : Array Nat) : Nat := xs.foldl (· + ·) 0
+def arrMapSum (xs : Array Nat) : Nat := (xs.map (· * 2)).foldl (· + ·) 0
+def arrRange (n : Nat) : Array Nat := (Array.range n)
+def arrGetD (xs : Array Nat) (i : Nat) : Nat := xs.getD i 0
+def arrAppend (xs ys : Array Nat) : Array Nat := xs ++ ys
+
+/-- List operations (List is a ctor inductive). -/
+def listSum (xs : List Nat) : Nat := xs.foldl (· + ·) 0
+def listLen (xs : List Nat) : Nat := xs.length
+def listRev (xs : List Nat) : List Nat := xs.reverse
+def listMapSum (xs : List Nat) : Nat := (xs.map (· + 1)).foldl (· + ·) 0
+
 end LeanJs.Demo

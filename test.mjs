@@ -11,6 +11,10 @@ const exports = [
   'LeanJs_Demo_floatCalc',
   'LeanJs_Demo_strLen', 'LeanJs_Demo_strBytes', 'LeanJs_Demo_strGet0',
   'LeanJs_Demo_strGet1', 'LeanJs_Demo_strExtract',
+  'LeanJs_Demo_arrSum', 'LeanJs_Demo_arrMapSum', 'LeanJs_Demo_arrRange',
+  'LeanJs_Demo_arrGetD', 'LeanJs_Demo_arrAppend',
+  'LeanJs_Demo_listSum', 'LeanJs_Demo_listLen', 'LeanJs_Demo_listRev',
+  'LeanJs_Demo_listMapSum',
   'LeanTodo_TodoList_add', 'LeanTodo_TodoList_toggle',
   'LeanTodo_TodoList_remove', 'LeanTodo_TodoList_step',
 ];
@@ -34,6 +38,15 @@ const {
   LeanJs_Demo_strGet0: strGet0,
   LeanJs_Demo_strGet1: strGet1,
   LeanJs_Demo_strExtract: strExtract,
+  LeanJs_Demo_arrSum: arrSum,
+  LeanJs_Demo_arrMapSum: arrMapSum,
+  LeanJs_Demo_arrRange: arrRange,
+  LeanJs_Demo_arrGetD: arrGetD,
+  LeanJs_Demo_arrAppend: arrAppend,
+  LeanJs_Demo_listSum: listSum,
+  LeanJs_Demo_listLen: listLen,
+  LeanJs_Demo_listRev: listRev,
+  LeanJs_Demo_listMapSum: listMapSum,
   LeanTodo_TodoList_add: add,
   LeanTodo_TodoList_toggle: toggle,
   LeanTodo_TodoList_remove: remove,
@@ -94,6 +107,31 @@ console.log(`strGet0 = ${String.fromCodePoint(strGet0(jp))}`);
 console.log(`strGet1 = ${String.fromCodePoint(strGet1(jp))}`);
 console.log(`strExtract03 = ${strExtract(jp, 0n, 3n)}`);
 console.log(`strExtract39 = ${strExtract(jp, 3n, 9n)}`);
+
+// ---- Array / List operations ----
+// Lean prints Array as `#[a, b, ...]`, List as `[a, b, ...]`.
+const showArr = (a) => `#[${a.join(', ')}]`;
+const listToArr2 = (l) => {
+  const out = [];
+  let cur = l;
+  while (typeof cur !== 'number' && cur.tag === 1) { out.push(cur.fields[0]); cur = cur.fields[1]; }
+  return out;
+};
+const showLst = (l) => `[${listToArr2(l).join(', ')}]`;
+// List literal: nil = 0, cons = {tag:1, fields:[head, tail]}
+const lst2list = (arr) => arr.reduceRight((tl, h) => ({ tag: 1, fields: [h, tl] }), 0);
+const arr = [1n, 2n, 3n, 4n, 5n];
+console.log(`arrSum = ${arrSum(arr)}`);
+console.log(`arrMapSum = ${arrMapSum(arr)}`);
+console.log(`arrRange = ${showArr(arrRange(5n))}`);
+console.log(`arrGetD2 = ${arrGetD(arr, 2n)}`);
+console.log(`arrGetD9 = ${arrGetD(arr, 9n)}`);
+console.log(`arrAppend = ${showArr(arrAppend(arr, [6n, 7n]))}`);
+const lst = lst2list([10n, 20n, 30n]);
+console.log(`listSum = ${listSum(lst)}`);
+console.log(`listLen = ${listLen(lst)}`);
+console.log(`listRev = ${showLst(listRev(lst))}`);
+console.log(`listMapSum = ${listMapSum(lst)}`);
 
 // ---- TodoList JS model ----
 // List: nil = 0, cons = { tag:1, fields:[head, tail] }

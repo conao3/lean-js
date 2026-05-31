@@ -62,7 +62,9 @@ def quoteString (s : String) : String := Id.run do
     Most map to a named prelude function; a few Nat ops are inlined to
     keep total semantics (truncated sub, div/mod by zero -> 0/lhs). -/
 def emitKnownFap (c : FunId) (ys : Array Arg) : Option String :=
-  let a := ys.map argToJs
+  -- Drop erased (type/instance/proof) args: EmitC passes only runtime-relevant
+  -- args to externs, so the prelude functions expect them packed left-to-right.
+  let a := (ys.filter (fun y => match y with | .erased => false | _ => true)).map argToJs
   let bin (op : String) : Option String :=
     if h : a.size = 2 then some s!"({a[0]} {op} {a[1]})" else none
   let call (fn : String) : Option String :=
@@ -210,6 +212,32 @@ def emitKnownFap (c : FunId) (ys : Array Arg) : Option String :=
   | `Array.push                   => call "lean_array_push"
   | `Array.pop                    => call "lean_array_pop"
   | `Array.swap                   => call "lean_array_swap"
+  | `Array.uget                   => call "lean_array_uget"
+  | `Array.ugetBorrowed           => call "lean_array_uget"
+  | `Array.getInternal            => call "lean_array_uget"
+  | `Array.getInternalBorrowed    => call "lean_array_uget"
+  | `Array.uset                   => call "lean_array_uset"
+  | `Array.usize                  => call "lean_array_usize"
+  | `Array.toList                 => call "lean_array_to_list"
+  | `Array.mkArray                => call "lean_mk_array"
+  | `Array.mkArray0               => some "[]"
+  -- Nat extras used by Float.ofScientific and array index lowering.
+  | `Nat.log2                     => call "lean_nat_log2"
+  | `Nat.shiftLeft                => call "lean_nat_shift_left"
+  | `Nat.shiftRight               => call "lean_nat_shift_right"
+  | `Nat.land                     => call "lean_nat_land"
+  | `Nat.lor                      => call "lean_nat_lor"
+  | `Nat.xor                      => call "lean_nat_xor"
+  -- Int / numeric conversions.
+  | `Int.ofNat                    => call "lean_int_of_nat"
+  | `Int.toNat                    => call "lean_int_to_nat"
+  | `Nat.toUInt8                  => call "lean_uint8_of_nat"
+  | `Nat.toUInt16                 => call "lean_uint16_of_nat"
+  | `Nat.toUInt32                 => call "lean_uint32_of_nat2"
+  | `Nat.toUInt64                 => call "lean_uint64_of_nat"
+  | `Nat.toUSize                  => call "lean_usize_of_nat"
+  | `UInt64.toFloat               => call "lean_uint64_to_float"
+  | `UInt32.toFloat               => call "lean_uint32_to_float"
   | _ => none
 
 def ctorLit (i : CtorInfo) (ys : Array Arg) : String :=
@@ -268,8 +296,11 @@ def emitExpr (ty : IRType := .object) : IR.Expr → String
   | .box _ x        => varName x        -- GC: identity
   | .unbox x        => varName x        -- GC: identity
   | .lit (.num v)   =>
-    -- scalar-typed literal (Bool/UInt/USize) -> plain number; obj Nat -> bigint
-    if ty.isScalar then s!"{v}" else s!"{v}n"
+    -- u8/u16/u32/float (and Bool) -> plain number; u64/usize and object Nat ->
+    -- bigint, matching the prelude's UInt64/USize (bigint) representation.
+    match ty with
+    | .uint8 | .uint16 | .uint32 | .float | .float32 => s!"{v}"
+    | _ => s!"{v}n"
   | .lit (.str v)   => quoteString v
   | .isShared _     => "1"
     -- Always report "shared" so the compiler's exclusivity branch takes the
