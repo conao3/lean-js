@@ -3,6 +3,7 @@ import LeanJs.Demo
 import LeanJs.DemoHO
 import LeanJs.DemoIO
 import LeanJs.DemoInit
+import LeanJs.DemoStress
 import LeanTodo.Basic
 
 open Lean Lean.IR
@@ -65,7 +66,7 @@ def main (args : List String) : IO Unit := do
   let env ← importModules
     #[{ module := `LeanJs.Demo }, { module := `LeanJs.DemoHO },
       { module := `LeanJs.DemoIO }, { module := `LeanJs.DemoInit },
-      { module := `LeanTodo.Basic }] {}
+      { module := `LeanJs.DemoStress }, { module := `LeanTodo.Basic }] {}
     (loadExts := true)
   let prelude ← IO.FS.readFile preludePath
   let decls := LeanJs.collectTransitive env rootNames
@@ -96,3 +97,4 @@ def main (args : List String) : IO Unit := do
   emitProg `LeanJs.DemoIO.errMain "out-err.mjs"
   emitProg `LeanJs.DemoIO.panicMain "out-panic.mjs"
   emitProg `LeanJs.DemoInit.main "out-init.mjs"
+  emitProg `LeanJs.DemoStress.stressMain "out-stress.mjs"

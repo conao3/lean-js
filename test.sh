@@ -9,7 +9,7 @@ set -euo pipefail
 lake build
 lake exe lean-js out.ts prelude.ts out-io.mjs
 # Compile every oracle program natively once; subsequent runs are lake-cached.
-lake build oracle-fns oracle-io oracle-stdin oracle-err oracle-panic oracle-init
+lake build oracle-fns oracle-io oracle-stdin oracle-err oracle-panic oracle-init oracle-stress
 ORACLE=.lake/build/bin
 
 # Function-level value equivalence: the native oracle prints every function
@@ -118,4 +118,18 @@ if diff -q /tmp/lean-init.out /tmp/ts-init.out >/dev/null; then
   echo "INIT-DIFF-TEST PASS: stdout identical"
 else
   echo "INIT-DIFF-TEST FAIL"; diff /tmp/lean-init.out /tmp/ts-init.out || true; exit 1
+fi
+
+# Stress program: six realistic self-contained programs (recursive-descent
+# parser, sorting/BST/HashMap/TreeMap, String processing, numeric algorithms
+# incl. bignum factorial and prime sieve, StateM/ExceptT/Option/Except monadic
+# code, List/Array combinators). Diff stdout against the native oracle.
+"$ORACLE/oracle-stress" > /tmp/lean-stress.out 2>&1
+node out-stress.mjs > /tmp/ts-stress.out 2>&1
+echo "=== STRESS ORACLE ==="; cat /tmp/lean-stress.out
+echo "=== STRESS node ===";    cat /tmp/ts-stress.out
+if diff -q /tmp/lean-stress.out /tmp/ts-stress.out >/dev/null; then
+  echo "STRESS-DIFF-TEST PASS: stdout identical"
+else
+  echo "STRESS-DIFF-TEST FAIL"; diff /tmp/lean-stress.out /tmp/ts-stress.out || true; exit 1
 fi
