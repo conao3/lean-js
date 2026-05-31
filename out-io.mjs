@@ -634,6 +634,65 @@ function LeanJs_DemoIO_main__closed_7() {
   return x_3;
 }
 
+function LeanJs_DemoIO_main__closed_9() {
+  const x_1 = 1000000000000000000n;
+  const x_2 = Nat_reprFast(x_1);
+  return x_2;
+}
+
+function LeanJs_DemoIO_main__closed_8() {
+  const x_1 = "big1 = ";
+  return x_1;
+}
+
+function LeanJs_DemoIO_main__closed_10() {
+  const x_1 = LeanJs_DemoIO_main__closed_9();
+  const x_2 = LeanJs_DemoIO_main__closed_8();
+  const x_3 = lean_string_append(x_2, x_1);
+  return x_3;
+}
+
+function LeanJs_DemoIO_main__closed_12() {
+  const x_1 = 1152921504606846976n;
+  const x_2 = Nat_reprFast(x_1);
+  return x_2;
+}
+
+function LeanJs_DemoIO_main__closed_11() {
+  const x_1 = "big2 = ";
+  return x_1;
+}
+
+function LeanJs_DemoIO_main__closed_13() {
+  const x_1 = LeanJs_DemoIO_main__closed_12();
+  const x_2 = LeanJs_DemoIO_main__closed_11();
+  const x_3 = lean_string_append(x_2, x_1);
+  return x_3;
+}
+
+function LeanJs_DemoIO_main__closed_15() {
+  const x_1 = 123456789012345678901234567890n;
+  return x_1;
+}
+
+function LeanJs_DemoIO_main__closed_16() {
+  const x_1 = LeanJs_DemoIO_main__closed_15();
+  const x_2 = Nat_reprFast(x_1);
+  return x_2;
+}
+
+function LeanJs_DemoIO_main__closed_14() {
+  const x_1 = "huge = ";
+  return x_1;
+}
+
+function LeanJs_DemoIO_main__closed_17() {
+  const x_1 = LeanJs_DemoIO_main__closed_16();
+  const x_2 = LeanJs_DemoIO_main__closed_14();
+  const x_3 = lean_string_append(x_2, x_1);
+  return x_3;
+}
+
 // extern ST_Prim_mkRef -> runtime prelude
 
 // extern ST_Prim_Ref_take -> runtime prelude
@@ -642,17 +701,17 @@ function LeanJs_DemoIO_main__closed_7() {
 
 // extern ST_Prim_Ref_get -> runtime prelude
 
-function LeanJs_DemoIO_main__closed_8() {
+function LeanJs_DemoIO_main__closed_18() {
   const x_1 = "ref = ";
   return x_1;
 }
 
-function LeanJs_DemoIO_main__closed_11() {
+function LeanJs_DemoIO_main__closed_21() {
   const x_1 = "walk dog";
   return x_1;
 }
 
-function LeanJs_DemoIO_main__closed_9() {
+function LeanJs_DemoIO_main__closed_19() {
   const x_1 = "buy milk";
   return x_1;
 }
@@ -669,8 +728,8 @@ function LeanTodo_TodoList_empty() {
   return x_1;
 }
 
-function LeanJs_DemoIO_main__closed_10() {
-  const x_1 = LeanJs_DemoIO_main__closed_9();
+function LeanJs_DemoIO_main__closed_20() {
+  const x_1 = LeanJs_DemoIO_main__closed_19();
   const x_2 = LeanTodo_TodoList_empty();
   const x_3 = LeanTodo_TodoList_add(x_2, x_1);
   return x_3;
@@ -708,9 +767,9 @@ function LeanTodo_TodoList_add(x_1, x_2) {
   }
 }
 
-function LeanJs_DemoIO_main__closed_12() {
-  const x_1 = LeanJs_DemoIO_main__closed_11();
-  const x_2 = LeanJs_DemoIO_main__closed_10();
+function LeanJs_DemoIO_main__closed_22() {
+  const x_1 = LeanJs_DemoIO_main__closed_21();
+  const x_2 = LeanJs_DemoIO_main__closed_20();
   const x_3 = LeanTodo_TodoList_add(x_2, x_1);
   return x_3;
 }
@@ -842,9 +901,9 @@ function LeanTodo_TodoList_toggle(x_1, x_2) {
   }
 }
 
-function LeanJs_DemoIO_main__closed_13() {
+function LeanJs_DemoIO_main__closed_23() {
   const x_1 = 0n;
-  const x_2 = LeanJs_DemoIO_main__closed_12();
+  const x_2 = LeanJs_DemoIO_main__closed_22();
   const x_3 = LeanTodo_TodoList_toggle(x_2, x_1);
   return x_3;
 }
@@ -1430,7 +1489,7 @@ function Nat_reprFast(x_1) {
           return x_9;
         }
         case 1: {
-          const x_10 = USize_ofNatLT(x_1, undefined);
+          const x_10 = lean_usize_of_nat(x_1);
           const x_11 = lean_string_of_usize(x_10);
           return x_11;
         }
@@ -1461,22 +1520,22 @@ function LeanJs_DemoIO_showList(x_1) {
   return x_13;
 }
 
-function LeanJs_DemoIO_main__closed_15() {
-  const x_1 = LeanJs_DemoIO_main__closed_13();
+function LeanJs_DemoIO_main__closed_25() {
+  const x_1 = LeanJs_DemoIO_main__closed_23();
   const x_2 = LeanJs_DemoIO_showList(x_1);
   return x_2;
 }
 
-function LeanJs_DemoIO_main__closed_14() {
+function LeanJs_DemoIO_main__closed_24() {
   const x_1 = "todo = ";
   return x_1;
 }
 
 // extern String_append -> runtime prelude
 
-function LeanJs_DemoIO_main__closed_16() {
-  const x_1 = LeanJs_DemoIO_main__closed_15();
-  const x_2 = LeanJs_DemoIO_main__closed_14();
+function LeanJs_DemoIO_main__closed_26() {
+  const x_1 = LeanJs_DemoIO_main__closed_25();
+  const x_2 = LeanJs_DemoIO_main__closed_24();
   const x_3 = lean_string_append(x_2, x_1);
   return x_3;
 }
@@ -1497,7 +1556,7 @@ function IO_println__at__LeanJs_DemoIO_main_spec_0(x_1) {
   return x_5;
 }
 
-function LeanJs_DemoIO_main__closed_17() {
+function LeanJs_DemoIO_main__closed_27() {
   const x_1 = "diagnostic to stderr";
   return x_1;
 }
@@ -1533,37 +1592,67 @@ function LeanJs_DemoIO_main() {
           const x_7 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_6, undefined);
           switch (lean_tag(x_7)) {
             case 0: {
-              const x_8 = 0n;
-              const x_9 = lean_st_mk_ref(x_8);
-              const x_10 = 41n;
-              const x_11 = lean_st_ref_set(x_9, x_10);
-              const x_12 = lean_st_ref_take(x_9);
-              const x_13 = 1n;
-              const x_14 = (x_12 + x_13);
-              const x_15 = lean_st_ref_set(x_9, x_14);
-              const x_16 = lean_st_ref_get(x_9);
-              const x_17 = LeanJs_DemoIO_main__closed_8();
-              const x_18 = Nat_reprFast(x_16);
-              const x_19 = lean_string_append(x_17, x_18);
-              const x_20 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_19, undefined);
-              switch (lean_tag(x_20)) {
+              const x_8 = LeanJs_DemoIO_main__closed_10();
+              const x_9 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_8, undefined);
+              switch (lean_tag(x_9)) {
                 case 0: {
-                  const x_21 = LeanJs_DemoIO_main__closed_16();
-                  const x_22 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_21, undefined);
-                  switch (lean_tag(x_22)) {
+                  const x_10 = LeanJs_DemoIO_main__closed_13();
+                  const x_11 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_10, undefined);
+                  switch (lean_tag(x_11)) {
                     case 0: {
-                      const x_23 = LeanJs_DemoIO_main__closed_17();
-                      const x_24 = IO_eprintln__at___private_Init_System_IO_0_IO_eprintlnAux_spec_0(x_23, undefined);
-                      return x_24;
+                      const x_12 = LeanJs_DemoIO_main__closed_17();
+                      const x_13 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_12, undefined);
+                      switch (lean_tag(x_13)) {
+                        case 0: {
+                          const x_14 = 0n;
+                          const x_15 = lean_st_mk_ref(x_14);
+                          const x_16 = 41n;
+                          const x_17 = lean_st_ref_set(x_15, x_16);
+                          const x_18 = lean_st_ref_take(x_15);
+                          const x_19 = 1n;
+                          const x_20 = (x_18 + x_19);
+                          const x_21 = lean_st_ref_set(x_15, x_20);
+                          const x_22 = lean_st_ref_get(x_15);
+                          const x_23 = LeanJs_DemoIO_main__closed_18();
+                          const x_24 = Nat_reprFast(x_22);
+                          const x_25 = lean_string_append(x_23, x_24);
+                          const x_26 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_25, undefined);
+                          switch (lean_tag(x_26)) {
+                            case 0: {
+                              const x_27 = LeanJs_DemoIO_main__closed_26();
+                              const x_28 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_27, undefined);
+                              switch (lean_tag(x_28)) {
+                                case 0: {
+                                  const x_29 = LeanJs_DemoIO_main__closed_27();
+                                  const x_30 = IO_eprintln__at___private_Init_System_IO_0_IO_eprintlnAux_spec_0(x_29, undefined);
+                                  return x_30;
+                                }
+                                case 1: {
+                                  return x_28;
+                                }
+                                default: { throw new Error("no matching case"); }
+                              }
+                            }
+                            case 1: {
+                              return x_26;
+                            }
+                            default: { throw new Error("no matching case"); }
+                          }
+                        }
+                        case 1: {
+                          return x_13;
+                        }
+                        default: { throw new Error("no matching case"); }
+                      }
                     }
                     case 1: {
-                      return x_22;
+                      return x_11;
                     }
                     default: { throw new Error("no matching case"); }
                   }
                 }
                 case 1: {
-                  return x_20;
+                  return x_9;
                 }
                 default: { throw new Error("no matching case"); }
               }

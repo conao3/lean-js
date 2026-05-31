@@ -18,6 +18,11 @@ fi
 node test-tco.mjs
 echo "--- TCO deep check done ---"
 
+# Fail-loud extern link check (negative test): an unmapped extern must be a hard
+# extraction error, not a dangling runtime call.
+lake env lean --run test-extern.lean
+echo "--- extern link check done ---"
+
 # Runnable IO program: run the same Lean `main` under `lean --run` and under
 # node (generated out-io.mjs), diffing stdout and stderr separately.
 lake env lean --run expected-io.lean > /tmp/lean-io.out 2> /tmp/lean-io.err

@@ -746,7 +746,7 @@ function Float_ofBinaryScientific(x_1, x_2) {
   const x_8 = lean_int_of_nat(x_5);
   const x_9 = (x_2 + x_8);
   const x_10 = lean_uint64_to_float(x_7);
-  const x_11 = Float_scaleB(x_10, x_9);
+  const x_11 = lean_float_scaleb(x_10, x_9);
   return x_11;
 }
 

@@ -47,11 +47,17 @@ def main (args : List String) : IO Unit := do
     (loadExts := true)
   let prelude ← IO.FS.readFile preludePath
   let decls := LeanJs.collectTransitive env rootNames
-  let body := LeanJs.render decls
+  -- Fail loud (non-zero exit, no output written) if any reached extern has no
+  -- prelude symbol — the analogue of a C linker rejecting an unresolved symbol.
+  let body ← match LeanJs.renderChecked env decls with
+    | .ok s => pure s
+    | .error e => throw (IO.userError s!"lean-js: {e}")
   let ts := prelude ++ "\n// ================ GENERATED ================\n\n" ++ body
   IO.FS.writeFile outPath ts
   IO.println s!"wrote {decls.size} decls to {outPath}"
-  let progBody := LeanJs.renderProgram env `LeanJs.DemoIO.main
+  let progBody ← match LeanJs.renderProgramChecked env `LeanJs.DemoIO.main with
+    | .ok s => pure s
+    | .error e => throw (IO.userError s!"lean-js: {e}")
   let prog := prelude ++ "\n// ================ GENERATED PROGRAM ================\n\n" ++ progBody
   IO.FS.writeFile progPath prog
   IO.println s!"wrote runnable program to {progPath}"

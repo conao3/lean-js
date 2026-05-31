@@ -24,6 +24,14 @@ def main : IO Unit := do
   IO.println "lean-js IO demo"
   IO.println s!"fib 10 = {fib 10}"
   IO.println s!"2 + 3 = {2 + 3}"
+  -- Large Nat printed via the COMPILED path (Nat.reprFast). 10^18 sits in the
+  -- reprFast "mid" range [reprArray.size, 2^64): it takes the slow path through
+  -- USize.ofNatLT / USize.repr, which previously emitted a dangling call.
+  IO.println s!"big1 = {(1000000000000000000 : Nat)}"
+  -- A computed mid-range Nat (still < 2^64) also exercises that USize path.
+  IO.println s!"big2 = {(2 : Nat) ^ 60}"
+  -- A Nat >= 2^64 takes reprFast's Nat.toDigits (pure) slow path.
+  IO.println s!"huge = {(123456789012345678901234567890 : Nat)}"
   let r ← IO.mkRef (0 : Nat)
   r.set 41
   r.modify (· + 1)
