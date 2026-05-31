@@ -79,4 +79,30 @@ def listLen (xs : List Nat) : Nat := xs.length
 def listRev (xs : List Nat) : List Nat := xs.reverse
 def listMapSum (xs : List Nat) : Nat := (xs.map (· + 1)).foldl (· + ·) 0
 
+mutual
+  def isEvenM : Nat → Bool
+    | 0 => true
+    | n+1 => isOddM n
+  def isOddM : Nat → Bool
+    | 0 => false
+    | n+1 => isEvenM n
+end
+
+def parityEven (n : Nat) : Bool := isEvenM n
+def parityOdd (n : Nat) : Bool := isOddM n
+
+mutual
+  def m3a : Nat → Nat
+    | 0 => 0
+    | n+1 => m3b n
+  def m3b : Nat → Nat
+    | 0 => 1
+    | n+1 => m3c n
+  def m3c : Nat → Nat
+    | 0 => 2
+    | n+1 => m3a n
+end
+
+def cycle3 (n : Nat) : Nat := m3a n
+
 end LeanJs.Demo

@@ -337,132 +337,167 @@ def emitExpr (ty : IRType := .object) : IR.Expr → String
     -- copying path instead of mutating in place; JS references are shared and
     -- there is no refcount, so in-place `set`/`reuse` would corrupt aliases.
 
-/-! ## Self-tail-call detection (strategy B)
+/-! ## Tail-call detection (strategies A + B)
 
-A self-tail-call lowers to `let r := self args; ret r` possibly preceded by
-straight-line statements. `matchSelfTailCall` looks through the straight-line
-prefix for that 2-node pattern. -/
+A tail call lowers to `let r := callee args; <dec/inc/del>*; ret r` possibly
+preceded by other straight-line statements. `matchTailCall` looks through the
+straight-line prefix and through the trailing refcount no-ops between the call
+and the `ret`, returning the callee and its args. Self-tail-calls (callee ==
+self) become a `while` loop; cross-function tail calls between members of a
+tail-call SCC become trampoline thunks. -/
 
-partial def matchSelfTailCall (self : FunId) : FnBody → Option (Array Arg)
-  | .vdecl x _ (.fap c args) (.ret (.var r)) =>
-      if c == self && r == x then some args else none
+/-- Does this body (a chain of `dec/inc/del`) end in `ret (var x)`? -/
+partial def retsVar (x : VarId) : FnBody → Bool
+  | .ret (.var r) => r == x
+  | .inc _ _ _ _ b | .dec _ _ _ _ b | .del _ b => retsVar x b
+  | _ => false
+
+partial def matchTailCall : FnBody → Option (FunId × Array Arg)
+  | .vdecl x _ (.fap c args) k =>
+      if retsVar x k then some (c, args) else none
   | .vdecl _ _ _ b | .set _ _ _ b | .uset _ _ _ b | .sset _ _ _ _ _ b
   | .setTag _ _ b | .inc _ _ _ _ b | .dec _ _ _ _ b | .del _ b =>
-      matchSelfTailCall self b
+      matchTailCall b
   | _ => none
 
-/-- Does the body anywhere contain a self-tail-call (so we need a loop)? -/
-partial def hasSelfTailCall (self : FunId) : FnBody → Bool
-  | b =>
-    match matchSelfTailCall self b with
-    | some _ => true
-    | none =>
-      match b with
-      | .case _ _ _ alts => alts.any (fun alt => hasSelfTailCall self alt.body)
-      | .jdecl _ _ v k => hasSelfTailCall self v || hasSelfTailCall self k
-      | .ret _ | .jmp _ _ | .unreachable => false
-      | other =>
-        let k := other.body
-        -- avoid infinite loop: `other.body` of a terminal returns itself
-        if other.isTerminal then false else hasSelfTailCall self k
+/-- All tail-call callees reachable in a body (across case alts and jdecl
+    bodies), used to build the inter-procedural tail-call edge set. -/
+partial def tailCallTargets : FnBody → Array FunId
+  | b => Id.run do
+    let mut acc : Array FunId := #[]
+    match matchTailCall b with
+    | some (c, _) => acc := acc.push c
+    | none => pure ()
+    match b with
+    | .case _ _ _ alts => for alt in alts do acc := acc ++ tailCallTargets alt.body
+    | .jdecl _ _ v k => acc := acc ++ tailCallTargets v ++ tailCallTargets k
+    | .ret _ | .jmp _ _ | .unreachable => pure ()
+    | other => unless other.isTerminal do acc := acc ++ tailCallTargets other.body
+    return acc
+
+/-- Does the body anywhere self-tail-call (so the self-loop is needed)? -/
+partial def hasSelfTailCall (self : FunId) (b : FnBody) : Bool :=
+  (tailCallTargets b).any (· == self)
+
+/-- The set of callee names a decl's body tail-calls, including itself. -/
+def declTailEdges (d : Decl) : Array FunId :=
+  match d with
+  | .fdecl (body := b) .. => tailCallTargets b
+  | .extern .. => #[]
 
 /-- Join-point environment for loop mode: maps a join-point index to its
     parameters and body, so a `jmp` can inline the body (keeping any `continue`
     lexically inside the surrounding `while`). -/
 abbrev JpEnv := Std.HashMap Nat (Array Param × FnBody)
 
+/-- Trampoline core suffix: `funRef` of a co-SCC member's thunk-returning core. -/
+def tcRef (c : FunId) : String := funRef c ++ "__tc"
+
 mutual
 
-partial def emitFnBodyLoop (self : FunId) (params : Array Param) (jps : JpEnv) :
-    FnBody → EmitM Unit
+/-- `self` is the function being emitted; `scc` is the set of names in its
+    tail-call SCC (size ≥ 2 means a trampolined core is being emitted). A tail
+    call to `self` loops (`continue`); to another SCC member it returns a thunk;
+    to anything else it is a normal returned call. -/
+partial def emitFnBodyLoop (self : FunId) (scc : Std.HashSet Name)
+    (params : Array Param) (jps : JpEnv) : FnBody → EmitM Unit
   | b => do
-    match matchSelfTailCall self b with
-    | some args => do
-      emitPrefixThenTail self params jps b args
-    | none =>
-      match b with
-      | .vdecl x ty e k => do
-        line s!"const {varName x} = {emitExpr ty e};"
-        emitFnBodyLoop self params jps k
-      | .jdecl j xs v k =>
-        -- register the join point for inlining at jmp sites
-        emitFnBodyLoop self params (jps.insert j.idx (xs, v)) k
-      | .set x i y k => do
-        line s!"{varName x}.fields[{i}] = {argToJs y};"
-        emitFnBodyLoop self params jps k
-      | .setTag x cidx k => do
-        line s!"{varName x}.tag = {cidx};"
-        emitFnBodyLoop self params jps k
-      | .uset x i y k => do
-        line s!"{varName x}.fields[{i}] = {varName y};"
-        emitFnBodyLoop self params jps k
-      | .sset x i offset y ty k => do
-        line s!"lean_ctor_set_{sscalarSuffix ty}({varName x}, {sbyteOffset i offset}, {varName y});"
-        emitFnBodyLoop self params jps k
-      | .inc _ _ _ _ k => emitFnBodyLoop self params jps k
-      | .dec _ _ _ _ k => emitFnBodyLoop self params jps k
-      | .del _ k       => emitFnBodyLoop self params jps k
-      | .ret x => line s!"return {argToJs x};"
-      | .jmp j ys => do
-        match jps.get? j.idx with
-        | some (xs, body) => do
-          -- inline: bind JP params to args, then emit the JP body in-place
-          for (p, a) in xs.zip ys do
-            line s!"const {varName p.x} = {argToJs a};"
-          emitFnBodyLoop self params jps body
-        | none =>
-          let args := String.intercalate ", " (ys.toList.map argToJs)
-          line s!"return {jpName j}({args});"
-      | .unreachable => line "throw new Error(\"unreachable\");"
-      | .case _ x xType alts => do
-        let scrut := if xType.isScalar then varName x else s!"lean_tag({varName x})"
-        line ("switch (" ++ scrut ++ ") {")
-        withIndent do
-          let mut sawDefault := false
-          for alt in alts do
-            match alt with
-            | .ctor info b => do
-              line ("case " ++ toString info.cidx ++ ": {")
-              withIndent (emitFnBodyLoop self params jps b)
-              line "}"
-            | .default b => do
-              sawDefault := true
-              line "default: {"
-              withIndent (emitFnBodyLoop self params jps b)
-              line "}"
-          unless sawDefault do
-            line "default: { throw new Error(\"no matching case\"); }"
-        line "}"
+    match matchTailCall b with
+    | some (c, _) =>
+      if c == self || scc.contains c then
+        emitPrefixThenTail self scc params jps b
+      else
+        emitNonTail self scc params jps b
+    | none => emitNonTail self scc params jps b
 
-/-- Emit the straight-line prefix of a matched self-tail-call, then the
-    param rebind + continue. -/
-partial def emitPrefixThenTail (self : FunId) (params : Array Param) (jps : JpEnv) :
-    FnBody → Array Arg → EmitM Unit
-  | .vdecl x ty (.fap c cargs) (.ret (.var r)), args => do
-    if c == self && r == x then
-      emitTailRebind params args
+/-- Emit a body whose head is not a (loopable/thunkable) tail call. -/
+partial def emitNonTail (self : FunId) (scc : Std.HashSet Name)
+    (params : Array Param) (jps : JpEnv) : FnBody → EmitM Unit
+  | .vdecl x ty e k => do
+    line s!"const {varName x} = {emitExpr ty e};"
+    emitFnBodyLoop self scc params jps k
+  | .jdecl j xs v k =>
+    emitFnBodyLoop self scc params (jps.insert j.idx (xs, v)) k
+  | .set x i y k => do
+    line s!"{varName x}.fields[{i}] = {argToJs y};"
+    emitFnBodyLoop self scc params jps k
+  | .setTag x cidx k => do
+    line s!"{varName x}.tag = {cidx};"
+    emitFnBodyLoop self scc params jps k
+  | .uset x i y k => do
+    line s!"{varName x}.fields[{i}] = {varName y};"
+    emitFnBodyLoop self scc params jps k
+  | .sset x i offset y ty k => do
+    line s!"lean_ctor_set_{sscalarSuffix ty}({varName x}, {sbyteOffset i offset}, {varName y});"
+    emitFnBodyLoop self scc params jps k
+  | .inc _ _ _ _ k => emitFnBodyLoop self scc params jps k
+  | .dec _ _ _ _ k => emitFnBodyLoop self scc params jps k
+  | .del _ k       => emitFnBodyLoop self scc params jps k
+  | .ret x => line s!"return {argToJs x};"
+  | .jmp j ys => do
+    match jps.get? j.idx with
+    | some (xs, body) => do
+      for (p, a) in xs.zip ys do
+        line s!"const {varName p.x} = {argToJs a};"
+      emitFnBodyLoop self scc params jps body
+    | none =>
+      let args := String.intercalate ", " (ys.toList.map argToJs)
+      line s!"return {jpName j}({args});"
+  | .unreachable => line "throw new Error(\"unreachable\");"
+  | .case _ x xType alts => do
+    let scrut := if xType.isScalar then varName x else s!"lean_tag({varName x})"
+    line ("switch (" ++ scrut ++ ") {")
+    withIndent do
+      let mut sawDefault := false
+      for alt in alts do
+        match alt with
+        | .ctor info b => do
+          line ("case " ++ toString info.cidx ++ ": {")
+          withIndent (emitFnBodyLoop self scc params jps b)
+          line "}"
+        | .default b => do
+          sawDefault := true
+          line "default: {"
+          withIndent (emitFnBodyLoop self scc params jps b)
+          line "}"
+      unless sawDefault do
+        line "default: { throw new Error(\"no matching case\"); }"
+    line "}"
+
+/-- Emit the straight-line prefix of a matched loopable/thunkable tail call,
+    then either rebind params + `continue` (self) or return a trampoline thunk
+    (other SCC member). -/
+partial def emitPrefixThenTail (self : FunId) (scc : Std.HashSet Name)
+    (params : Array Param) (jps : JpEnv) : FnBody → EmitM Unit
+  | .vdecl x ty (.fap c cargs) k => do
+    if retsVar x k then
+      if c == self then
+        emitTailRebind params cargs
+      else
+        let args := String.intercalate ", " (cargs.toList.map argToJs)
+        line ("return { __tc: 1, f: " ++ tcRef c ++ ", a: [" ++ args ++ "] };")
     else
       line s!"const {varName x} = {emitExpr ty (.fap c cargs)};"
-      pure ()
-  | .vdecl x ty e k, args => do
+      emitFnBodyLoop self scc params jps k
+  | .vdecl x ty e k => do
     line s!"const {varName x} = {emitExpr ty e};"
-    emitPrefixThenTail self params jps k args
-  | .set x i y k, args => do
+    emitPrefixThenTail self scc params jps k
+  | .set x i y k => do
     line s!"{varName x}.fields[{i}] = {argToJs y};"
-    emitPrefixThenTail self params jps k args
-  | .setTag x cidx k, args => do
+    emitPrefixThenTail self scc params jps k
+  | .setTag x cidx k => do
     line s!"{varName x}.tag = {cidx};"
-    emitPrefixThenTail self params jps k args
-  | .uset x i y k, args => do
+    emitPrefixThenTail self scc params jps k
+  | .uset x i y k => do
     line s!"{varName x}.fields[{i}] = {varName y};"
-    emitPrefixThenTail self params jps k args
-  | .sset x i offset y ty k, args => do
+    emitPrefixThenTail self scc params jps k
+  | .sset x i offset y ty k => do
     line s!"lean_ctor_set_{sscalarSuffix ty}({varName x}, {sbyteOffset i offset}, {varName y});"
-    emitPrefixThenTail self params jps k args
-  | .inc _ _ _ _ k, args => emitPrefixThenTail self params jps k args
-  | .dec _ _ _ _ k, args => emitPrefixThenTail self params jps k args
-  | .del _ k, args       => emitPrefixThenTail self params jps k args
-  | _, args => emitTailRebind params args
+    emitPrefixThenTail self scc params jps k
+  | .inc _ _ _ _ k => emitPrefixThenTail self scc params jps k
+  | .dec _ _ _ _ k => emitPrefixThenTail self scc params jps k
+  | .del _ k       => emitPrefixThenTail self scc params jps k
+  | b => emitNonTail self scc params jps b
 
 partial def emitTailRebind (params : Array Param) (args : Array Arg) : EmitM Unit := do
   -- stage all new values into temporaries first (aliasing safety)
@@ -525,23 +560,106 @@ partial def emitFnBody : FnBody → EmitM Unit
         line "default: { throw new Error(\"no matching case\"); }"
     line "}"
 
-/-- Emit a top-level `Decl` as a TS function, using the loop emitter when the
-    body self-tail-calls. -/
-def emitDecl : Decl → EmitM Unit
+/-! ## Tail-call SCC (strategy A)
+
+Build the directed graph of "f tail-calls g" edges over the collected decls,
+then find strongly connected components. A component of size ≥ 2 is a group of
+mutually tail-recursive functions: each member is emitted as a thunk-returning
+`__tc` core plus a public wrapper that drives the trampoline. Self-recursion
+(SCC of size 1 with a self edge) keeps the existing `while` loop. -/
+
+abbrev SccMap := Std.HashMap Name (Std.HashSet Name)
+
+/-- Tarjan's SCC over the tail-edge graph; returns, for each node, the set of
+    names in its component (including itself). Only edges whose target is also a
+    collected decl are followed. -/
+partial def computeTailSccs (decls : Array Decl) : SccMap := Id.run do
+  let names : Std.HashSet Name := decls.foldl (·.insert ·.name) {}
+  let edges : Std.HashMap Name (Array Name) :=
+    decls.foldl (fun m d =>
+      m.insert d.name ((declTailEdges d).filter names.contains)) {}
+  let mut index : Std.HashMap Name Nat := {}
+  let mut low : Std.HashMap Name Nat := {}
+  let mut onStack : Std.HashSet Name := {}
+  let mut stack : Array Name := #[]
+  let mut counter : Nat := 0
+  let mut comp : SccMap := {}
+  -- iterative-friendly recursion via fuel-free partial def
+  let rec strongConnect (v : Name)
+      (index : Std.HashMap Name Nat) (low : Std.HashMap Name Nat)
+      (onStack : Std.HashSet Name) (stack : Array Name) (counter : Nat)
+      (comp : SccMap) :
+      (Std.HashMap Name Nat × Std.HashMap Name Nat × Std.HashSet Name ×
+        Array Name × Nat × SccMap) := Id.run do
+    let mut index := index.insert v counter
+    let mut low := low.insert v counter
+    let mut counter := counter + 1
+    let mut stack := stack.push v
+    let mut onStack := onStack.insert v
+    let mut comp := comp
+    for w in (edges.getD v #[]) do
+      if !index.contains w then
+        let (i2, l2, o2, s2, c2, cm2) := strongConnect w index low onStack stack counter comp
+        index := i2; low := l2; onStack := o2; stack := s2; counter := c2; comp := cm2
+        low := low.insert v (Nat.min (low.getD v 0) (low.getD w 0))
+      else if onStack.contains w then
+        low := low.insert v (Nat.min (low.getD v 0) (index.getD w 0))
+    if low.getD v 0 == index.getD v 0 then
+      let mut members : Std.HashSet Name := {}
+      let mut done := false
+      repeat
+        match stack.back? with
+        | none => done := true
+        | some w =>
+          stack := stack.pop
+          onStack := onStack.erase w
+          members := members.insert w
+          if w == v then done := true
+        if done then break
+      for w in members do comp := comp.insert w members
+    return (index, low, onStack, stack, counter, comp)
+  for d in decls do
+    if !index.contains d.name then
+      let (i2, l2, o2, s2, c2, cm2) :=
+        strongConnect d.name index low onStack stack counter comp
+      index := i2; low := l2; onStack := o2; stack := s2; counter := c2; comp := cm2
+  return comp
+
+/-- Emit a top-level `Decl` as a TS function. `sccs` carries each decl's
+    tail-call component; a component of size ≥ 2 is trampolined. -/
+def emitDeclWith (sccs : SccMap) : Decl → EmitM Unit
   | .fdecl f xs _ body _ => do
     let params := xs.toList.filter (fun p => !p.ty.isErased && !p.ty.isVoid)
     let paramStr := String.intercalate ", " (params.map (fun p => varName p.x))
-    line ("function " ++ funRef f ++ "(" ++ paramStr ++ ") {")
-    withIndent do
-      if hasSelfTailCall f body then
+    let scc := sccs.getD f {}
+    if scc.size ≥ 2 then
+      -- trampolined core: SCC-internal tail edges return thunks; self edges loop
+      line ("function " ++ tcRef f ++ "(" ++ paramStr ++ ") {")
+      withIndent do
         line "while (true) {"
-        withIndent (emitFnBodyLoop f xs {} body)
+        withIndent (emitFnBodyLoop f scc xs {} body)
         line "}"
-      else
-        emitFnBody body
-    line "}"
+      line "}"
+      -- public wrapper drives the trampoline
+      line ("function " ++ funRef f ++ "(" ++ paramStr ++ ") {")
+      withIndent do
+        line s!"return lean_trampoline({tcRef f}({paramStr}));"
+      line "}"
+    else
+      line ("function " ++ funRef f ++ "(" ++ paramStr ++ ") {")
+      withIndent do
+        if hasSelfTailCall f body then
+          line "while (true) {"
+          withIndent (emitFnBodyLoop f {} xs {} body)
+          line "}"
+        else
+          emitFnBody body
+      line "}"
   | .extern f _ _ _ =>
     line s!"// extern {funRef f} -> runtime prelude"
+
+/-- Backwards-compatible single-decl emitter (no SCC trampolining). -/
+def emitDecl : Decl → EmitM Unit := emitDeclWith {}
 
 /-! ## Transitive declaration collection (strategy A) -/
 
@@ -597,11 +715,13 @@ partial def collectTransitive (env : Environment) (roots : Array Name) : Array D
     | none   => pure ()
   return decls
 
-/-- Run the emitter over the given decls, returning the produced TS source. -/
+/-- Run the emitter over the given decls, returning the produced TS source.
+    Computes tail-call SCCs first so mutually tail-recursive groups trampoline. -/
 def render (decls : Array Decl) : String := Id.run do
+  let sccs := computeTailSccs decls
   let act : EmitM Unit := do
     for d in decls do
-      emitDecl d
+      emitDeclWith sccs d
       line ""
   let (_, st) := act.run {}
   return st.out
@@ -645,9 +765,10 @@ def emitMainEntry (env : Environment) (d : Decl) : EmitM Unit := do
     declarations plus the entry that invokes `main`. -/
 def renderProgram (env : Environment) (mainName : Name) : String := Id.run do
   let decls := collectTransitive env #[mainName]
+  let sccs := computeTailSccs decls
   let act : EmitM Unit := do
     for d in decls do
-      emitDecl d
+      emitDeclWith sccs d
       line ""
     match decls.find? (fun d => d.name == mainName) with
     | some d => emitMainEntry env d

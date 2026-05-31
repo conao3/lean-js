@@ -56,6 +56,16 @@ const lean_ctor_set_u64 = (x, o, v) => x.sdata.setBigUint64(o, BigInt.asUintN(64
 const lean_ctor_set_f64 = (x, o, v) => x.sdata.setFloat64(o, v, true);
 const lean_ctor_set_f32 = (x, o, v) => x.sdata.setFloat32(o, Math.fround(v), true);
 
+// ---- trampoline driver for mutual / cross-function tail calls ----
+// A trampolined core returns a thunk { __tc:1, f, a:[args] } at an SCC-internal
+// tail edge instead of recursing; the driver unrolls thunks so no JS stack
+// frame is consumed per tail step. Ordinary return values (ctors, bigints,
+// numbers, strings, arrays, closures) never carry `__tc`, so they pass through.
+function lean_trampoline(t) {
+  while (t && typeof t === 'object' && t.__tc === 1) { t = t.f(...t.a); }
+  return t;
+}
+
 // ---- closure application (pap/ap model) ----
 function lean_apply(clo, more) {
   if (typeof clo === 'function') return clo(...more);

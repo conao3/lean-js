@@ -26,6 +26,7 @@ def rootNames : Array Name := #[
   `LeanJs.Demo.arrGetD, `LeanJs.Demo.arrAppend,
   `LeanJs.Demo.listSum, `LeanJs.Demo.listLen, `LeanJs.Demo.listRev,
   `LeanJs.Demo.listMapSum,
+  `LeanJs.Demo.parityEven, `LeanJs.Demo.parityOdd, `LeanJs.Demo.cycle3,
   `LeanTodo.TodoList.add,
   `LeanTodo.TodoList.toggle,
   `LeanTodo.TodoList.remove,

@@ -56,6 +56,16 @@ const lean_ctor_set_u64 = (x, o, v) => x.sdata.setBigUint64(o, BigInt.asUintN(64
 const lean_ctor_set_f64 = (x, o, v) => x.sdata.setFloat64(o, v, true);
 const lean_ctor_set_f32 = (x, o, v) => x.sdata.setFloat32(o, Math.fround(v), true);
 
+// ---- trampoline driver for mutual / cross-function tail calls ----
+// A trampolined core returns a thunk { __tc:1, f, a:[args] } at an SCC-internal
+// tail edge instead of recursing; the driver unrolls thunks so no JS stack
+// frame is consumed per tail step. Ordinary return values (ctors, bigints,
+// numbers, strings, arrays, closures) never carry `__tc`, so they pass through.
+function lean_trampoline(t) {
+  while (t && typeof t === 'object' && t.__tc === 1) { t = t.f(...t.a); }
+  return t;
+}
+
 // ---- closure application (pap/ap model) ----
 function lean_apply(clo, more) {
   if (typeof clo === 'function') return clo(...more);
@@ -945,8 +955,6 @@ function Array_range__closed_0() {
 
 // extern Array_emptyWithCapacity -> runtime prelude
 
-// extern Nat_sub -> runtime prelude
-
 function _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg(x_1, x_2, x_3, x_4) {
   while (true) {
     const x_5 = 0n;
@@ -1211,6 +1219,131 @@ function LeanJs_Demo_listMapSum(x_1) {
   const x_4 = List_mapTR_loop__at__LeanJs_Demo_listMapSum_spec_0(x_1, x_3);
   const x_5 = List_foldl__at__LeanJs_Demo_listSum_spec_0(x_2, x_4);
   return x_5;
+}
+
+function LeanJs_Demo_parityEven(x_1) {
+  const x_2 = LeanJs_Demo_isEvenM(x_1);
+  return x_2;
+}
+
+function LeanJs_Demo_isEvenM__tc(x_1) {
+  while (true) {
+    const x_2 = 0n;
+    const x_3 = lean_nat_dec_eq(x_1, x_2);
+    switch (x_3) {
+      case 1: {
+        return x_3;
+      }
+      case 0: {
+        const x_4 = 1n;
+        const x_5 = (x_1 > x_4 ? x_1 - x_4 : 0n);
+        return { __tc: 1, f: LeanJs_Demo_isOddM__tc, a: [x_5] };
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function LeanJs_Demo_isEvenM(x_1) {
+  return lean_trampoline(LeanJs_Demo_isEvenM__tc(x_1));
+}
+
+function LeanJs_Demo_isOddM__tc(x_1) {
+  while (true) {
+    const x_2 = 0n;
+    const x_3 = lean_nat_dec_eq(x_1, x_2);
+    switch (x_3) {
+      case 1: {
+        const x_4 = 0;
+        return x_4;
+      }
+      case 0: {
+        const x_5 = 1n;
+        const x_6 = (x_1 > x_5 ? x_1 - x_5 : 0n);
+        return { __tc: 1, f: LeanJs_Demo_isEvenM__tc, a: [x_6] };
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function LeanJs_Demo_isOddM(x_1) {
+  return lean_trampoline(LeanJs_Demo_isOddM__tc(x_1));
+}
+
+function LeanJs_Demo_parityOdd(x_1) {
+  const x_2 = LeanJs_Demo_isOddM(x_1);
+  return x_2;
+}
+
+// extern Nat_sub -> runtime prelude
+
+function LeanJs_Demo_m3c__tc(x_1) {
+  while (true) {
+    const x_2 = 0n;
+    const x_3 = lean_nat_dec_eq(x_1, x_2);
+    switch (x_3) {
+      case 1: {
+        const x_4 = 2n;
+        return x_4;
+      }
+      case 0: {
+        const x_5 = 1n;
+        const x_6 = (x_1 > x_5 ? x_1 - x_5 : 0n);
+        return { __tc: 1, f: LeanJs_Demo_m3a__tc, a: [x_6] };
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function LeanJs_Demo_m3c(x_1) {
+  return lean_trampoline(LeanJs_Demo_m3c__tc(x_1));
+}
+
+function LeanJs_Demo_m3b__tc(x_1) {
+  while (true) {
+    const x_2 = 0n;
+    const x_3 = lean_nat_dec_eq(x_1, x_2);
+    switch (x_3) {
+      case 1: {
+        const x_4 = 1n;
+        return x_4;
+      }
+      case 0: {
+        const x_5 = 1n;
+        const x_6 = (x_1 > x_5 ? x_1 - x_5 : 0n);
+        return { __tc: 1, f: LeanJs_Demo_m3c__tc, a: [x_6] };
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function LeanJs_Demo_m3b(x_1) {
+  return lean_trampoline(LeanJs_Demo_m3b__tc(x_1));
+}
+
+function LeanJs_Demo_m3a__tc(x_1) {
+  while (true) {
+    const x_2 = 0n;
+    const x_3 = lean_nat_dec_eq(x_1, x_2);
+    switch (x_3) {
+      case 1: {
+        return x_2;
+      }
+      case 0: {
+        const x_4 = 1n;
+        const x_5 = (x_1 > x_4 ? x_1 - x_4 : 0n);
+        return { __tc: 1, f: LeanJs_Demo_m3b__tc, a: [x_5] };
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function LeanJs_Demo_m3a(x_1) {
+  return lean_trampoline(LeanJs_Demo_m3a__tc(x_1));
+}
+
+function LeanJs_Demo_cycle3(x_1) {
+  const x_2 = LeanJs_Demo_m3a(x_1);
+  return x_2;
 }
 
 // extern Nat_add -> runtime prelude

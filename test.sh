@@ -14,6 +14,10 @@ else
   echo "DIFF-TEST FAIL"; diff /tmp/lean.out /tmp/ts.out; exit 1
 fi
 
+# Deep mutual/cross-function TCO: node-side no-stack-overflow check at large N.
+node test-tco.mjs
+echo "--- TCO deep check done ---"
+
 # Runnable IO program: run the same Lean `main` under `lean --run` and under
 # node (generated out-io.mjs), diffing stdout and stderr separately.
 lake env lean --run expected-io.lean > /tmp/lean-io.out 2> /tmp/lean-io.err

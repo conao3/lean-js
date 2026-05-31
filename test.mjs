@@ -15,6 +15,7 @@ const exports = [
   'LeanJs_Demo_arrGetD', 'LeanJs_Demo_arrAppend',
   'LeanJs_Demo_listSum', 'LeanJs_Demo_listLen', 'LeanJs_Demo_listRev',
   'LeanJs_Demo_listMapSum',
+  'LeanJs_Demo_parityEven', 'LeanJs_Demo_parityOdd', 'LeanJs_Demo_cycle3',
   'LeanTodo_TodoList_add', 'LeanTodo_TodoList_toggle',
   'LeanTodo_TodoList_remove', 'LeanTodo_TodoList_step',
 ];
@@ -47,6 +48,9 @@ const {
   LeanJs_Demo_listLen: listLen,
   LeanJs_Demo_listRev: listRev,
   LeanJs_Demo_listMapSum: listMapSum,
+  LeanJs_Demo_parityEven: parityEven,
+  LeanJs_Demo_parityOdd: parityOdd,
+  LeanJs_Demo_cycle3: cycle3,
   LeanTodo_TodoList_add: add,
   LeanTodo_TodoList_toggle: toggle,
   LeanTodo_TodoList_remove: remove,
@@ -132,6 +136,17 @@ console.log(`listSum = ${listSum(lst)}`);
 console.log(`listLen = ${listLen(lst)}`);
 console.log(`listRev = ${showLst(listRev(lst))}`);
 console.log(`listMapSum = ${listMapSum(lst)}`);
+
+// ---- Mutual / cross-function TCO (Bool prints as true/false; scalar 0/1) ----
+const showBool = (b) => (b ? 'true' : 'false');
+console.log(`parityEven 7 = ${showBool(parityEven(7n))}`);
+console.log(`parityOdd 7 = ${showBool(parityOdd(7n))}`);
+console.log(`parityEven 3000 = ${showBool(parityEven(3000n))}`);
+console.log(`parityOdd 3000 = ${showBool(parityOdd(3000n))}`);
+console.log(`cycle3 0 = ${cycle3(0n)}`);
+console.log(`cycle3 1 = ${cycle3(1n)}`);
+console.log(`cycle3 2 = ${cycle3(2n)}`);
+console.log(`cycle3 3000 = ${cycle3(3000n)}`);
 
 // ---- TodoList JS model ----
 // List: nil = 0, cons = { tag:1, fields:[head, tail] }

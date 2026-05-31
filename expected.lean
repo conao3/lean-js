@@ -55,6 +55,29 @@ def listLen (xs : List Nat) : Nat := xs.length
 def listRev (xs : List Nat) : List Nat := xs.reverse
 def listMapSum (xs : List Nat) : Nat := (xs.map (· + 1)).foldl (· + ·) 0
 
+mutual
+  def isEvenM : Nat → Bool
+    | 0 => true
+    | n+1 => isOddM n
+  def isOddM : Nat → Bool
+    | 0 => false
+    | n+1 => isEvenM n
+end
+def parityEven (n : Nat) : Bool := isEvenM n
+def parityOdd (n : Nat) : Bool := isOddM n
+mutual
+  def m3a : Nat → Nat
+    | 0 => 0
+    | n+1 => m3b n
+  def m3b : Nat → Nat
+    | 0 => 1
+    | n+1 => m3c n
+  def m3c : Nat → Nat
+    | 0 => 2
+    | n+1 => m3a n
+end
+def cycle3 (n : Nat) : Nat := m3a n
+
 def showTodo (t : Todo) : String :=
   let mark := if t.done then "x" else " "
   s!"{t.id}:{t.title}:{mark}"
@@ -117,6 +140,17 @@ def main : IO Unit := do
   IO.println s!"listLen = {listLen lst}"
   IO.println s!"listRev = {listRev lst}"
   IO.println s!"listMapSum = {listMapSum lst}"
+  -- Mutual / cross-function TCO correctness (deep no-overflow is checked
+  -- node-side in test-tco.mjs at N=1000000; the Lean interpreter caps recursion
+  -- well below the naive-JS overflow point, so the diff-test uses a safe N).
+  IO.println s!"parityEven 7 = {parityEven 7}"
+  IO.println s!"parityOdd 7 = {parityOdd 7}"
+  IO.println s!"parityEven 3000 = {parityEven 3000}"
+  IO.println s!"parityOdd 3000 = {parityOdd 3000}"
+  IO.println s!"cycle3 0 = {cycle3 0}"
+  IO.println s!"cycle3 1 = {cycle3 1}"
+  IO.println s!"cycle3 2 = {cycle3 2}"
+  IO.println s!"cycle3 3000 = {cycle3 3000}"
   -- TodoList sequence: add, add, add, toggle, remove
   let l0 := TodoList.empty
   let l1 := l0.add "buy milk"
