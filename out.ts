@@ -806,7 +806,7 @@ function LeanJs_Demo_mkShifted(x_1) {
   }
 }
 
-function LeanJs_Demo_sumTo_go(x_1, x_2) {
+function LeanJs_Demo_sumTo_go__tc(x_1, x_2) {
   while (true) {
     const x_3 = 0n;
     const x_4 = lean_nat_dec_eq(x_1, x_3);
@@ -829,11 +829,18 @@ function LeanJs_Demo_sumTo_go(x_1, x_2) {
     }
   }
 }
+function LeanJs_Demo_sumTo_go(x_1, x_2) {
+  return lean_trampoline(LeanJs_Demo_sumTo_go__tc(x_1, x_2));
+}
 
+function LeanJs_Demo_sumTo__tc(x_1) {
+  while (true) {
+    const x_2 = 0n;
+    return { __tc: 1, f: LeanJs_Demo_sumTo_go__tc, a: [x_1, x_2] };
+  }
+}
 function LeanJs_Demo_sumTo(x_1) {
-  const x_2 = 0n;
-  const x_3 = LeanJs_Demo_sumTo_go(x_1, x_2);
-  return x_3;
+  return lean_trampoline(LeanJs_Demo_sumTo__tc(x_1));
 }
 
 function LeanJs_Demo_fact(x_1) {
@@ -949,58 +956,70 @@ function Float_ofScientific__closed_1() {
 
 // extern Float_scaleB -> runtime prelude
 
-function Float_ofBinaryScientific(x_1, x_2) {
-  const x_3 = lean_nat_log2(x_1);
-  const x_4 = 63n;
-  const x_5 = (x_3 > x_4 ? x_3 - x_4 : 0n);
-  const x_6 = lean_nat_shift_right(x_1, x_5);
-  const x_7 = lean_uint64_of_nat(x_6);
-  const x_8 = lean_int_of_nat(x_5);
-  const x_9 = (x_2 + x_8);
-  const x_10 = lean_uint64_to_float(x_7);
-  const x_11 = lean_float_scaleb(x_10, x_9);
-  return x_11;
-}
-
-function Float_ofScientific(x_1, x_2, x_3) {
-  switch (x_2) {
-    case 0: {
-      const x_4 = 5n;
-      const x_5 = lean_nat_pow(x_4, x_3);
-      const x_6 = (x_1 * x_5);
-      const x_7 = lean_int_of_nat(x_3);
-      const x_8 = Float_ofBinaryScientific(x_6, x_7);
-      return x_8;
-    }
-    case 1: {
-      const x_9 = 64n;
-      const x_10 = lean_nat_log2(x_1);
-      const x_11 = (x_9 > x_10 ? x_9 - x_10 : 0n);
-      const x_12 = 3n;
-      const x_13 = (x_12 * x_3);
-      const x_14 = (x_13 + x_11);
-      const x_15 = lean_nat_shift_left(x_1, x_14);
-      const x_16 = 5n;
-      const x_17 = lean_nat_pow(x_16, x_3);
-      const x_18 = (x_17 === 0n ? 0n : x_15 / x_17);
-      const x_19 = Float_ofScientific__closed_1();
-      const x_20 = lean_int_of_nat(x_3);
-      const x_21 = (x_19 * x_20);
-      const x_22 = lean_int_of_nat(x_11);
-      const x_23 = (x_21 - x_22);
-      const x_24 = Float_ofBinaryScientific(x_18, x_23);
-      return x_24;
-    }
-    default: { throw new Error("no matching case"); }
+function Float_ofBinaryScientific__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = lean_nat_log2(x_1);
+    const x_4 = 63n;
+    const x_5 = (x_3 > x_4 ? x_3 - x_4 : 0n);
+    const x_6 = lean_nat_shift_right(x_1, x_5);
+    const x_7 = lean_uint64_of_nat(x_6);
+    const x_8 = lean_int_of_nat(x_5);
+    const x_9 = (x_2 + x_8);
+    const x_10 = lean_uint64_to_float(x_7);
+    const x_11 = lean_float_scaleb(x_10, x_9);
+    return x_11;
   }
 }
+function Float_ofBinaryScientific(x_1, x_2) {
+  return lean_trampoline(Float_ofBinaryScientific__tc(x_1, x_2));
+}
 
+function Float_ofScientific__tc(x_1, x_2, x_3) {
+  while (true) {
+    switch (x_2) {
+      case 0: {
+        const x_4 = 5n;
+        const x_5 = lean_nat_pow(x_4, x_3);
+        const x_6 = (x_1 * x_5);
+        const x_7 = lean_int_of_nat(x_3);
+        return { __tc: 1, f: Float_ofBinaryScientific__tc, a: [x_6, x_7] };
+      }
+      case 1: {
+        const x_9 = 64n;
+        const x_10 = lean_nat_log2(x_1);
+        const x_11 = (x_9 > x_10 ? x_9 - x_10 : 0n);
+        const x_12 = 3n;
+        const x_13 = (x_12 * x_3);
+        const x_14 = (x_13 + x_11);
+        const x_15 = lean_nat_shift_left(x_1, x_14);
+        const x_16 = 5n;
+        const x_17 = lean_nat_pow(x_16, x_3);
+        const x_18 = (x_17 === 0n ? 0n : x_15 / x_17);
+        const x_19 = Float_ofScientific__closed_1();
+        const x_20 = lean_int_of_nat(x_3);
+        const x_21 = (x_19 * x_20);
+        const x_22 = lean_int_of_nat(x_11);
+        const x_23 = (x_21 - x_22);
+        return { __tc: 1, f: Float_ofBinaryScientific__tc, a: [x_18, x_23] };
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function Float_ofScientific(x_1, x_2, x_3) {
+  return lean_trampoline(Float_ofScientific__tc(x_1, x_2, x_3));
+}
+
+function LeanJs_Demo_floatCalc__closed_0__tc() {
+  while (true) {
+    const x_1 = 1n;
+    const x_2 = 1;
+    const x_3 = 20n;
+    return { __tc: 1, f: Float_ofScientific__tc, a: [x_3, x_2, x_1] };
+  }
+}
 function LeanJs_Demo_floatCalc__closed_0() {
-  const x_1 = 1n;
-  const x_2 = 1;
-  const x_3 = 20n;
-  const x_4 = lean_float_of_scientific(x_3, x_2, x_1);
-  return x_4;
+  return lean_trampoline(LeanJs_Demo_floatCalc__closed_0__tc());
 }
 
 // extern Float_mul -> runtime prelude
@@ -1053,45 +1072,48 @@ function LeanJs_Demo_strExtract(x_1, x_2, x_3) {
   return x_4;
 }
 
-function LeanJs_Demo_arrSum(x_1) {
-  const x_2 = 0n;
-  const x_3 = lean_array_get_size(x_1);
-  const x_4 = lean_nat_dec_lt(x_2, x_3);
-  switch (x_4) {
-    case 0: {
-      return x_2;
-    }
-    case 1: {
-      const x_5 = lean_nat_dec_le(x_3, x_3);
-      switch (x_5) {
-        case 0: {
-          switch (x_4) {
-            case 0: {
-              return x_2;
-            }
-            case 1: {
-              const x_6 = 0n;
-              const x_7 = lean_usize_of_nat(x_3);
-              const x_8 = _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0(x_1, x_6, x_7, x_2);
-              return x_8;
-            }
-            default: { throw new Error("no matching case"); }
-          }
-        }
-        case 1: {
-          const x_9 = 0n;
-          const x_10 = lean_usize_of_nat(x_3);
-          const x_11 = _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0(x_1, x_9, x_10, x_2);
-          return x_11;
-        }
-        default: { throw new Error("no matching case"); }
+function LeanJs_Demo_arrSum__tc(x_1) {
+  while (true) {
+    const x_2 = 0n;
+    const x_3 = lean_array_get_size(x_1);
+    const x_4 = lean_nat_dec_lt(x_2, x_3);
+    switch (x_4) {
+      case 0: {
+        return x_2;
       }
+      case 1: {
+        const x_5 = lean_nat_dec_le(x_3, x_3);
+        switch (x_5) {
+          case 0: {
+            switch (x_4) {
+              case 0: {
+                return x_2;
+              }
+              case 1: {
+                const x_6 = 0n;
+                const x_7 = lean_usize_of_nat(x_3);
+                return { __tc: 1, f: _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0__tc, a: [x_1, x_6, x_7, x_2] };
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          }
+          case 1: {
+            const x_9 = 0n;
+            const x_10 = lean_usize_of_nat(x_3);
+            return { __tc: 1, f: _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0__tc, a: [x_1, x_9, x_10, x_2] };
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      default: { throw new Error("no matching case"); }
     }
-    default: { throw new Error("no matching case"); }
   }
 }
+function LeanJs_Demo_arrSum(x_1) {
+  return lean_trampoline(LeanJs_Demo_arrSum__tc(x_1));
+}
 
-function _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_Demo_arrMapSum_spec_0(x_1, x_2, x_3) {
+function _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_Demo_arrMapSum_spec_0__tc(x_1, x_2, x_3) {
   while (true) {
     const x_4 = lean_usize_dec_lt(x_2, x_1);
     switch (x_4) {
@@ -1119,8 +1141,11 @@ function _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_Demo_
     }
   }
 }
+function _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_Demo_arrMapSum_spec_0(x_1, x_2, x_3) {
+  return lean_trampoline(_private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_Demo_arrMapSum_spec_0__tc(x_1, x_2, x_3));
+}
 
-function _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0(x_1, x_2, x_3, x_4) {
+function _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0__tc(x_1, x_2, x_3, x_4) {
   while (true) {
     const x_5 = lean_usize_dec_eq(x_2, x_3);
     switch (x_5) {
@@ -1146,53 +1171,68 @@ function _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_De
     }
   }
 }
+function _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0(x_1, x_2, x_3, x_4) {
+  return lean_trampoline(_private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0__tc(x_1, x_2, x_3, x_4));
+}
 
-function LeanJs_Demo_arrMapSum(x_1) {
-  const x_2 = 0n;
-  const x_3 = lean_array_usize(x_1);
-  const x_4 = 0n;
-  const x_5 = _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_Demo_arrMapSum_spec_0(x_3, x_4, x_1);
-  const x_6 = lean_array_get_size(x_5);
-  const x_7 = lean_nat_dec_lt(x_2, x_6);
-  switch (x_7) {
-    case 0: {
-      return x_2;
-    }
-    case 1: {
-      const x_8 = lean_nat_dec_le(x_6, x_6);
-      switch (x_8) {
-        case 0: {
-          switch (x_7) {
-            case 0: {
-              return x_2;
-            }
-            case 1: {
-              const x_9 = lean_usize_of_nat(x_6);
-              const x_10 = _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0(x_5, x_4, x_9, x_2);
-              return x_10;
-            }
-            default: { throw new Error("no matching case"); }
-          }
-        }
-        case 1: {
-          const x_11 = lean_usize_of_nat(x_6);
-          const x_12 = _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0(x_5, x_4, x_11, x_2);
-          return x_12;
-        }
-        default: { throw new Error("no matching case"); }
+function LeanJs_Demo_arrMapSum__tc(x_1) {
+  while (true) {
+    const x_2 = 0n;
+    const x_3 = lean_array_usize(x_1);
+    const x_4 = 0n;
+    const x_5 = _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_Demo_arrMapSum_spec_0(x_3, x_4, x_1);
+    const x_6 = lean_array_get_size(x_5);
+    const x_7 = lean_nat_dec_lt(x_2, x_6);
+    switch (x_7) {
+      case 0: {
+        return x_2;
       }
+      case 1: {
+        const x_8 = lean_nat_dec_le(x_6, x_6);
+        switch (x_8) {
+          case 0: {
+            switch (x_7) {
+              case 0: {
+                return x_2;
+              }
+              case 1: {
+                const x_9 = lean_usize_of_nat(x_6);
+                return { __tc: 1, f: _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0__tc, a: [x_5, x_4, x_9, x_2] };
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          }
+          case 1: {
+            const x_11 = lean_usize_of_nat(x_6);
+            return { __tc: 1, f: _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_Demo_arrSum_spec_0__tc, a: [x_5, x_4, x_11, x_2] };
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      default: { throw new Error("no matching case"); }
     }
-    default: { throw new Error("no matching case"); }
   }
 }
-
-function Array_range__lam_0(x_1) {
-  return x_1;
+function LeanJs_Demo_arrMapSum(x_1) {
+  return lean_trampoline(LeanJs_Demo_arrMapSum__tc(x_1));
 }
 
+function Array_range__lam_0__tc(x_1) {
+  while (true) {
+    return x_1;
+  }
+}
+function Array_range__lam_0(x_1) {
+  return lean_trampoline(Array_range__lam_0__tc(x_1));
+}
+
+function Array_range__lam_0__boxed__tc(x_1) {
+  while (true) {
+    return { __tc: 1, f: Array_range__lam_0__tc, a: [x_1] };
+  }
+}
 function Array_range__lam_0__boxed(x_1) {
-  const x_2 = Array_range__lam_0(x_1);
-  return x_2;
+  return lean_trampoline(Array_range__lam_0__boxed__tc(x_1));
 }
 
 function Array_range__closed_0() {
@@ -1202,7 +1242,7 @@ function Array_range__closed_0() {
 
 // extern Array_emptyWithCapacity -> runtime prelude
 
-function _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg(x_1, x_2, x_3, x_4) {
+function _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg__tc(x_1, x_2, x_3, x_4) {
   while (true) {
     const x_5 = 0n;
     const x_6 = lean_nat_dec_eq(x_4, x_5);
@@ -1231,22 +1271,37 @@ function _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg(x_1, x_2, x_3, x
     }
   }
 }
+function _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg(x_1, x_2, x_3, x_4) {
+  return lean_trampoline(_private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg__tc(x_1, x_2, x_3, x_4));
+}
 
+function Array_ofFn__redArg__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = [];
+    return { __tc: 1, f: _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg__tc, a: [x_1, x_2, x_3, x_1] };
+  }
+}
 function Array_ofFn__redArg(x_1, x_2) {
-  const x_3 = [];
-  const x_4 = _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg(x_1, x_2, x_3, x_1);
-  return x_4;
+  return lean_trampoline(Array_ofFn__redArg__tc(x_1, x_2));
 }
 
+function Array_range__tc(x_1) {
+  while (true) {
+    const x_2 = Array_range__closed_0();
+    return { __tc: 1, f: Array_ofFn__redArg__tc, a: [x_1, x_2] };
+  }
+}
 function Array_range(x_1) {
-  const x_2 = Array_range__closed_0();
-  const x_3 = Array_ofFn__redArg(x_1, x_2);
-  return x_3;
+  return lean_trampoline(Array_range__tc(x_1));
 }
 
+function LeanJs_Demo_arrRange__tc(x_1) {
+  while (true) {
+    return { __tc: 1, f: Array_range__tc, a: [x_1] };
+  }
+}
 function LeanJs_Demo_arrRange(x_1) {
-  const x_2 = Array_range(x_1);
-  return x_2;
+  return lean_trampoline(LeanJs_Demo_arrRange__tc(x_1));
 }
 
 // extern Array_getInternalBorrowed -> runtime prelude
@@ -1275,7 +1330,7 @@ function LeanJs_Demo_arrGetD(x_1, x_2) {
 
 // extern Array_push -> runtime prelude
 
-function _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__Array_append_spec_0__redArg(x_1, x_2, x_3, x_4) {
+function _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__Array_append_spec_0__redArg__tc(x_1, x_2, x_3, x_4) {
   while (true) {
     const x_5 = lean_usize_dec_eq(x_2, x_3);
     switch (x_5) {
@@ -1301,57 +1356,71 @@ function _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__Array_app
     }
   }
 }
+function _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__Array_append_spec_0__redArg(x_1, x_2, x_3, x_4) {
+  return lean_trampoline(_private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__Array_append_spec_0__redArg__tc(x_1, x_2, x_3, x_4));
+}
 
-function Array_append__redArg(x_1, x_2) {
-  const x_3 = 0n;
-  const x_4 = lean_array_get_size(x_2);
-  const x_5 = lean_nat_dec_lt(x_3, x_4);
-  switch (x_5) {
-    case 0: {
-      return x_1;
-    }
-    case 1: {
-      const x_6 = lean_nat_dec_le(x_4, x_4);
-      switch (x_6) {
-        case 0: {
-          switch (x_5) {
-            case 0: {
-              return x_1;
-            }
-            case 1: {
-              const x_7 = 0n;
-              const x_8 = lean_usize_of_nat(x_4);
-              const x_9 = _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__Array_append_spec_0__redArg(x_2, x_7, x_8, x_1);
-              return x_9;
-            }
-            default: { throw new Error("no matching case"); }
-          }
-        }
-        case 1: {
-          const x_10 = 0n;
-          const x_11 = lean_usize_of_nat(x_4);
-          const x_12 = _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__Array_append_spec_0__redArg(x_2, x_10, x_11, x_1);
-          return x_12;
-        }
-        default: { throw new Error("no matching case"); }
+function Array_append__redArg__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = 0n;
+    const x_4 = lean_array_get_size(x_2);
+    const x_5 = lean_nat_dec_lt(x_3, x_4);
+    switch (x_5) {
+      case 0: {
+        return x_1;
       }
+      case 1: {
+        const x_6 = lean_nat_dec_le(x_4, x_4);
+        switch (x_6) {
+          case 0: {
+            switch (x_5) {
+              case 0: {
+                return x_1;
+              }
+              case 1: {
+                const x_7 = 0n;
+                const x_8 = lean_usize_of_nat(x_4);
+                return { __tc: 1, f: _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__Array_append_spec_0__redArg__tc, a: [x_2, x_7, x_8, x_1] };
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          }
+          case 1: {
+            const x_10 = 0n;
+            const x_11 = lean_usize_of_nat(x_4);
+            return { __tc: 1, f: _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__Array_append_spec_0__redArg__tc, a: [x_2, x_10, x_11, x_1] };
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      default: { throw new Error("no matching case"); }
     }
-    default: { throw new Error("no matching case"); }
   }
 }
+function Array_append__redArg(x_1, x_2) {
+  return lean_trampoline(Array_append__redArg__tc(x_1, x_2));
+}
 
+function LeanJs_Demo_arrAppend__tc(x_1, x_2) {
+  while (true) {
+    return { __tc: 1, f: Array_append__redArg__tc, a: [x_1, x_2] };
+  }
+}
 function LeanJs_Demo_arrAppend(x_1, x_2) {
-  const x_3 = Array_append__redArg(x_1, x_2);
-  return x_3;
+  return lean_trampoline(LeanJs_Demo_arrAppend__tc(x_1, x_2));
 }
 
+function LeanJs_Demo_listSum__tc(x_1) {
+  while (true) {
+    const x_2 = 0n;
+    return { __tc: 1, f: List_foldl__at__LeanJs_Demo_listSum_spec_0__tc, a: [x_2, x_1] };
+  }
+}
 function LeanJs_Demo_listSum(x_1) {
-  const x_2 = 0n;
-  const x_3 = List_foldl__at__LeanJs_Demo_listSum_spec_0(x_2, x_1);
-  return x_3;
+  return lean_trampoline(LeanJs_Demo_listSum__tc(x_1));
 }
 
-function List_lengthTRAux__redArg(x_1, x_2) {
+function List_lengthTRAux__redArg__tc(x_1, x_2) {
   while (true) {
     switch (lean_tag(x_1)) {
       case 0: {
@@ -1371,29 +1440,43 @@ function List_lengthTRAux__redArg(x_1, x_2) {
     }
   }
 }
+function List_lengthTRAux__redArg(x_1, x_2) {
+  return lean_trampoline(List_lengthTRAux__redArg__tc(x_1, x_2));
+}
 
+function List_lengthTR__redArg__tc(x_1) {
+  while (true) {
+    const x_2 = 0n;
+    return { __tc: 1, f: List_lengthTRAux__redArg__tc, a: [x_1, x_2] };
+  }
+}
 function List_lengthTR__redArg(x_1) {
-  const x_2 = 0n;
-  const x_3 = List_lengthTRAux__redArg(x_1, x_2);
-  return x_3;
+  return lean_trampoline(List_lengthTR__redArg__tc(x_1));
 }
 
+function LeanJs_Demo_listLen__tc(x_1) {
+  while (true) {
+    return { __tc: 1, f: List_lengthTR__redArg__tc, a: [x_1] };
+  }
+}
 function LeanJs_Demo_listLen(x_1) {
-  const x_2 = List_lengthTR__redArg(x_1);
-  return x_2;
+  return lean_trampoline(LeanJs_Demo_listLen__tc(x_1));
 }
 
+function LeanJs_Demo_listRev__tc(x_1) {
+  while (true) {
+    return { __tc: 1, f: List_reverse__redArg__tc, a: [x_1] };
+  }
+}
 function LeanJs_Demo_listRev(x_1) {
-  const x_2 = List_reverse__redArg(x_1);
-  return x_2;
+  return lean_trampoline(LeanJs_Demo_listRev__tc(x_1));
 }
 
-function List_mapTR_loop__at__LeanJs_Demo_listMapSum_spec_0(x_1, x_2) {
+function List_mapTR_loop__at__LeanJs_Demo_listMapSum_spec_0__tc(x_1, x_2) {
   while (true) {
     switch (lean_tag(x_1)) {
       case 0: {
-        const x_3 = List_reverse__redArg(x_2);
-        return x_3;
+        return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
         const x_4 = 1;
@@ -1430,8 +1513,11 @@ function List_mapTR_loop__at__LeanJs_Demo_listMapSum_spec_0(x_1, x_2) {
     }
   }
 }
+function List_mapTR_loop__at__LeanJs_Demo_listMapSum_spec_0(x_1, x_2) {
+  return lean_trampoline(List_mapTR_loop__at__LeanJs_Demo_listMapSum_spec_0__tc(x_1, x_2));
+}
 
-function List_foldl__at__LeanJs_Demo_listSum_spec_0(x_1, x_2) {
+function List_foldl__at__LeanJs_Demo_listSum_spec_0__tc(x_1, x_2) {
   while (true) {
     switch (lean_tag(x_2)) {
       case 0: {
@@ -1451,18 +1537,29 @@ function List_foldl__at__LeanJs_Demo_listSum_spec_0(x_1, x_2) {
     }
   }
 }
-
-function LeanJs_Demo_listMapSum(x_1) {
-  const x_2 = 0n;
-  const x_3 = 0;
-  const x_4 = List_mapTR_loop__at__LeanJs_Demo_listMapSum_spec_0(x_1, x_3);
-  const x_5 = List_foldl__at__LeanJs_Demo_listSum_spec_0(x_2, x_4);
-  return x_5;
+function List_foldl__at__LeanJs_Demo_listSum_spec_0(x_1, x_2) {
+  return lean_trampoline(List_foldl__at__LeanJs_Demo_listSum_spec_0__tc(x_1, x_2));
 }
 
+function LeanJs_Demo_listMapSum__tc(x_1) {
+  while (true) {
+    const x_2 = 0n;
+    const x_3 = 0;
+    const x_4 = List_mapTR_loop__at__LeanJs_Demo_listMapSum_spec_0(x_1, x_3);
+    return { __tc: 1, f: List_foldl__at__LeanJs_Demo_listSum_spec_0__tc, a: [x_2, x_4] };
+  }
+}
+function LeanJs_Demo_listMapSum(x_1) {
+  return lean_trampoline(LeanJs_Demo_listMapSum__tc(x_1));
+}
+
+function LeanJs_Demo_parityEven__tc(x_1) {
+  while (true) {
+    return { __tc: 1, f: LeanJs_Demo_isEvenM__tc, a: [x_1] };
+  }
+}
 function LeanJs_Demo_parityEven(x_1) {
-  const x_2 = LeanJs_Demo_isEvenM(x_1);
-  return x_2;
+  return lean_trampoline(LeanJs_Demo_parityEven__tc(x_1));
 }
 
 function LeanJs_Demo_isEvenM__tc(x_1) {
@@ -1508,9 +1605,13 @@ function LeanJs_Demo_isOddM(x_1) {
   return lean_trampoline(LeanJs_Demo_isOddM__tc(x_1));
 }
 
+function LeanJs_Demo_parityOdd__tc(x_1) {
+  while (true) {
+    return { __tc: 1, f: LeanJs_Demo_isOddM__tc, a: [x_1] };
+  }
+}
 function LeanJs_Demo_parityOdd(x_1) {
-  const x_2 = LeanJs_Demo_isOddM(x_1);
-  return x_2;
+  return lean_trampoline(LeanJs_Demo_parityOdd__tc(x_1));
 }
 
 function LeanJs_Demo_m3c__tc(x_1) {
@@ -1578,9 +1679,13 @@ function LeanJs_Demo_m3a(x_1) {
   return lean_trampoline(LeanJs_Demo_m3a__tc(x_1));
 }
 
+function LeanJs_Demo_cycle3__tc(x_1) {
+  while (true) {
+    return { __tc: 1, f: LeanJs_Demo_m3a__tc, a: [x_1] };
+  }
+}
 function LeanJs_Demo_cycle3(x_1) {
-  const x_2 = LeanJs_Demo_m3a(x_1);
-  return x_2;
+  return lean_trampoline(LeanJs_Demo_cycle3__tc(x_1));
 }
 
 // extern Int8_add -> runtime prelude
@@ -1729,17 +1834,100 @@ function LeanJs_Demo_spackSum(x_1) {
   return x_12;
 }
 
-function LeanJs_DemoHO_hofApply__lam_0(x_1) {
-  const x_2 = 2n;
-  const x_3 = (x_1 * x_2);
-  const x_4 = 1n;
-  const x_5 = (x_3 + x_4);
-  return x_5;
+function LeanJs_Demo_cs1__tc(x_1) {
+  while (true) {
+    const x_2 = 1n;
+    const x_3 = (x_1 + x_2);
+    return x_3;
+  }
+}
+function LeanJs_Demo_cs1(x_1) {
+  return lean_trampoline(LeanJs_Demo_cs1__tc(x_1));
 }
 
+function LeanJs_Demo_cs2__tc(x_1) {
+  while (true) {
+    const x_2 = 1n;
+    const x_3 = (x_1 + x_2);
+    return { __tc: 1, f: LeanJs_Demo_cs1__tc, a: [x_3] };
+  }
+}
+function LeanJs_Demo_cs2(x_1) {
+  return lean_trampoline(LeanJs_Demo_cs2__tc(x_1));
+}
+
+function LeanJs_Demo_cs3__tc(x_1) {
+  while (true) {
+    const x_2 = 1n;
+    const x_3 = (x_1 + x_2);
+    return { __tc: 1, f: LeanJs_Demo_cs2__tc, a: [x_3] };
+  }
+}
+function LeanJs_Demo_cs3(x_1) {
+  return lean_trampoline(LeanJs_Demo_cs3__tc(x_1));
+}
+
+function LeanJs_Demo_chainHead__tc(x_1) {
+  while (true) {
+    return { __tc: 1, f: LeanJs_Demo_cs3__tc, a: [x_1] };
+  }
+}
+function LeanJs_Demo_chainHead(x_1) {
+  return lean_trampoline(LeanJs_Demo_chainHead__tc(x_1));
+}
+
+function LeanJs_Demo_viaA(x_1) {
+  const x_2 = 1n;
+  const x_3 = (x_1 + x_2);
+  return x_3;
+}
+
+function LeanJs_Demo_pingN__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = 0n;
+    const x_4 = lean_nat_dec_eq(x_1, x_3);
+    switch (x_4) {
+      case 1: {
+        return x_2;
+      }
+      case 0: {
+        const x_5 = 1n;
+        const x_6 = (x_1 > x_5 ? x_1 - x_5 : 0n);
+        const x_7 = LeanJs_Demo_viaA(x_2);
+        const __t_1 = x_6;
+        const __t_2 = x_7;
+        x_1 = __t_1;
+        x_2 = __t_2;
+        continue;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function LeanJs_Demo_pingN(x_1, x_2) {
+  return lean_trampoline(LeanJs_Demo_pingN__tc(x_1, x_2));
+}
+
+function LeanJs_DemoHO_hofApply__lam_0__tc(x_1) {
+  while (true) {
+    const x_2 = 2n;
+    const x_3 = (x_1 * x_2);
+    const x_4 = 1n;
+    const x_5 = (x_3 + x_4);
+    return x_5;
+  }
+}
+function LeanJs_DemoHO_hofApply__lam_0(x_1) {
+  return lean_trampoline(LeanJs_DemoHO_hofApply__lam_0__tc(x_1));
+}
+
+function LeanJs_DemoHO_hofApply__lam_0__boxed__tc(x_1) {
+  while (true) {
+    return { __tc: 1, f: LeanJs_DemoHO_hofApply__lam_0__tc, a: [x_1] };
+  }
+}
 function LeanJs_DemoHO_hofApply__lam_0__boxed(x_1) {
-  const x_2 = LeanJs_DemoHO_hofApply__lam_0(x_1);
-  return x_2;
+  return lean_trampoline(LeanJs_DemoHO_hofApply__lam_0__boxed__tc(x_1));
 }
 
 function LeanJs_DemoHO_hofApply__closed_0() {
@@ -1747,30 +1935,42 @@ function LeanJs_DemoHO_hofApply__closed_0() {
   return x_1;
 }
 
+function LeanJs_DemoHO_applyTwice__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = lean_apply(x_1, [x_2]);
+    const x_4 = lean_apply(x_1, [x_3]);
+    return x_4;
+  }
+}
 function LeanJs_DemoHO_applyTwice(x_1, x_2) {
-  const x_3 = lean_apply(x_1, [x_2]);
-  const x_4 = lean_apply(x_1, [x_3]);
-  return x_4;
+  return lean_trampoline(LeanJs_DemoHO_applyTwice__tc(x_1, x_2));
 }
 
+function LeanJs_DemoHO_hofApply__closed_1__tc() {
+  while (true) {
+    const x_1 = 5n;
+    const x_2 = LeanJs_DemoHO_hofApply__closed_0();
+    return { __tc: 1, f: LeanJs_DemoHO_applyTwice__tc, a: [x_2, x_1] };
+  }
+}
 function LeanJs_DemoHO_hofApply__closed_1() {
-  const x_1 = 5n;
-  const x_2 = LeanJs_DemoHO_hofApply__closed_0();
-  const x_3 = LeanJs_DemoHO_applyTwice(x_2, x_1);
-  return x_3;
+  return lean_trampoline(LeanJs_DemoHO_hofApply__closed_1__tc());
 }
 
+function LeanJs_DemoHO_hofApply__tc() {
+  while (true) {
+    return { __tc: 1, f: LeanJs_DemoHO_hofApply__closed_1__tc, a: [] };
+  }
+}
 function LeanJs_DemoHO_hofApply() {
-  const x_1 = LeanJs_DemoHO_hofApply__closed_1();
-  return x_1;
+  return lean_trampoline(LeanJs_DemoHO_hofApply__tc());
 }
 
-function List_mapTR_loop__at__LeanJs_DemoHO_listMapLam_spec_0(x_1, x_2) {
+function List_mapTR_loop__at__LeanJs_DemoHO_listMapLam_spec_0__tc(x_1, x_2) {
   while (true) {
     switch (lean_tag(x_1)) {
       case 0: {
-        const x_3 = List_reverse__redArg(x_2);
-        return x_3;
+        return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
         const x_4 = 1;
@@ -1807,19 +2007,25 @@ function List_mapTR_loop__at__LeanJs_DemoHO_listMapLam_spec_0(x_1, x_2) {
     }
   }
 }
-
-function LeanJs_DemoHO_listMapLam(x_1) {
-  const x_2 = 0;
-  const x_3 = List_mapTR_loop__at__LeanJs_DemoHO_listMapLam_spec_0(x_1, x_2);
-  return x_3;
+function List_mapTR_loop__at__LeanJs_DemoHO_listMapLam_spec_0(x_1, x_2) {
+  return lean_trampoline(List_mapTR_loop__at__LeanJs_DemoHO_listMapLam_spec_0__tc(x_1, x_2));
 }
 
-function List_filterTR_loop__at__LeanJs_DemoHO_listFilterLam_spec_0(x_1, x_2) {
+function LeanJs_DemoHO_listMapLam__tc(x_1) {
+  while (true) {
+    const x_2 = 0;
+    return { __tc: 1, f: List_mapTR_loop__at__LeanJs_DemoHO_listMapLam_spec_0__tc, a: [x_1, x_2] };
+  }
+}
+function LeanJs_DemoHO_listMapLam(x_1) {
+  return lean_trampoline(LeanJs_DemoHO_listMapLam__tc(x_1));
+}
+
+function List_filterTR_loop__at__LeanJs_DemoHO_listFilterLam_spec_0__tc(x_1, x_2) {
   while (true) {
     switch (lean_tag(x_1)) {
       case 0: {
-        const x_3 = List_reverse__redArg(x_2);
-        return x_3;
+        return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
         const x_4 = 1;
@@ -1883,14 +2089,21 @@ function List_filterTR_loop__at__LeanJs_DemoHO_listFilterLam_spec_0(x_1, x_2) {
     }
   }
 }
-
-function LeanJs_DemoHO_listFilterLam(x_1) {
-  const x_2 = 0;
-  const x_3 = List_filterTR_loop__at__LeanJs_DemoHO_listFilterLam_spec_0(x_1, x_2);
-  return x_3;
+function List_filterTR_loop__at__LeanJs_DemoHO_listFilterLam_spec_0(x_1, x_2) {
+  return lean_trampoline(List_filterTR_loop__at__LeanJs_DemoHO_listFilterLam_spec_0__tc(x_1, x_2));
 }
 
-function List_foldl__at__LeanJs_DemoHO_listFoldlLam_spec_0(x_1, x_2) {
+function LeanJs_DemoHO_listFilterLam__tc(x_1) {
+  while (true) {
+    const x_2 = 0;
+    return { __tc: 1, f: List_filterTR_loop__at__LeanJs_DemoHO_listFilterLam_spec_0__tc, a: [x_1, x_2] };
+  }
+}
+function LeanJs_DemoHO_listFilterLam(x_1) {
+  return lean_trampoline(LeanJs_DemoHO_listFilterLam__tc(x_1));
+}
+
+function List_foldl__at__LeanJs_DemoHO_listFoldlLam_spec_0__tc(x_1, x_2) {
   while (true) {
     switch (lean_tag(x_2)) {
       case 0: {
@@ -1912,11 +2125,18 @@ function List_foldl__at__LeanJs_DemoHO_listFoldlLam_spec_0(x_1, x_2) {
     }
   }
 }
+function List_foldl__at__LeanJs_DemoHO_listFoldlLam_spec_0(x_1, x_2) {
+  return lean_trampoline(List_foldl__at__LeanJs_DemoHO_listFoldlLam_spec_0__tc(x_1, x_2));
+}
 
+function LeanJs_DemoHO_listFoldlLam__tc(x_1) {
+  while (true) {
+    const x_2 = 0n;
+    return { __tc: 1, f: List_foldl__at__LeanJs_DemoHO_listFoldlLam_spec_0__tc, a: [x_2, x_1] };
+  }
+}
 function LeanJs_DemoHO_listFoldlLam(x_1) {
-  const x_2 = 0n;
-  const x_3 = List_foldl__at__LeanJs_DemoHO_listFoldlLam_spec_0(x_2, x_1);
-  return x_3;
+  return lean_trampoline(LeanJs_DemoHO_listFoldlLam__tc(x_1));
 }
 
 // extern Array_usize -> runtime prelude
@@ -1931,7 +2151,7 @@ function LeanJs_DemoHO_listFoldlLam(x_1) {
 
 // extern Array_uset -> runtime prelude
 
-function _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_DemoHO_arrMapLam_spec_0(x_1, x_2, x_3) {
+function _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_DemoHO_arrMapLam_spec_0__tc(x_1, x_2, x_3) {
   while (true) {
     const x_4 = lean_usize_dec_lt(x_2, x_1);
     switch (x_4) {
@@ -1958,12 +2178,19 @@ function _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_DemoH
     }
   }
 }
+function _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_DemoHO_arrMapLam_spec_0(x_1, x_2, x_3) {
+  return lean_trampoline(_private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_DemoHO_arrMapLam_spec_0__tc(x_1, x_2, x_3));
+}
 
+function LeanJs_DemoHO_arrMapLam__tc(x_1) {
+  while (true) {
+    const x_2 = lean_array_usize(x_1);
+    const x_3 = 0n;
+    return { __tc: 1, f: _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_DemoHO_arrMapLam_spec_0__tc, a: [x_2, x_3, x_1] };
+  }
+}
 function LeanJs_DemoHO_arrMapLam(x_1) {
-  const x_2 = lean_array_usize(x_1);
-  const x_3 = 0n;
-  const x_4 = _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_DemoHO_arrMapLam_spec_0(x_2, x_3, x_1);
-  return x_4;
+  return lean_trampoline(LeanJs_DemoHO_arrMapLam__tc(x_1));
 }
 
 function LeanJs_DemoHO_applyAdders__closed_2() {
@@ -1992,14 +2219,23 @@ function LeanJs_DemoHO_applyAdders__closed_4() {
   return x_3;
 }
 
+function LeanJs_DemoHO_applyAdders__lam_0__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = (x_2 + x_1);
+    return x_3;
+  }
+}
 function LeanJs_DemoHO_applyAdders__lam_0(x_1, x_2) {
-  const x_3 = (x_2 + x_1);
-  return x_3;
+  return lean_trampoline(LeanJs_DemoHO_applyAdders__lam_0__tc(x_1, x_2));
 }
 
+function LeanJs_DemoHO_applyAdders__lam_0__boxed__tc(x_1, x_2) {
+  while (true) {
+    return { __tc: 1, f: LeanJs_DemoHO_applyAdders__lam_0__tc, a: [x_1, x_2] };
+  }
+}
 function LeanJs_DemoHO_applyAdders__lam_0__boxed(x_1, x_2) {
-  const x_3 = LeanJs_DemoHO_applyAdders__lam_0(x_1, x_2);
-  return x_3;
+  return lean_trampoline(LeanJs_DemoHO_applyAdders__lam_0__boxed__tc(x_1, x_2));
 }
 
 function LeanJs_DemoHO_applyAdders__closed_0() {
@@ -2015,12 +2251,11 @@ function LeanJs_DemoHO_applyAdders__closed_5() {
   return x_3;
 }
 
-function List_mapTR_loop__at__LeanJs_DemoHO_applyAdders_spec_0(x_1, x_2, x_3) {
+function List_mapTR_loop__at__LeanJs_DemoHO_applyAdders_spec_0__tc(x_1, x_2, x_3) {
   while (true) {
     switch (lean_tag(x_2)) {
       case 0: {
-        const x_4 = List_reverse__redArg(x_3);
-        return x_4;
+        return { __tc: 1, f: List_reverse__redArg__tc, a: [x_3] };
       }
       case 1: {
         const x_5 = 1;
@@ -2059,8 +2294,11 @@ function List_mapTR_loop__at__LeanJs_DemoHO_applyAdders_spec_0(x_1, x_2, x_3) {
     }
   }
 }
+function List_mapTR_loop__at__LeanJs_DemoHO_applyAdders_spec_0(x_1, x_2, x_3) {
+  return lean_trampoline(List_mapTR_loop__at__LeanJs_DemoHO_applyAdders_spec_0__tc(x_1, x_2, x_3));
+}
 
-function List_foldl__at__LeanJs_DemoHO_applyAdders_spec_1(x_1, x_2) {
+function List_foldl__at__LeanJs_DemoHO_applyAdders_spec_1__tc(x_1, x_2) {
   while (true) {
     switch (lean_tag(x_2)) {
       case 0: {
@@ -2080,27 +2318,43 @@ function List_foldl__at__LeanJs_DemoHO_applyAdders_spec_1(x_1, x_2) {
     }
   }
 }
+function List_foldl__at__LeanJs_DemoHO_applyAdders_spec_1(x_1, x_2) {
+  return lean_trampoline(List_foldl__at__LeanJs_DemoHO_applyAdders_spec_1__tc(x_1, x_2));
+}
 
+function LeanJs_DemoHO_applyAdders__tc(x_1) {
+  while (true) {
+    const x_2 = 0;
+    const x_3 = LeanJs_DemoHO_applyAdders__closed_5();
+    const x_4 = 0n;
+    const x_5 = List_mapTR_loop__at__LeanJs_DemoHO_applyAdders_spec_0(x_1, x_3, x_2);
+    return { __tc: 1, f: List_foldl__at__LeanJs_DemoHO_applyAdders_spec_1__tc, a: [x_4, x_5] };
+  }
+}
 function LeanJs_DemoHO_applyAdders(x_1) {
-  const x_2 = 0;
-  const x_3 = LeanJs_DemoHO_applyAdders__closed_5();
-  const x_4 = 0n;
-  const x_5 = List_mapTR_loop__at__LeanJs_DemoHO_applyAdders_spec_0(x_1, x_3, x_2);
-  const x_6 = List_foldl__at__LeanJs_DemoHO_applyAdders_spec_1(x_4, x_5);
-  return x_6;
+  return lean_trampoline(LeanJs_DemoHO_applyAdders__tc(x_1));
 }
 
+function LeanJs_DemoHO_add3__tc(x_1, x_2, x_3) {
+  while (true) {
+    const x_4 = (x_1 + x_2);
+    const x_5 = (x_4 + x_3);
+    return x_5;
+  }
+}
 function LeanJs_DemoHO_add3(x_1, x_2, x_3) {
-  const x_4 = (x_1 + x_2);
-  const x_5 = (x_4 + x_3);
-  return x_5;
+  return lean_trampoline(LeanJs_DemoHO_add3__tc(x_1, x_2, x_3));
 }
 
+function LeanJs_DemoHO_currySplit__tc(x_1) {
+  while (true) {
+    const x_2 = 100n;
+    const x_3 = 7n;
+    return { __tc: 1, f: LeanJs_DemoHO_add3__tc, a: [x_1, x_2, x_3] };
+  }
+}
 function LeanJs_DemoHO_currySplit(x_1) {
-  const x_2 = 100n;
-  const x_3 = 7n;
-  const x_4 = LeanJs_DemoHO_add3(x_1, x_2, x_3);
-  return x_4;
+  return lean_trampoline(LeanJs_DemoHO_currySplit__tc(x_1));
 }
 
 function LeanJs_DemoHO_optSeq__closed_0() {
@@ -2109,42 +2363,55 @@ function LeanJs_DemoHO_optSeq__closed_0() {
   return x_2;
 }
 
-function LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_optSeq_spec_0(x_1) {
-  switch (lean_tag(x_1)) {
-    case 0: {
-      return x_1;
-    }
-    case 1: {
-      const x_2 = 1;
-      switch (x_2) {
-        case 0: {
-          const x_3 = x_1.fields[0];
-          const x_4 = (x_3 + x_3);
-          x_1.fields[0] = x_4;
-          return x_1;
-        }
-        case 1: {
-          const x_5 = x_1.fields[0];
-          const x_6 = (x_5 + x_5);
-          const x_7 = lean_ctor(1, 1, 0, 0, x_6);
-          return x_7;
-        }
-        default: { throw new Error("no matching case"); }
+function LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_optSeq_spec_0__tc(x_1) {
+  while (true) {
+    switch (lean_tag(x_1)) {
+      case 0: {
+        return x_1;
       }
+      case 1: {
+        const x_2 = 1;
+        switch (x_2) {
+          case 0: {
+            const x_3 = x_1.fields[0];
+            const x_4 = (x_3 + x_3);
+            x_1.fields[0] = x_4;
+            return x_1;
+          }
+          case 1: {
+            const x_5 = x_1.fields[0];
+            const x_6 = (x_5 + x_5);
+            const x_7 = lean_ctor(1, 1, 0, 0, x_6);
+            return x_7;
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      default: { throw new Error("no matching case"); }
     }
-    default: { throw new Error("no matching case"); }
   }
 }
-
-function LeanJs_DemoHO_optSeq__closed_1() {
-  const x_1 = LeanJs_DemoHO_optSeq__closed_0();
-  const x_2 = LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_optSeq_spec_0(x_1);
-  return x_2;
+function LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_optSeq_spec_0(x_1) {
+  return lean_trampoline(LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_optSeq_spec_0__tc(x_1));
 }
 
+function LeanJs_DemoHO_optSeq__closed_1__tc() {
+  while (true) {
+    const x_1 = LeanJs_DemoHO_optSeq__closed_0();
+    return { __tc: 1, f: LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_optSeq_spec_0__tc, a: [x_1] };
+  }
+}
+function LeanJs_DemoHO_optSeq__closed_1() {
+  return lean_trampoline(LeanJs_DemoHO_optSeq__closed_1__tc());
+}
+
+function LeanJs_DemoHO_optSeq__tc() {
+  while (true) {
+    return { __tc: 1, f: LeanJs_DemoHO_optSeq__closed_1__tc, a: [] };
+  }
+}
 function LeanJs_DemoHO_optSeq() {
-  const x_1 = LeanJs_DemoHO_optSeq__closed_1();
-  return x_1;
+  return lean_trampoline(LeanJs_DemoHO_optSeq__tc());
 }
 
 function LeanJs_DemoHO_exSeq__closed_0() {
@@ -2153,50 +2420,62 @@ function LeanJs_DemoHO_exSeq__closed_0() {
   return x_2;
 }
 
-function LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_exSeq_spec_0(x_1) {
-  switch (lean_tag(x_1)) {
-    case 0: {
-      return x_1;
-    }
-    case 1: {
-      const x_2 = 1;
-      switch (x_2) {
-        case 0: {
-          const x_3 = x_1.fields[0];
-          const x_4 = (x_3 + x_3);
-          x_1.fields[0] = x_4;
-          return x_1;
-        }
-        case 1: {
-          const x_5 = x_1.fields[0];
-          const x_6 = (x_5 + x_5);
-          const x_7 = lean_ctor(1, 1, 0, 0, x_6);
-          return x_7;
-        }
-        default: { throw new Error("no matching case"); }
-      }
-    }
-    default: { throw new Error("no matching case"); }
-  }
-}
-
-function LeanJs_DemoHO_exSeq__closed_1() {
-  const x_1 = LeanJs_DemoHO_exSeq__closed_0();
-  const x_2 = LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_exSeq_spec_0(x_1);
-  return x_2;
-}
-
-function LeanJs_DemoHO_exSeq() {
-  const x_1 = LeanJs_DemoHO_exSeq__closed_1();
-  return x_1;
-}
-
-function List_mapTR_loop__at__LeanJs_DemoHO_fmapList_spec_0(x_1, x_2) {
+function LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_exSeq_spec_0__tc(x_1) {
   while (true) {
     switch (lean_tag(x_1)) {
       case 0: {
-        const x_3 = List_reverse__redArg(x_2);
-        return x_3;
+        return x_1;
+      }
+      case 1: {
+        const x_2 = 1;
+        switch (x_2) {
+          case 0: {
+            const x_3 = x_1.fields[0];
+            const x_4 = (x_3 + x_3);
+            x_1.fields[0] = x_4;
+            return x_1;
+          }
+          case 1: {
+            const x_5 = x_1.fields[0];
+            const x_6 = (x_5 + x_5);
+            const x_7 = lean_ctor(1, 1, 0, 0, x_6);
+            return x_7;
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_exSeq_spec_0(x_1) {
+  return lean_trampoline(LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_exSeq_spec_0__tc(x_1));
+}
+
+function LeanJs_DemoHO_exSeq__closed_1__tc() {
+  while (true) {
+    const x_1 = LeanJs_DemoHO_exSeq__closed_0();
+    return { __tc: 1, f: LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_exSeq_spec_0__tc, a: [x_1] };
+  }
+}
+function LeanJs_DemoHO_exSeq__closed_1() {
+  return lean_trampoline(LeanJs_DemoHO_exSeq__closed_1__tc());
+}
+
+function LeanJs_DemoHO_exSeq__tc() {
+  while (true) {
+    return { __tc: 1, f: LeanJs_DemoHO_exSeq__closed_1__tc, a: [] };
+  }
+}
+function LeanJs_DemoHO_exSeq() {
+  return lean_trampoline(LeanJs_DemoHO_exSeq__tc());
+}
+
+function List_mapTR_loop__at__LeanJs_DemoHO_fmapList_spec_0__tc(x_1, x_2) {
+  while (true) {
+    switch (lean_tag(x_1)) {
+      case 0: {
+        return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
         const x_4 = 1;
@@ -2233,11 +2512,18 @@ function List_mapTR_loop__at__LeanJs_DemoHO_fmapList_spec_0(x_1, x_2) {
     }
   }
 }
+function List_mapTR_loop__at__LeanJs_DemoHO_fmapList_spec_0(x_1, x_2) {
+  return lean_trampoline(List_mapTR_loop__at__LeanJs_DemoHO_fmapList_spec_0__tc(x_1, x_2));
+}
 
+function LeanJs_DemoHO_fmapList__tc(x_1) {
+  while (true) {
+    const x_2 = 0;
+    return { __tc: 1, f: List_mapTR_loop__at__LeanJs_DemoHO_fmapList_spec_0__tc, a: [x_1, x_2] };
+  }
+}
 function LeanJs_DemoHO_fmapList(x_1) {
-  const x_2 = 0;
-  const x_3 = List_mapTR_loop__at__LeanJs_DemoHO_fmapList_spec_0(x_1, x_2);
-  return x_3;
+  return lean_trampoline(LeanJs_DemoHO_fmapList__tc(x_1));
 }
 
 function LeanJs_DemoHO_safeDiv__closed_0() {
@@ -2245,27 +2531,36 @@ function LeanJs_DemoHO_safeDiv__closed_0() {
   return x_1;
 }
 
+function LeanJs_DemoHO_safeDiv__closed_1__tc() {
+  while (true) {
+    const x_1 = LeanJs_DemoHO_safeDiv__closed_0();
+    const x_2 = lean_ctor(0, 1, 0, 0, x_1);
+    return x_2;
+  }
+}
 function LeanJs_DemoHO_safeDiv__closed_1() {
-  const x_1 = LeanJs_DemoHO_safeDiv__closed_0();
-  const x_2 = lean_ctor(0, 1, 0, 0, x_1);
-  return x_2;
+  return lean_trampoline(LeanJs_DemoHO_safeDiv__closed_1__tc());
 }
 
-function LeanJs_DemoHO_safeDiv(x_1, x_2) {
-  const x_3 = 0n;
-  const x_4 = lean_nat_dec_eq(x_2, x_3);
-  switch (x_4) {
-    case 0: {
-      const x_5 = (x_2 === 0n ? 0n : x_1 / x_2);
-      const x_6 = lean_ctor(1, 1, 0, 0, x_5);
-      return x_6;
+function LeanJs_DemoHO_safeDiv__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = 0n;
+    const x_4 = lean_nat_dec_eq(x_2, x_3);
+    switch (x_4) {
+      case 0: {
+        const x_5 = (x_2 === 0n ? 0n : x_1 / x_2);
+        const x_6 = lean_ctor(1, 1, 0, 0, x_5);
+        return x_6;
+      }
+      case 1: {
+        return { __tc: 1, f: LeanJs_DemoHO_safeDiv__closed_1__tc, a: [] };
+      }
+      default: { throw new Error("no matching case"); }
     }
-    case 1: {
-      const x_7 = LeanJs_DemoHO_safeDiv__closed_1();
-      return x_7;
-    }
-    default: { throw new Error("no matching case"); }
   }
+}
+function LeanJs_DemoHO_safeDiv(x_1, x_2) {
+  return lean_trampoline(LeanJs_DemoHO_safeDiv__tc(x_1, x_2));
 }
 
 function LeanJs_DemoHO_safeDivStr__closed_0() {
@@ -2278,7 +2573,7 @@ function LeanJs_DemoHO_safeDivStr__closed_1() {
   return x_1;
 }
 
-function List_range_loop(x_1, x_2) {
+function List_range_loop__tc(x_1, x_2) {
   while (true) {
     const x_3 = 0n;
     const x_4 = lean_nat_dec_eq(x_1, x_3);
@@ -2300,27 +2595,37 @@ function List_range_loop(x_1, x_2) {
     }
   }
 }
-
-function List_range(x_1) {
-  const x_2 = 0;
-  const x_3 = List_range_loop(x_1, x_2);
-  return x_3;
+function List_range_loop(x_1, x_2) {
+  return lean_trampoline(List_range_loop__tc(x_1, x_2));
 }
 
+function List_range__tc(x_1) {
+  while (true) {
+    const x_2 = 0;
+    return { __tc: 1, f: List_range_loop__tc, a: [x_1, x_2] };
+  }
+}
+function List_range(x_1) {
+  return lean_trampoline(List_range__tc(x_1));
+}
+
+function _private_Init_Data_Repr_0_Nat_reprArray__closed_0__tc() {
+  while (true) {
+    const x_1 = 128n;
+    return { __tc: 1, f: List_range__tc, a: [x_1] };
+  }
+}
 function _private_Init_Data_Repr_0_Nat_reprArray__closed_0() {
-  const x_1 = 128n;
-  const x_2 = List_range(x_1);
-  return x_2;
+  return lean_trampoline(_private_Init_Data_Repr_0_Nat_reprArray__closed_0__tc());
 }
 
 // extern USize_ofNat -> runtime prelude
 
-function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0(x_1, x_2) {
+function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0__tc(x_1, x_2) {
   while (true) {
     switch (lean_tag(x_1)) {
       case 0: {
-        const x_3 = List_reverse__redArg(x_2);
-        return x_3;
+        return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
         const x_4 = 1;
@@ -2357,25 +2662,41 @@ function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0(x_1
     }
   }
 }
+function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0(x_1, x_2) {
+  return lean_trampoline(List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0__tc(x_1, x_2));
+}
 
+function _private_Init_Data_Repr_0_Nat_reprArray__closed_1__tc() {
+  while (true) {
+    const x_1 = 0;
+    const x_2 = _private_Init_Data_Repr_0_Nat_reprArray__closed_0();
+    return { __tc: 1, f: List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0__tc, a: [x_2, x_1] };
+  }
+}
 function _private_Init_Data_Repr_0_Nat_reprArray__closed_1() {
-  const x_1 = 0;
-  const x_2 = _private_Init_Data_Repr_0_Nat_reprArray__closed_0();
-  const x_3 = List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0(x_2, x_1);
-  return x_3;
+  return lean_trampoline(_private_Init_Data_Repr_0_Nat_reprArray__closed_1__tc());
 }
 
 // extern Array_mk -> runtime prelude
 
+function _private_Init_Data_Repr_0_Nat_reprArray__closed_2__tc() {
+  while (true) {
+    const x_1 = _private_Init_Data_Repr_0_Nat_reprArray__closed_1();
+    const x_2 = lean_array_mk(x_1);
+    return x_2;
+  }
+}
 function _private_Init_Data_Repr_0_Nat_reprArray__closed_2() {
-  const x_1 = _private_Init_Data_Repr_0_Nat_reprArray__closed_1();
-  const x_2 = lean_array_mk(x_1);
-  return x_2;
+  return lean_trampoline(_private_Init_Data_Repr_0_Nat_reprArray__closed_2__tc());
 }
 
+function _private_Init_Data_Repr_0_Nat_reprArray__tc() {
+  while (true) {
+    return { __tc: 1, f: _private_Init_Data_Repr_0_Nat_reprArray__closed_2__tc, a: [] };
+  }
+}
 function _private_Init_Data_Repr_0_Nat_reprArray() {
-  const x_1 = _private_Init_Data_Repr_0_Nat_reprArray__closed_2();
-  return x_1;
+  return lean_trampoline(_private_Init_Data_Repr_0_Nat_reprArray__tc());
 }
 
 // extern Array_size -> runtime prelude
@@ -2388,15 +2709,24 @@ function Nat_reprFast__closed_0() {
 
 // extern System_Platform_getNumBits -> runtime prelude
 
+function System_Platform_numBits__closed_0__tc() {
+  while (true) {
+    const x_1 = 0;
+    const x_2 = lean_system_platform_nbits(x_1);
+    return x_2;
+  }
+}
 function System_Platform_numBits__closed_0() {
-  const x_1 = 0;
-  const x_2 = lean_system_platform_nbits(x_1);
-  return x_2;
+  return lean_trampoline(System_Platform_numBits__closed_0__tc());
 }
 
+function System_Platform_numBits__tc() {
+  while (true) {
+    return { __tc: 1, f: System_Platform_numBits__closed_0__tc, a: [] };
+  }
+}
 function System_Platform_numBits() {
-  const x_1 = System_Platform_numBits__closed_0();
-  return x_1;
+  return lean_trampoline(System_Platform_numBits__tc());
 }
 
 // extern Nat_pow -> runtime prelude
@@ -2597,7 +2927,7 @@ function Nat_digitChar(x_1) {
 
 // extern Nat_sub -> runtime prelude
 
-function Nat_toDigitsCore(x_1, x_2, x_3, x_4) {
+function Nat_toDigitsCore__tc(x_1, x_2, x_3, x_4) {
   while (true) {
     const x_5 = 0n;
     const x_6 = lean_nat_dec_eq(x_2, x_5);
@@ -2638,13 +2968,20 @@ function Nat_toDigitsCore(x_1, x_2, x_3, x_4) {
     }
   }
 }
+function Nat_toDigitsCore(x_1, x_2, x_3, x_4) {
+  return lean_trampoline(Nat_toDigitsCore__tc(x_1, x_2, x_3, x_4));
+}
 
+function Nat_toDigits__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = 1n;
+    const x_4 = (x_2 + x_3);
+    const x_5 = 0;
+    return { __tc: 1, f: Nat_toDigitsCore__tc, a: [x_1, x_4, x_2, x_5] };
+  }
+}
 function Nat_toDigits(x_1, x_2) {
-  const x_3 = 1n;
-  const x_4 = (x_2 + x_3);
-  const x_5 = 0;
-  const x_6 = Nat_toDigitsCore(x_1, x_4, x_2, x_5);
-  return x_6;
+  return lean_trampoline(Nat_toDigits__tc(x_1, x_2));
 }
 
 // extern String_ofList -> runtime prelude
@@ -2710,44 +3047,48 @@ function LeanJs_DemoHO_safeDivStr(x_1, x_2) {
 
 // extern Nat_add -> runtime prelude
 
-function LeanTodo_TodoList_add(x_1, x_2) {
-  const x_3 = 1;
-  switch (x_3) {
-    case 0: {
-      const x_4 = x_1.fields[0];
-      const x_5 = x_1.fields[1];
-      const x_6 = 0;
-      const x_7 = lean_ctor(0, 2, 0, 1, x_5, x_2);
-      lean_ctor_set_u8(x_7, 0, x_6);
-      const x_8 = lean_ctor(1, 2, 0, 0, x_7, x_4);
-      const x_9 = 1n;
-      const x_10 = (x_5 + x_9);
-      x_1.fields[1] = x_10;
-      x_1.fields[0] = x_8;
-      return x_1;
+function LeanTodo_TodoList_add__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = 1;
+    switch (x_3) {
+      case 0: {
+        const x_4 = x_1.fields[0];
+        const x_5 = x_1.fields[1];
+        const x_6 = 0;
+        const x_7 = lean_ctor(0, 2, 0, 1, x_5, x_2);
+        lean_ctor_set_u8(x_7, 0, x_6);
+        const x_8 = lean_ctor(1, 2, 0, 0, x_7, x_4);
+        const x_9 = 1n;
+        const x_10 = (x_5 + x_9);
+        x_1.fields[1] = x_10;
+        x_1.fields[0] = x_8;
+        return x_1;
+      }
+      case 1: {
+        const x_11 = x_1.fields[0];
+        const x_12 = x_1.fields[1];
+        const x_13 = 0;
+        const x_14 = lean_ctor(0, 2, 0, 1, x_12, x_2);
+        lean_ctor_set_u8(x_14, 0, x_13);
+        const x_15 = lean_ctor(1, 2, 0, 0, x_14, x_11);
+        const x_16 = 1n;
+        const x_17 = (x_12 + x_16);
+        const x_18 = lean_ctor(0, 2, 0, 0, x_15, x_17);
+        return x_18;
+      }
+      default: { throw new Error("no matching case"); }
     }
-    case 1: {
-      const x_11 = x_1.fields[0];
-      const x_12 = x_1.fields[1];
-      const x_13 = 0;
-      const x_14 = lean_ctor(0, 2, 0, 1, x_12, x_2);
-      lean_ctor_set_u8(x_14, 0, x_13);
-      const x_15 = lean_ctor(1, 2, 0, 0, x_14, x_11);
-      const x_16 = 1n;
-      const x_17 = (x_12 + x_16);
-      const x_18 = lean_ctor(0, 2, 0, 0, x_15, x_17);
-      return x_18;
-    }
-    default: { throw new Error("no matching case"); }
   }
 }
+function LeanTodo_TodoList_add(x_1, x_2) {
+  return lean_trampoline(LeanTodo_TodoList_add__tc(x_1, x_2));
+}
 
-function List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_1, x_2, x_3) {
+function List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0__tc(x_1, x_2, x_3) {
   while (true) {
     switch (lean_tag(x_2)) {
       case 0: {
-        const x_4 = List_reverse__redArg(x_3);
-        return x_4;
+        return { __tc: 1, f: List_reverse__redArg__tc, a: [x_3] };
       }
       case 1: {
         const x_5 = x_2.fields[0];
@@ -2846,30 +3187,38 @@ function List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_1, x_2, x_3) {
     }
   }
 }
-
-function LeanTodo_TodoList_toggle(x_1, x_2) {
-  const x_3 = 1;
-  switch (x_3) {
-    case 0: {
-      const x_4 = x_1.fields[0];
-      const x_5 = 0;
-      const x_6 = List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_2, x_4, x_5);
-      x_1.fields[0] = x_6;
-      return x_1;
-    }
-    case 1: {
-      const x_7 = x_1.fields[0];
-      const x_8 = x_1.fields[1];
-      const x_9 = 0;
-      const x_10 = List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_2, x_7, x_9);
-      const x_11 = lean_ctor(0, 2, 0, 0, x_10, x_8);
-      return x_11;
-    }
-    default: { throw new Error("no matching case"); }
-  }
+function List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_1, x_2, x_3) {
+  return lean_trampoline(List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0__tc(x_1, x_2, x_3));
 }
 
-function List_reverseAux__redArg(x_1, x_2) {
+function LeanTodo_TodoList_toggle__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = 1;
+    switch (x_3) {
+      case 0: {
+        const x_4 = x_1.fields[0];
+        const x_5 = 0;
+        const x_6 = List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_2, x_4, x_5);
+        x_1.fields[0] = x_6;
+        return x_1;
+      }
+      case 1: {
+        const x_7 = x_1.fields[0];
+        const x_8 = x_1.fields[1];
+        const x_9 = 0;
+        const x_10 = List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_2, x_7, x_9);
+        const x_11 = lean_ctor(0, 2, 0, 0, x_10, x_8);
+        return x_11;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function LeanTodo_TodoList_toggle(x_1, x_2) {
+  return lean_trampoline(LeanTodo_TodoList_toggle__tc(x_1, x_2));
+}
+
+function List_reverseAux__redArg__tc(x_1, x_2) {
   while (true) {
     switch (lean_tag(x_1)) {
       case 0: {
@@ -2904,21 +3253,27 @@ function List_reverseAux__redArg(x_1, x_2) {
     }
   }
 }
+function List_reverseAux__redArg(x_1, x_2) {
+  return lean_trampoline(List_reverseAux__redArg__tc(x_1, x_2));
+}
 
+function List_reverse__redArg__tc(x_1) {
+  while (true) {
+    const x_2 = 0;
+    return { __tc: 1, f: List_reverseAux__redArg__tc, a: [x_1, x_2] };
+  }
+}
 function List_reverse__redArg(x_1) {
-  const x_2 = 0;
-  const x_3 = List_reverseAux__redArg(x_1, x_2);
-  return x_3;
+  return lean_trampoline(List_reverse__redArg__tc(x_1));
 }
 
 // extern Nat_decEq -> runtime prelude
 
-function List_filterTR_loop__at__LeanTodo_TodoList_remove_spec_0(x_1, x_2, x_3) {
+function List_filterTR_loop__at__LeanTodo_TodoList_remove_spec_0__tc(x_1, x_2, x_3) {
   while (true) {
     switch (lean_tag(x_2)) {
       case 0: {
-        const x_4 = List_reverse__redArg(x_3);
-        return x_4;
+        return { __tc: 1, f: List_reverse__redArg__tc, a: [x_3] };
       }
       case 1: {
         const x_5 = 1;
@@ -2986,47 +3341,57 @@ function List_filterTR_loop__at__LeanTodo_TodoList_remove_spec_0(x_1, x_2, x_3) 
     }
   }
 }
-
-function LeanTodo_TodoList_remove(x_1, x_2) {
-  const x_3 = 1;
-  switch (x_3) {
-    case 0: {
-      const x_4 = x_1.fields[0];
-      const x_5 = 0;
-      const x_6 = List_filterTR_loop__at__LeanTodo_TodoList_remove_spec_0(x_2, x_4, x_5);
-      x_1.fields[0] = x_6;
-      return x_1;
-    }
-    case 1: {
-      const x_7 = x_1.fields[0];
-      const x_8 = x_1.fields[1];
-      const x_9 = 0;
-      const x_10 = List_filterTR_loop__at__LeanTodo_TodoList_remove_spec_0(x_2, x_7, x_9);
-      const x_11 = lean_ctor(0, 2, 0, 0, x_10, x_8);
-      return x_11;
-    }
-    default: { throw new Error("no matching case"); }
-  }
+function List_filterTR_loop__at__LeanTodo_TodoList_remove_spec_0(x_1, x_2, x_3) {
+  return lean_trampoline(List_filterTR_loop__at__LeanTodo_TodoList_remove_spec_0__tc(x_1, x_2, x_3));
 }
 
-function LeanTodo_TodoList_step(x_1, x_2) {
-  switch (lean_tag(x_2)) {
-    case 0: {
-      const x_3 = x_2.fields[0];
-      const x_4 = LeanTodo_TodoList_add(x_1, x_3);
-      return x_4;
+function LeanTodo_TodoList_remove__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = 1;
+    switch (x_3) {
+      case 0: {
+        const x_4 = x_1.fields[0];
+        const x_5 = 0;
+        const x_6 = List_filterTR_loop__at__LeanTodo_TodoList_remove_spec_0(x_2, x_4, x_5);
+        x_1.fields[0] = x_6;
+        return x_1;
+      }
+      case 1: {
+        const x_7 = x_1.fields[0];
+        const x_8 = x_1.fields[1];
+        const x_9 = 0;
+        const x_10 = List_filterTR_loop__at__LeanTodo_TodoList_remove_spec_0(x_2, x_7, x_9);
+        const x_11 = lean_ctor(0, 2, 0, 0, x_10, x_8);
+        return x_11;
+      }
+      default: { throw new Error("no matching case"); }
     }
-    case 1: {
-      const x_5 = x_2.fields[0];
-      const x_6 = LeanTodo_TodoList_toggle(x_1, x_5);
-      return x_6;
-    }
-    case 2: {
-      const x_7 = x_2.fields[0];
-      const x_8 = LeanTodo_TodoList_remove(x_1, x_7);
-      return x_8;
-    }
-    default: { throw new Error("no matching case"); }
   }
+}
+function LeanTodo_TodoList_remove(x_1, x_2) {
+  return lean_trampoline(LeanTodo_TodoList_remove__tc(x_1, x_2));
+}
+
+function LeanTodo_TodoList_step__tc(x_1, x_2) {
+  while (true) {
+    switch (lean_tag(x_2)) {
+      case 0: {
+        const x_3 = x_2.fields[0];
+        return { __tc: 1, f: LeanTodo_TodoList_add__tc, a: [x_1, x_3] };
+      }
+      case 1: {
+        const x_5 = x_2.fields[0];
+        return { __tc: 1, f: LeanTodo_TodoList_toggle__tc, a: [x_1, x_5] };
+      }
+      case 2: {
+        const x_7 = x_2.fields[0];
+        return { __tc: 1, f: LeanTodo_TodoList_remove__tc, a: [x_1, x_7] };
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function LeanTodo_TodoList_step(x_1, x_2) {
+  return lean_trampoline(LeanTodo_TodoList_step__tc(x_1, x_2));
 }
 

@@ -812,20 +812,25 @@ function Int_instInhabited__closed_0() {
 
 // extern Int_natAbs -> runtime prelude
 
-function Int_toNat(x_1) {
-  const x_2 = 0n;
-  const x_3 = Int_instInhabited__closed_0();
-  const x_4 = lean_int_dec_lt(x_1, x_3);
-  switch (x_4) {
-    case 0: {
-      const x_5 = lean_nat_abs(x_1);
-      return x_5;
+function Int_toNat__tc(x_1) {
+  while (true) {
+    const x_2 = 0n;
+    const x_3 = Int_instInhabited__closed_0();
+    const x_4 = lean_int_dec_lt(x_1, x_3);
+    switch (x_4) {
+      case 0: {
+        const x_5 = lean_nat_abs(x_1);
+        return x_5;
+      }
+      case 1: {
+        return x_2;
+      }
+      default: { throw new Error("no matching case"); }
     }
-    case 1: {
-      return x_2;
-    }
-    default: { throw new Error("no matching case"); }
   }
+}
+function Int_toNat(x_1) {
+  return lean_trampoline(Int_toNat__tc(x_1));
 }
 
 function LeanJs_DemoIO_clampPos__closed_3() {
@@ -843,49 +848,69 @@ function LeanJs_DemoIO_clampPos__closed_1() {
   return x_1;
 }
 
-function LeanJs_DemoIO_clampPos__closed_4() {
-  const x_1 = LeanJs_DemoIO_clampPos__closed_3();
-  const x_2 = 16n;
-  const x_3 = 83n;
-  const x_4 = LeanJs_DemoIO_clampPos__closed_2();
-  const x_5 = LeanJs_DemoIO_clampPos__closed_1();
-  const x_6 = mkPanicMessageWithDecl(x_5, x_4, x_3, x_2, x_1);
-  return x_6;
-}
-
-function panic__at__String_Slice_toNat_x33__spec_0(x_1) {
-  const x_2 = 0n;
-  const x_3 = lean_panic_fn(x_2, x_1);
-  return x_3;
-}
-
-function LeanJs_DemoIO_clampPos(x_1) {
-  const x_2 = LeanJs_DemoIO_clampPos__closed_0();
-  const x_3 = lean_int_dec_lt(x_1, x_2);
-  switch (x_3) {
-    case 0: {
-      const x_4 = lean_int_to_nat(x_1);
-      return x_4;
-    }
-    case 1: {
-      const x_5 = LeanJs_DemoIO_clampPos__closed_4();
-      const x_6 = panic__at__String_Slice_toNat_x33__spec_0(x_5);
-      return x_6;
-    }
-    default: { throw new Error("no matching case"); }
+function LeanJs_DemoIO_clampPos__closed_4__tc() {
+  while (true) {
+    const x_1 = LeanJs_DemoIO_clampPos__closed_3();
+    const x_2 = 16n;
+    const x_3 = 83n;
+    const x_4 = LeanJs_DemoIO_clampPos__closed_2();
+    const x_5 = LeanJs_DemoIO_clampPos__closed_1();
+    return { __tc: 1, f: mkPanicMessageWithDecl__tc, a: [x_5, x_4, x_3, x_2, x_1] };
   }
 }
-
-function LeanJs_DemoIO_panicMain__closed_3() {
-  const x_1 = LeanJs_DemoIO_panicMain__closed_2();
-  const x_2 = LeanJs_DemoIO_clampPos(x_1);
-  return x_2;
+function LeanJs_DemoIO_clampPos__closed_4() {
+  return lean_trampoline(LeanJs_DemoIO_clampPos__closed_4__tc());
 }
 
+function panic__at__String_Slice_toNat_x33__spec_0__tc(x_1) {
+  while (true) {
+    const x_2 = 0n;
+    const x_3 = lean_panic_fn(x_2, x_1);
+    return x_3;
+  }
+}
+function panic__at__String_Slice_toNat_x33__spec_0(x_1) {
+  return lean_trampoline(panic__at__String_Slice_toNat_x33__spec_0__tc(x_1));
+}
+
+function LeanJs_DemoIO_clampPos__tc(x_1) {
+  while (true) {
+    const x_2 = LeanJs_DemoIO_clampPos__closed_0();
+    const x_3 = lean_int_dec_lt(x_1, x_2);
+    switch (x_3) {
+      case 0: {
+        return { __tc: 1, f: Int_toNat__tc, a: [x_1] };
+      }
+      case 1: {
+        const x_5 = LeanJs_DemoIO_clampPos__closed_4();
+        return { __tc: 1, f: panic__at__String_Slice_toNat_x33__spec_0__tc, a: [x_5] };
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function LeanJs_DemoIO_clampPos(x_1) {
+  return lean_trampoline(LeanJs_DemoIO_clampPos__tc(x_1));
+}
+
+function LeanJs_DemoIO_panicMain__closed_3__tc() {
+  while (true) {
+    const x_1 = LeanJs_DemoIO_panicMain__closed_2();
+    return { __tc: 1, f: LeanJs_DemoIO_clampPos__tc, a: [x_1] };
+  }
+}
+function LeanJs_DemoIO_panicMain__closed_3() {
+  return lean_trampoline(LeanJs_DemoIO_panicMain__closed_3__tc());
+}
+
+function LeanJs_DemoIO_panicMain__closed_5__tc() {
+  while (true) {
+    const x_1 = LeanJs_DemoIO_panicMain__closed_3();
+    return { __tc: 1, f: Nat_reprFast__tc, a: [x_1] };
+  }
+}
 function LeanJs_DemoIO_panicMain__closed_5() {
-  const x_1 = LeanJs_DemoIO_panicMain__closed_3();
-  const x_2 = Nat_reprFast(x_1);
-  return x_2;
+  return lean_trampoline(LeanJs_DemoIO_panicMain__closed_5__tc());
 }
 
 function LeanJs_DemoIO_panicMain__closed_4() {
@@ -937,65 +962,87 @@ function mkPanicMessage__closed_2() {
 
 // extern String_Internal_append -> runtime prelude
 
+function mkPanicMessageWithDecl__tc(x_1, x_2, x_3, x_4, x_5) {
+  while (true) {
+    const x_6 = mkPanicMessage__closed_0();
+    const x_7 = lean_string_append(x_6, x_2);
+    const x_8 = mkPanicMessageWithDecl__closed_0();
+    const x_9 = lean_string_append(x_7, x_8);
+    const x_10 = lean_string_append(x_9, x_1);
+    const x_11 = mkPanicMessage__closed_1();
+    const x_12 = lean_string_append(x_10, x_11);
+    const x_13 = Nat_reprFast(x_3);
+    const x_14 = lean_string_append(x_12, x_13);
+    const x_15 = lean_string_append(x_14, x_11);
+    const x_16 = Nat_reprFast(x_4);
+    const x_17 = lean_string_append(x_15, x_16);
+    const x_18 = mkPanicMessage__closed_2();
+    const x_19 = lean_string_append(x_17, x_18);
+    const x_20 = lean_string_append(x_19, x_5);
+    return x_20;
+  }
+}
 function mkPanicMessageWithDecl(x_1, x_2, x_3, x_4, x_5) {
-  const x_6 = mkPanicMessage__closed_0();
-  const x_7 = lean_string_append(x_6, x_2);
-  const x_8 = mkPanicMessageWithDecl__closed_0();
-  const x_9 = lean_string_append(x_7, x_8);
-  const x_10 = lean_string_append(x_9, x_1);
-  const x_11 = mkPanicMessage__closed_1();
-  const x_12 = lean_string_append(x_10, x_11);
-  const x_13 = Nat_reprFast(x_3);
-  const x_14 = lean_string_append(x_12, x_13);
-  const x_15 = lean_string_append(x_14, x_11);
-  const x_16 = Nat_reprFast(x_4);
-  const x_17 = lean_string_append(x_15, x_16);
-  const x_18 = mkPanicMessage__closed_2();
-  const x_19 = lean_string_append(x_17, x_18);
-  const x_20 = lean_string_append(x_19, x_5);
-  return x_20;
+  return lean_trampoline(mkPanicMessageWithDecl__tc(x_1, x_2, x_3, x_4, x_5));
 }
 
+function List_head_x33___redArg__closed_1__tc() {
+  while (true) {
+    const x_1 = List_getLast_x33___redArg__closed_2();
+    const x_2 = 12n;
+    const x_3 = 80n;
+    const x_4 = List_head_x33___redArg__closed_0();
+    const x_5 = List_getLast_x33___redArg__closed_0();
+    return { __tc: 1, f: mkPanicMessageWithDecl__tc, a: [x_5, x_4, x_3, x_2, x_1] };
+  }
+}
 function List_head_x33___redArg__closed_1() {
-  const x_1 = List_getLast_x33___redArg__closed_2();
-  const x_2 = 12n;
-  const x_3 = 80n;
-  const x_4 = List_head_x33___redArg__closed_0();
-  const x_5 = List_getLast_x33___redArg__closed_0();
-  const x_6 = mkPanicMessageWithDecl(x_5, x_4, x_3, x_2, x_1);
-  return x_6;
+  return lean_trampoline(List_head_x33___redArg__closed_1__tc());
 }
 
 // extern panicCore -> runtime prelude
 
-function panic__redArg(x_1, x_2) {
-  const x_3 = lean_panic_fn(x_1, x_2);
-  return x_3;
-}
-
-function List_head_x33___redArg(x_1, x_2) {
-  switch (lean_tag(x_2)) {
-    case 0: {
-      const x_3 = List_head_x33___redArg__closed_1();
-      const x_4 = panic__redArg(x_1, x_3);
-      return x_4;
-    }
-    case 1: {
-      const x_5 = x_2.fields[0];
-      return x_5;
-    }
-    default: { throw new Error("no matching case"); }
+function panic__redArg__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = lean_panic_fn(x_1, x_2);
+    return x_3;
   }
 }
-
-function LeanJs_DemoIO_panicMain__closed_7() {
-  const x_1 = 0;
-  const x_2 = 0n;
-  const x_3 = List_head_x33___redArg(x_2, x_1);
-  return x_3;
+function panic__redArg(x_1, x_2) {
+  return lean_trampoline(panic__redArg__tc(x_1, x_2));
 }
 
-function List_range_loop(x_1, x_2) {
+function List_head_x33___redArg__tc(x_1, x_2) {
+  while (true) {
+    switch (lean_tag(x_2)) {
+      case 0: {
+        const x_3 = List_head_x33___redArg__closed_1();
+        return { __tc: 1, f: panic__redArg__tc, a: [x_1, x_3] };
+      }
+      case 1: {
+        const x_5 = x_2.fields[0];
+        return x_5;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function List_head_x33___redArg(x_1, x_2) {
+  return lean_trampoline(List_head_x33___redArg__tc(x_1, x_2));
+}
+
+function LeanJs_DemoIO_panicMain__closed_7__tc() {
+  while (true) {
+    const x_1 = 0;
+    const x_2 = 0n;
+    return { __tc: 1, f: List_head_x33___redArg__tc, a: [x_2, x_1] };
+  }
+}
+function LeanJs_DemoIO_panicMain__closed_7() {
+  return lean_trampoline(LeanJs_DemoIO_panicMain__closed_7__tc());
+}
+
+function List_range_loop__tc(x_1, x_2) {
   while (true) {
     const x_3 = 0n;
     const x_4 = lean_nat_dec_eq(x_1, x_3);
@@ -1017,20 +1064,31 @@ function List_range_loop(x_1, x_2) {
     }
   }
 }
+function List_range_loop(x_1, x_2) {
+  return lean_trampoline(List_range_loop__tc(x_1, x_2));
+}
 
+function List_range__tc(x_1) {
+  while (true) {
+    const x_2 = 0;
+    return { __tc: 1, f: List_range_loop__tc, a: [x_1, x_2] };
+  }
+}
 function List_range(x_1) {
-  const x_2 = 0;
-  const x_3 = List_range_loop(x_1, x_2);
-  return x_3;
+  return lean_trampoline(List_range__tc(x_1));
 }
 
+function _private_Init_Data_Repr_0_Nat_reprArray__closed_0__tc() {
+  while (true) {
+    const x_1 = 128n;
+    return { __tc: 1, f: List_range__tc, a: [x_1] };
+  }
+}
 function _private_Init_Data_Repr_0_Nat_reprArray__closed_0() {
-  const x_1 = 128n;
-  const x_2 = List_range(x_1);
-  return x_2;
+  return lean_trampoline(_private_Init_Data_Repr_0_Nat_reprArray__closed_0__tc());
 }
 
-function List_reverseAux__redArg(x_1, x_2) {
+function List_reverseAux__redArg__tc(x_1, x_2) {
   while (true) {
     switch (lean_tag(x_1)) {
       case 0: {
@@ -1065,21 +1123,27 @@ function List_reverseAux__redArg(x_1, x_2) {
     }
   }
 }
+function List_reverseAux__redArg(x_1, x_2) {
+  return lean_trampoline(List_reverseAux__redArg__tc(x_1, x_2));
+}
 
+function List_reverse__redArg__tc(x_1) {
+  while (true) {
+    const x_2 = 0;
+    return { __tc: 1, f: List_reverseAux__redArg__tc, a: [x_1, x_2] };
+  }
+}
 function List_reverse__redArg(x_1) {
-  const x_2 = 0;
-  const x_3 = List_reverseAux__redArg(x_1, x_2);
-  return x_3;
+  return lean_trampoline(List_reverse__redArg__tc(x_1));
 }
 
 // extern USize_ofNat -> runtime prelude
 
-function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0(x_1, x_2) {
+function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0__tc(x_1, x_2) {
   while (true) {
     switch (lean_tag(x_1)) {
       case 0: {
-        const x_3 = List_reverse__redArg(x_2);
-        return x_3;
+        return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
         const x_4 = 1;
@@ -1116,25 +1180,41 @@ function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0(x_1
     }
   }
 }
+function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0(x_1, x_2) {
+  return lean_trampoline(List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0__tc(x_1, x_2));
+}
 
+function _private_Init_Data_Repr_0_Nat_reprArray__closed_1__tc() {
+  while (true) {
+    const x_1 = 0;
+    const x_2 = _private_Init_Data_Repr_0_Nat_reprArray__closed_0();
+    return { __tc: 1, f: List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0__tc, a: [x_2, x_1] };
+  }
+}
 function _private_Init_Data_Repr_0_Nat_reprArray__closed_1() {
-  const x_1 = 0;
-  const x_2 = _private_Init_Data_Repr_0_Nat_reprArray__closed_0();
-  const x_3 = List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0(x_2, x_1);
-  return x_3;
+  return lean_trampoline(_private_Init_Data_Repr_0_Nat_reprArray__closed_1__tc());
 }
 
 // extern Array_mk -> runtime prelude
 
+function _private_Init_Data_Repr_0_Nat_reprArray__closed_2__tc() {
+  while (true) {
+    const x_1 = _private_Init_Data_Repr_0_Nat_reprArray__closed_1();
+    const x_2 = lean_array_mk(x_1);
+    return x_2;
+  }
+}
 function _private_Init_Data_Repr_0_Nat_reprArray__closed_2() {
-  const x_1 = _private_Init_Data_Repr_0_Nat_reprArray__closed_1();
-  const x_2 = lean_array_mk(x_1);
-  return x_2;
+  return lean_trampoline(_private_Init_Data_Repr_0_Nat_reprArray__closed_2__tc());
 }
 
+function _private_Init_Data_Repr_0_Nat_reprArray__tc() {
+  while (true) {
+    return { __tc: 1, f: _private_Init_Data_Repr_0_Nat_reprArray__closed_2__tc, a: [] };
+  }
+}
 function _private_Init_Data_Repr_0_Nat_reprArray() {
-  const x_1 = _private_Init_Data_Repr_0_Nat_reprArray__closed_2();
-  return x_1;
+  return lean_trampoline(_private_Init_Data_Repr_0_Nat_reprArray__tc());
 }
 
 // extern Array_size -> runtime prelude
@@ -1147,15 +1227,24 @@ function Nat_reprFast__closed_0() {
 
 // extern System_Platform_getNumBits -> runtime prelude
 
+function System_Platform_numBits__closed_0__tc() {
+  while (true) {
+    const x_1 = 0;
+    const x_2 = lean_system_platform_nbits(x_1);
+    return x_2;
+  }
+}
 function System_Platform_numBits__closed_0() {
-  const x_1 = 0;
-  const x_2 = lean_system_platform_nbits(x_1);
-  return x_2;
+  return lean_trampoline(System_Platform_numBits__closed_0__tc());
 }
 
+function System_Platform_numBits__tc() {
+  while (true) {
+    return { __tc: 1, f: System_Platform_numBits__closed_0__tc, a: [] };
+  }
+}
 function System_Platform_numBits() {
-  const x_1 = System_Platform_numBits__closed_0();
-  return x_1;
+  return lean_trampoline(System_Platform_numBits__tc());
 }
 
 // extern Nat_pow -> runtime prelude
@@ -1360,7 +1449,7 @@ function Nat_digitChar(x_1) {
 
 // extern Nat_sub -> runtime prelude
 
-function Nat_toDigitsCore(x_1, x_2, x_3, x_4) {
+function Nat_toDigitsCore__tc(x_1, x_2, x_3, x_4) {
   while (true) {
     const x_5 = 0n;
     const x_6 = lean_nat_dec_eq(x_2, x_5);
@@ -1401,13 +1490,20 @@ function Nat_toDigitsCore(x_1, x_2, x_3, x_4) {
     }
   }
 }
+function Nat_toDigitsCore(x_1, x_2, x_3, x_4) {
+  return lean_trampoline(Nat_toDigitsCore__tc(x_1, x_2, x_3, x_4));
+}
 
+function Nat_toDigits__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = 1n;
+    const x_4 = (x_2 + x_3);
+    const x_5 = 0;
+    return { __tc: 1, f: Nat_toDigitsCore__tc, a: [x_1, x_4, x_2, x_5] };
+  }
+}
 function Nat_toDigits(x_1, x_2) {
-  const x_3 = 1n;
-  const x_4 = (x_2 + x_3);
-  const x_5 = 0;
-  const x_6 = Nat_toDigitsCore(x_1, x_4, x_2, x_5);
-  return x_6;
+  return lean_trampoline(Nat_toDigits__tc(x_1, x_2));
 }
 
 // extern String_ofList -> runtime prelude
@@ -1418,41 +1514,50 @@ function Nat_toDigits(x_1, x_2) {
 
 // extern Array_getInternal -> runtime prelude
 
-function Nat_reprFast(x_1) {
-  const x_2 = _private_Init_Data_Repr_0_Nat_reprArray();
-  const x_3 = Nat_reprFast__closed_0();
-  const x_4 = lean_nat_dec_lt(x_1, x_3);
-  switch (x_4) {
-    case 0: {
-      const x_5 = Nat_reprFast__closed_1();
-      const x_6 = lean_nat_dec_lt(x_1, x_5);
-      switch (x_6) {
-        case 0: {
-          const x_7 = 10n;
-          const x_8 = Nat_toDigits(x_7, x_1);
-          const x_9 = lean_string_mk(x_8);
-          return x_9;
+function Nat_reprFast__tc(x_1) {
+  while (true) {
+    const x_2 = _private_Init_Data_Repr_0_Nat_reprArray();
+    const x_3 = Nat_reprFast__closed_0();
+    const x_4 = lean_nat_dec_lt(x_1, x_3);
+    switch (x_4) {
+      case 0: {
+        const x_5 = Nat_reprFast__closed_1();
+        const x_6 = lean_nat_dec_lt(x_1, x_5);
+        switch (x_6) {
+          case 0: {
+            const x_7 = 10n;
+            const x_8 = Nat_toDigits(x_7, x_1);
+            const x_9 = lean_string_mk(x_8);
+            return x_9;
+          }
+          case 1: {
+            const x_10 = lean_usize_of_nat(x_1);
+            const x_11 = lean_string_of_usize(x_10);
+            return x_11;
+          }
+          default: { throw new Error("no matching case"); }
         }
-        case 1: {
-          const x_10 = lean_usize_of_nat(x_1);
-          const x_11 = lean_string_of_usize(x_10);
-          return x_11;
-        }
-        default: { throw new Error("no matching case"); }
       }
+      case 1: {
+        const x_12 = lean_array_uget(x_2, x_1);
+        return x_12;
+      }
+      default: { throw new Error("no matching case"); }
     }
-    case 1: {
-      const x_12 = lean_array_uget(x_2, x_1);
-      return x_12;
-    }
-    default: { throw new Error("no matching case"); }
   }
 }
+function Nat_reprFast(x_1) {
+  return lean_trampoline(Nat_reprFast__tc(x_1));
+}
 
+function LeanJs_DemoIO_panicMain__closed_9__tc() {
+  while (true) {
+    const x_1 = LeanJs_DemoIO_panicMain__closed_7();
+    return { __tc: 1, f: Nat_reprFast__tc, a: [x_1] };
+  }
+}
 function LeanJs_DemoIO_panicMain__closed_9() {
-  const x_1 = LeanJs_DemoIO_panicMain__closed_7();
-  const x_2 = Nat_reprFast(x_1);
-  return x_2;
+  return lean_trampoline(LeanJs_DemoIO_panicMain__closed_9__tc());
 }
 
 function LeanJs_DemoIO_panicMain__closed_8() {
@@ -1478,54 +1583,67 @@ function LeanJs_DemoIO_panicMain__closed_11() {
 
 // extern IO_getStdout -> runtime prelude
 
-function IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0(x_1) {
-  const x_3 = lean_get_stdout();
-  const x_4 = x_3.fields[4];
-  const x_5 = lean_apply(x_4, [x_1, undefined]);
-  return x_5;
-}
-
-function IO_println__at__LeanJs_DemoIO_main_spec_0(x_1) {
-  const x_3 = 10;
-  const x_4 = lean_string_push(x_1, x_3);
-  const x_5 = IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0(x_4, undefined);
-  return x_5;
-}
-
-function LeanJs_DemoIO_panicMain() {
-  const x_2 = LeanJs_DemoIO_panicMain__closed_0();
-  const x_3 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_2, undefined);
-  switch (lean_tag(x_3)) {
-    case 0: {
-      const x_4 = LeanJs_DemoIO_panicMain__closed_6();
-      const x_5 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_4, undefined);
-      switch (lean_tag(x_5)) {
-        case 0: {
-          const x_6 = LeanJs_DemoIO_panicMain__closed_10();
-          const x_7 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_6, undefined);
-          switch (lean_tag(x_7)) {
-            case 0: {
-              const x_8 = LeanJs_DemoIO_panicMain__closed_11();
-              const x_9 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_8, undefined);
-              return x_9;
-            }
-            case 1: {
-              return x_7;
-            }
-            default: { throw new Error("no matching case"); }
-          }
-        }
-        case 1: {
-          return x_5;
-        }
-        default: { throw new Error("no matching case"); }
-      }
-    }
-    case 1: {
-      return x_3;
-    }
-    default: { throw new Error("no matching case"); }
+function IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0__tc(x_1) {
+  while (true) {
+    const x_3 = lean_get_stdout();
+    const x_4 = x_3.fields[4];
+    const x_5 = lean_apply(x_4, [x_1, undefined]);
+    return x_5;
   }
+}
+function IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0(x_1) {
+  return lean_trampoline(IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0__tc(x_1));
+}
+
+function IO_println__at__LeanJs_DemoIO_main_spec_0__tc(x_1) {
+  while (true) {
+    const x_3 = 10;
+    const x_4 = lean_string_push(x_1, x_3);
+    return { __tc: 1, f: IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0__tc, a: [x_4, undefined] };
+  }
+}
+function IO_println__at__LeanJs_DemoIO_main_spec_0(x_1) {
+  return lean_trampoline(IO_println__at__LeanJs_DemoIO_main_spec_0__tc(x_1));
+}
+
+function LeanJs_DemoIO_panicMain__tc() {
+  while (true) {
+    const x_2 = LeanJs_DemoIO_panicMain__closed_0();
+    const x_3 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_2, undefined);
+    switch (lean_tag(x_3)) {
+      case 0: {
+        const x_4 = LeanJs_DemoIO_panicMain__closed_6();
+        const x_5 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_4, undefined);
+        switch (lean_tag(x_5)) {
+          case 0: {
+            const x_6 = LeanJs_DemoIO_panicMain__closed_10();
+            const x_7 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_6, undefined);
+            switch (lean_tag(x_7)) {
+              case 0: {
+                const x_8 = LeanJs_DemoIO_panicMain__closed_11();
+                return { __tc: 1, f: IO_println__at__LeanJs_DemoIO_main_spec_0__tc, a: [x_8, undefined] };
+              }
+              case 1: {
+                return x_7;
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          }
+          case 1: {
+            return x_5;
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      case 1: {
+        return x_3;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function LeanJs_DemoIO_panicMain() {
+  return lean_trampoline(LeanJs_DemoIO_panicMain__tc());
 }
 
 

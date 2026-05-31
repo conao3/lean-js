@@ -784,18 +784,27 @@ function LeanJs_DemoIO_errMain__closed_0() {
 
 // extern IO_getStdout -> runtime prelude
 
+function IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0__tc(x_1) {
+  while (true) {
+    const x_3 = lean_get_stdout();
+    const x_4 = x_3.fields[4];
+    const x_5 = lean_apply(x_4, [x_1, undefined]);
+    return x_5;
+  }
+}
 function IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0(x_1) {
-  const x_3 = lean_get_stdout();
-  const x_4 = x_3.fields[4];
-  const x_5 = lean_apply(x_4, [x_1, undefined]);
-  return x_5;
+  return lean_trampoline(IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0__tc(x_1));
 }
 
+function IO_println__at__LeanJs_DemoIO_main_spec_0__tc(x_1) {
+  while (true) {
+    const x_3 = 10;
+    const x_4 = lean_string_push(x_1, x_3);
+    return { __tc: 1, f: IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0__tc, a: [x_4, undefined] };
+  }
+}
 function IO_println__at__LeanJs_DemoIO_main_spec_0(x_1) {
-  const x_3 = 10;
-  const x_4 = lean_string_push(x_1, x_3);
-  const x_5 = IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0(x_4, undefined);
-  return x_5;
+  return lean_trampoline(IO_println__at__LeanJs_DemoIO_main_spec_0__tc(x_1));
 }
 
 function LeanJs_DemoIO_errMain__closed_1() {

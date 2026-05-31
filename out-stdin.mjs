@@ -799,7 +799,7 @@ function String_Slice_toString(x_1) {
 
 // extern UInt32_decEq -> runtime prelude
 
-function String_Slice_Pos_prevn(x_1, x_2, x_3) {
+function String_Slice_Pos_prevn__tc(x_1, x_2, x_3) {
   while (true) {
     const x_4 = 0n;
     const x_5 = lean_nat_dec_eq(x_3, x_4);
@@ -849,6 +849,9 @@ function String_Slice_Pos_prevn(x_1, x_2, x_3) {
     }
   }
 }
+function String_Slice_Pos_prevn(x_1, x_2, x_3) {
+  return lean_trampoline(String_Slice_Pos_prevn__tc(x_1, x_2, x_3));
+}
 
 // extern String_utf8ByteSize -> runtime prelude
 
@@ -867,70 +870,79 @@ function String_instDecidableLtRaw__aux_1(x_1, x_2) {
 
 // extern UInt8_decEq -> runtime prelude
 
-function UInt8_instDecidableIsUTF8FirstByte__aux_1(x_1) {
-  const x_2 = 128;
-  const x_3 = lean_uint8_land(x_1, x_2);
-  const x_4 = 0;
-  const x_5 = lean_uint8_dec_eq(x_3, x_4);
-  switch (x_5) {
-    case 0: {
-      const x_6 = 224;
-      const x_7 = lean_uint8_land(x_1, x_6);
-      const x_8 = 192;
-      const x_9 = lean_uint8_dec_eq(x_7, x_8);
-      switch (x_9) {
-        case 0: {
-          const x_10 = 240;
-          const x_11 = lean_uint8_land(x_1, x_10);
-          const x_12 = lean_uint8_dec_eq(x_11, x_6);
-          switch (x_12) {
-            case 0: {
-              const x_13 = 248;
-              const x_14 = lean_uint8_land(x_1, x_13);
-              const x_15 = lean_uint8_dec_eq(x_14, x_10);
-              return x_15;
+function UInt8_instDecidableIsUTF8FirstByte__aux_1__tc(x_1) {
+  while (true) {
+    const x_2 = 128;
+    const x_3 = lean_uint8_land(x_1, x_2);
+    const x_4 = 0;
+    const x_5 = lean_uint8_dec_eq(x_3, x_4);
+    switch (x_5) {
+      case 0: {
+        const x_6 = 224;
+        const x_7 = lean_uint8_land(x_1, x_6);
+        const x_8 = 192;
+        const x_9 = lean_uint8_dec_eq(x_7, x_8);
+        switch (x_9) {
+          case 0: {
+            const x_10 = 240;
+            const x_11 = lean_uint8_land(x_1, x_10);
+            const x_12 = lean_uint8_dec_eq(x_11, x_6);
+            switch (x_12) {
+              case 0: {
+                const x_13 = 248;
+                const x_14 = lean_uint8_land(x_1, x_13);
+                const x_15 = lean_uint8_dec_eq(x_14, x_10);
+                return x_15;
+              }
+              case 1: {
+                return x_12;
+              }
+              default: { throw new Error("no matching case"); }
             }
-            case 1: {
-              return x_12;
-            }
-            default: { throw new Error("no matching case"); }
           }
+          case 1: {
+            return x_9;
+          }
+          default: { throw new Error("no matching case"); }
         }
-        case 1: {
-          return x_9;
-        }
-        default: { throw new Error("no matching case"); }
       }
+      case 1: {
+        return x_5;
+      }
+      default: { throw new Error("no matching case"); }
     }
-    case 1: {
-      return x_5;
-    }
-    default: { throw new Error("no matching case"); }
   }
 }
+function UInt8_instDecidableIsUTF8FirstByte__aux_1(x_1) {
+  return lean_trampoline(UInt8_instDecidableIsUTF8FirstByte__aux_1__tc(x_1));
+}
 
+function String_Pos_Raw_isValidForSlice__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = x_1.fields[0];
+    const x_4 = x_1.fields[1];
+    const x_5 = x_1.fields[2];
+    const x_6 = (x_5 > x_4 ? x_5 - x_4 : 0n);
+    const x_7 = String_instDecidableLtRaw__aux_1(x_2, x_6);
+    switch (x_7) {
+      case 0: {
+        const x_8 = lean_nat_dec_eq(x_2, x_6);
+        return x_8;
+      }
+      case 1: {
+        const x_9 = (x_4 + x_2);
+        const x_10 = lean_string_get_byte_fast(x_3, x_9);
+        return { __tc: 1, f: UInt8_instDecidableIsUTF8FirstByte__aux_1__tc, a: [x_10] };
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
 function String_Pos_Raw_isValidForSlice(x_1, x_2) {
-  const x_3 = x_1.fields[0];
-  const x_4 = x_1.fields[1];
-  const x_5 = x_1.fields[2];
-  const x_6 = (x_5 > x_4 ? x_5 - x_4 : 0n);
-  const x_7 = String_instDecidableLtRaw__aux_1(x_2, x_6);
-  switch (x_7) {
-    case 0: {
-      const x_8 = lean_nat_dec_eq(x_2, x_6);
-      return x_8;
-    }
-    case 1: {
-      const x_9 = (x_4 + x_2);
-      const x_10 = lean_string_get_byte_fast(x_3, x_9);
-      const x_11 = UInt8_instDecidableIsUTF8FirstByte__aux_1(x_10);
-      return x_11;
-    }
-    default: { throw new Error("no matching case"); }
-  }
+  return lean_trampoline(String_Pos_Raw_isValidForSlice__tc(x_1, x_2));
 }
 
-function String_Slice_posLE(x_1, x_2) {
+function String_Slice_posLE__tc(x_1, x_2) {
   while (true) {
     const x_3 = String_Pos_Raw_isValidForSlice(x_1, x_2);
     switch (x_3) {
@@ -949,6 +961,9 @@ function String_Slice_posLE(x_1, x_2) {
       default: { throw new Error("no matching case"); }
     }
   }
+}
+function String_Slice_posLE(x_1, x_2) {
+  return lean_trampoline(String_Slice_posLE__tc(x_1, x_2));
 }
 
 function String_Slice_Pos_prev_x63_(x_1, x_2) {
@@ -999,7 +1014,7 @@ function LeanJs_DemoIO_echoLoop__closed_2() {
   return x_1;
 }
 
-function List_range_loop(x_1, x_2) {
+function List_range_loop__tc(x_1, x_2) {
   while (true) {
     const x_3 = 0n;
     const x_4 = lean_nat_dec_eq(x_1, x_3);
@@ -1021,20 +1036,31 @@ function List_range_loop(x_1, x_2) {
     }
   }
 }
+function List_range_loop(x_1, x_2) {
+  return lean_trampoline(List_range_loop__tc(x_1, x_2));
+}
 
+function List_range__tc(x_1) {
+  while (true) {
+    const x_2 = 0;
+    return { __tc: 1, f: List_range_loop__tc, a: [x_1, x_2] };
+  }
+}
 function List_range(x_1) {
-  const x_2 = 0;
-  const x_3 = List_range_loop(x_1, x_2);
-  return x_3;
+  return lean_trampoline(List_range__tc(x_1));
 }
 
+function _private_Init_Data_Repr_0_Nat_reprArray__closed_0__tc() {
+  while (true) {
+    const x_1 = 128n;
+    return { __tc: 1, f: List_range__tc, a: [x_1] };
+  }
+}
 function _private_Init_Data_Repr_0_Nat_reprArray__closed_0() {
-  const x_1 = 128n;
-  const x_2 = List_range(x_1);
-  return x_2;
+  return lean_trampoline(_private_Init_Data_Repr_0_Nat_reprArray__closed_0__tc());
 }
 
-function List_reverseAux__redArg(x_1, x_2) {
+function List_reverseAux__redArg__tc(x_1, x_2) {
   while (true) {
     switch (lean_tag(x_1)) {
       case 0: {
@@ -1069,21 +1095,27 @@ function List_reverseAux__redArg(x_1, x_2) {
     }
   }
 }
+function List_reverseAux__redArg(x_1, x_2) {
+  return lean_trampoline(List_reverseAux__redArg__tc(x_1, x_2));
+}
 
+function List_reverse__redArg__tc(x_1) {
+  while (true) {
+    const x_2 = 0;
+    return { __tc: 1, f: List_reverseAux__redArg__tc, a: [x_1, x_2] };
+  }
+}
 function List_reverse__redArg(x_1) {
-  const x_2 = 0;
-  const x_3 = List_reverseAux__redArg(x_1, x_2);
-  return x_3;
+  return lean_trampoline(List_reverse__redArg__tc(x_1));
 }
 
 // extern USize_ofNat -> runtime prelude
 
-function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0(x_1, x_2) {
+function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0__tc(x_1, x_2) {
   while (true) {
     switch (lean_tag(x_1)) {
       case 0: {
-        const x_3 = List_reverse__redArg(x_2);
-        return x_3;
+        return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
         const x_4 = 1;
@@ -1120,25 +1152,41 @@ function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0(x_1
     }
   }
 }
+function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0(x_1, x_2) {
+  return lean_trampoline(List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0__tc(x_1, x_2));
+}
 
+function _private_Init_Data_Repr_0_Nat_reprArray__closed_1__tc() {
+  while (true) {
+    const x_1 = 0;
+    const x_2 = _private_Init_Data_Repr_0_Nat_reprArray__closed_0();
+    return { __tc: 1, f: List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0__tc, a: [x_2, x_1] };
+  }
+}
 function _private_Init_Data_Repr_0_Nat_reprArray__closed_1() {
-  const x_1 = 0;
-  const x_2 = _private_Init_Data_Repr_0_Nat_reprArray__closed_0();
-  const x_3 = List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0(x_2, x_1);
-  return x_3;
+  return lean_trampoline(_private_Init_Data_Repr_0_Nat_reprArray__closed_1__tc());
 }
 
 // extern Array_mk -> runtime prelude
 
+function _private_Init_Data_Repr_0_Nat_reprArray__closed_2__tc() {
+  while (true) {
+    const x_1 = _private_Init_Data_Repr_0_Nat_reprArray__closed_1();
+    const x_2 = lean_array_mk(x_1);
+    return x_2;
+  }
+}
 function _private_Init_Data_Repr_0_Nat_reprArray__closed_2() {
-  const x_1 = _private_Init_Data_Repr_0_Nat_reprArray__closed_1();
-  const x_2 = lean_array_mk(x_1);
-  return x_2;
+  return lean_trampoline(_private_Init_Data_Repr_0_Nat_reprArray__closed_2__tc());
 }
 
+function _private_Init_Data_Repr_0_Nat_reprArray__tc() {
+  while (true) {
+    return { __tc: 1, f: _private_Init_Data_Repr_0_Nat_reprArray__closed_2__tc, a: [] };
+  }
+}
 function _private_Init_Data_Repr_0_Nat_reprArray() {
-  const x_1 = _private_Init_Data_Repr_0_Nat_reprArray__closed_2();
-  return x_1;
+  return lean_trampoline(_private_Init_Data_Repr_0_Nat_reprArray__tc());
 }
 
 // extern Array_size -> runtime prelude
@@ -1151,15 +1199,24 @@ function Nat_reprFast__closed_0() {
 
 // extern System_Platform_getNumBits -> runtime prelude
 
+function System_Platform_numBits__closed_0__tc() {
+  while (true) {
+    const x_1 = 0;
+    const x_2 = lean_system_platform_nbits(x_1);
+    return x_2;
+  }
+}
 function System_Platform_numBits__closed_0() {
-  const x_1 = 0;
-  const x_2 = lean_system_platform_nbits(x_1);
-  return x_2;
+  return lean_trampoline(System_Platform_numBits__closed_0__tc());
 }
 
+function System_Platform_numBits__tc() {
+  while (true) {
+    return { __tc: 1, f: System_Platform_numBits__closed_0__tc, a: [] };
+  }
+}
 function System_Platform_numBits() {
-  const x_1 = System_Platform_numBits__closed_0();
-  return x_1;
+  return lean_trampoline(System_Platform_numBits__tc());
 }
 
 // extern Nat_pow -> runtime prelude
@@ -1364,7 +1421,7 @@ function Nat_digitChar(x_1) {
 
 // extern Nat_sub -> runtime prelude
 
-function Nat_toDigitsCore(x_1, x_2, x_3, x_4) {
+function Nat_toDigitsCore__tc(x_1, x_2, x_3, x_4) {
   while (true) {
     const x_5 = 0n;
     const x_6 = lean_nat_dec_eq(x_2, x_5);
@@ -1405,13 +1462,20 @@ function Nat_toDigitsCore(x_1, x_2, x_3, x_4) {
     }
   }
 }
+function Nat_toDigitsCore(x_1, x_2, x_3, x_4) {
+  return lean_trampoline(Nat_toDigitsCore__tc(x_1, x_2, x_3, x_4));
+}
 
+function Nat_toDigits__tc(x_1, x_2) {
+  while (true) {
+    const x_3 = 1n;
+    const x_4 = (x_2 + x_3);
+    const x_5 = 0;
+    return { __tc: 1, f: Nat_toDigitsCore__tc, a: [x_1, x_4, x_2, x_5] };
+  }
+}
 function Nat_toDigits(x_1, x_2) {
-  const x_3 = 1n;
-  const x_4 = (x_2 + x_3);
-  const x_5 = 0;
-  const x_6 = Nat_toDigitsCore(x_1, x_4, x_2, x_5);
-  return x_6;
+  return lean_trampoline(Nat_toDigits__tc(x_1, x_2));
 }
 
 // extern String_ofList -> runtime prelude
@@ -1464,21 +1528,30 @@ function LeanJs_DemoIO_echoLoop__closed_3() {
 
 // extern IO_getStdout -> runtime prelude
 
+function IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0__tc(x_1) {
+  while (true) {
+    const x_3 = lean_get_stdout();
+    const x_4 = x_3.fields[4];
+    const x_5 = lean_apply(x_4, [x_1, undefined]);
+    return x_5;
+  }
+}
 function IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0(x_1) {
-  const x_3 = lean_get_stdout();
-  const x_4 = x_3.fields[4];
-  const x_5 = lean_apply(x_4, [x_1, undefined]);
-  return x_5;
+  return lean_trampoline(IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0__tc(x_1));
 }
 
+function IO_println__at__LeanJs_DemoIO_main_spec_0__tc(x_1) {
+  while (true) {
+    const x_3 = 10;
+    const x_4 = lean_string_push(x_1, x_3);
+    return { __tc: 1, f: IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0__tc, a: [x_4, undefined] };
+  }
+}
 function IO_println__at__LeanJs_DemoIO_main_spec_0(x_1) {
-  const x_3 = 10;
-  const x_4 = lean_string_push(x_1, x_3);
-  const x_5 = IO_print__at__IO_println__at__LeanJs_DemoIO_main_spec_0_spec_0(x_4, undefined);
-  return x_5;
+  return lean_trampoline(IO_println__at__LeanJs_DemoIO_main_spec_0__tc(x_1));
 }
 
-function LeanJs_DemoIO_echoLoop(x_1, x_2) {
+function LeanJs_DemoIO_echoLoop__tc(x_1, x_2) {
   while (true) {
     const x_4 = x_1.fields[3];
     const x_5 = lean_apply(x_4, [undefined]);
@@ -1720,8 +1793,7 @@ function LeanJs_DemoIO_echoLoop(x_1, x_2) {
             const x_46 = lean_string_append(x_44, x_45);
             const x_47 = LeanJs_DemoIO_echoLoop__closed_3();
             const x_48 = lean_string_append(x_46, x_47);
-            const x_49 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_48, undefined);
-            return x_49;
+            return { __tc: 1, f: IO_println__at__LeanJs_DemoIO_main_spec_0__tc, a: [x_48, undefined] };
           }
           default: { throw new Error("no matching case"); }
         }
@@ -1744,12 +1816,19 @@ function LeanJs_DemoIO_echoLoop(x_1, x_2) {
     }
   }
 }
+function LeanJs_DemoIO_echoLoop(x_1, x_2) {
+  return lean_trampoline(LeanJs_DemoIO_echoLoop__tc(x_1, x_2));
+}
 
+function LeanJs_DemoIO_stdinEcho__tc() {
+  while (true) {
+    const x_2 = lean_get_stdin();
+    const x_3 = 1n;
+    return { __tc: 1, f: LeanJs_DemoIO_echoLoop__tc, a: [x_2, x_3, undefined] };
+  }
+}
 function LeanJs_DemoIO_stdinEcho() {
-  const x_2 = lean_get_stdin();
-  const x_3 = 1n;
-  const x_4 = LeanJs_DemoIO_echoLoop(x_2, x_3, undefined);
-  return x_4;
+  return lean_trampoline(LeanJs_DemoIO_stdinEcho__tc());
 }
 
 

@@ -24,6 +24,7 @@ const exports = [
   'LeanJs_Demo_spackC', 'LeanJs_Demo_spackE', 'LeanJs_Demo_spackF',
   'LeanJs_Demo_spackG', 'LeanJs_Demo_spackSum',
   'lean_int8_to_int', 'lean_int16_to_int', 'lean_int32_to_int', 'lean_int64_to_int_sint',
+  'LeanJs_Demo_chainHead', 'LeanJs_Demo_pingN',
   'LeanJs_DemoHO_hofApply', 'LeanJs_DemoHO_listMapLam', 'LeanJs_DemoHO_listFilterLam',
   'LeanJs_DemoHO_listFoldlLam', 'LeanJs_DemoHO_arrMapLam', 'LeanJs_DemoHO_applyAdders',
   'LeanJs_DemoHO_currySplit', 'LeanJs_DemoHO_optSeq', 'LeanJs_DemoHO_exSeq',
@@ -87,6 +88,8 @@ const {
   lean_int16_to_int: i16ToInt,
   lean_int32_to_int: i32ToInt,
   lean_int64_to_int_sint: i64ToInt,
+  LeanJs_Demo_chainHead: chainHead,
+  LeanJs_Demo_pingN: pingN,
   LeanJs_DemoHO_hofApply: hofApply,
   LeanJs_DemoHO_listMapLam: listMapLam,
   LeanJs_DemoHO_listFilterLam: listFilterLam,
@@ -256,6 +259,8 @@ console.log(`exSeq = ${showExc(exSeq())}`);
 console.log(`fmapList = ${showLst(fmapList(lst2list([1n, 2n, 3n])))}`);
 console.log(`safeDiv 10 2 = ${safeDivStr(10n, 2n)}`);
 console.log(`safeDiv 10 0 = ${safeDivStr(10n, 0n)}`);
+console.log(`chainHead 10 = ${chainHead(10n)}`);
+console.log(`pingN 5 0 = ${pingN(5n, 0n)}`);
 
 // ---- TodoList JS model ----
 // List: nil = 0, cons = { tag:1, fields:[head, tail] }

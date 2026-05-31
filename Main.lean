@@ -34,6 +34,7 @@ def rootNames : Array Name := #[
   `LeanJs.Demo.floatStr, `LeanJs.Demo.float32Str,
   `LeanJs.Demo.mkSPack, `LeanJs.Demo.spackA, `LeanJs.Demo.spackB, `LeanJs.Demo.spackC,
   `LeanJs.Demo.spackE, `LeanJs.Demo.spackF, `LeanJs.Demo.spackG, `LeanJs.Demo.spackSum,
+  `LeanJs.Demo.chainHead, `LeanJs.Demo.pingN,
   `LeanJs.DemoHO.hofApply,
   `LeanJs.DemoHO.listMapLam, `LeanJs.DemoHO.listFilterLam, `LeanJs.DemoHO.listFoldlLam,
   `LeanJs.DemoHO.arrMapLam,

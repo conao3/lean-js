@@ -112,6 +112,18 @@ def spackG (s : SPack) : Float32 := s.g
 def spackSum (s : SPack) : Int :=
   s.a.toInt + s.b.toInt + s.c.toInt + s.e.toInt
 
+def cs0 (n : Nat) : Nat := n
+def cs1 (n : Nat) : Nat := cs0 (n + 1)
+def cs2 (n : Nat) : Nat := cs1 (n + 1)
+def cs3 (n : Nat) : Nat := cs2 (n + 1)
+def chainHead (n : Nat) : Nat := cs3 n
+def viaA (n : Nat) : Nat := n + 1
+def viaB (n : Nat) : Nat := viaA n
+def pingN (n acc : Nat) : Nat :=
+  match n with
+  | 0 => acc
+  | n+1 => pingN n (viaB acc)
+
 def showTodo (t : Todo) : String :=
   let mark := if t.done then "x" else " "
   s!"{t.id}:{t.title}:{mark}"
@@ -233,6 +245,10 @@ def main : IO Unit := do
   IO.println s!"fmapList = {fmapList [1,2,3]}"
   IO.println s!"safeDiv 10 2 = {safeDivStr 10 2}"
   IO.println s!"safeDiv 10 0 = {safeDivStr 10 0}"
+  -- Acyclic cross-function tail chain (small-N value diff; deep no-overflow
+  -- check lives node-side in test-tco.mjs).
+  IO.println s!"chainHead 10 = {chainHead 10}"
+  IO.println s!"pingN 5 0 = {pingN 5 0}"
   -- TodoList sequence: add, add, add, toggle, remove
   let l0 := TodoList.empty
   let l1 := l0.add "buy milk"

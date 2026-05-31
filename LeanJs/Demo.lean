@@ -152,4 +152,25 @@ def spackG (s : SPack) : Float32 := s.g
 def spackSum (s : SPack) : Int :=
   s.a.toInt + s.b.toInt + s.c.toInt + s.e.toInt
 
+/-! Acyclic cross-function tail chain (a DAG, not a cycle): each step
+    tail-calls a DISTINCT next function, so every node is its own size-1 SCC with
+    no self-edge. The old SCC trampoline (which only fired for SCC ≥ 2) would
+    emit a stacking JS call per link; the uniform thunk-target mechanism wraps
+    each chain link as a `__tc` core so the chain runs in constant JS stack. -/
+def cs0 (n : Nat) : Nat := n
+def cs1 (n : Nat) : Nat := cs0 (n + 1)
+def cs2 (n : Nat) : Nat := cs1 (n + 1)
+def cs3 (n : Nat) : Nat := cs2 (n + 1)
+def chainHead (n : Nat) : Nat := cs3 n
+
+/-- A self-looping driver (already TCO'd) whose per-step body performs a
+    cross-function tail edge `viaB → viaA`. At large N the cross edge must not
+    stack: `pingN` loops, and each `viaB acc` evaluates through the trampoline. -/
+def viaA (n : Nat) : Nat := n + 1
+def viaB (n : Nat) : Nat := viaA n
+def pingN (n acc : Nat) : Nat :=
+  match n with
+  | 0 => acc
+  | n+1 => pingN n (viaB acc)
+
 end LeanJs.Demo

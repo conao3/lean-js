@@ -636,15 +636,15 @@ def declTailEdges (d : Decl) : Array FunId :=
     lexically inside the surrounding `while`). -/
 abbrev JpEnv := Std.HashMap Nat (Array Param × FnBody)
 
-/-- Trampoline core suffix: `funRef` of a co-SCC member's thunk-returning core. -/
+/-- Trampoline core suffix: `funRef` of a thunk-returning core. -/
 def tcRef (c : FunId) : String := funRef c ++ "__tc"
 
 mutual
 
-/-- `self` is the function being emitted; `scc` is the set of names in its
-    tail-call SCC (size ≥ 2 means a trampolined core is being emitted). A tail
-    call to `self` loops (`continue`); to another SCC member it returns a thunk;
-    to anything else it is a normal returned call. -/
+/-- `self` is the function being emitted; `scc` is the thunk-target set (names
+    that have a `__tc` core). A tail call to `self` loops (`continue`); to any
+    thunk target it returns a `{__tc}` thunk; to anything else (extern, plain
+    leaf) it is a normal returned call. -/
 partial def emitFnBodyLoop (self : FunId) (scc : Std.HashSet Name)
     (params : Array Param) (jps : JpEnv) : FnBody → EmitM Unit
   | b => do
@@ -816,84 +816,62 @@ partial def emitFnBody : FnBody → EmitM Unit
         line "default: { throw new Error(\"no matching case\"); }"
     line "}"
 
-/-! ## Tail-call SCC (strategy A)
+/-! ## Tail-call trampoline targets (strategy A)
 
-Build the directed graph of "f tail-calls g" edges over the collected decls,
-then find strongly connected components. A component of size ≥ 2 is a group of
-mutually tail-recursive functions: each member is emitted as a thunk-returning
-`__tc` core plus a public wrapper that drives the trampoline. Self-recursion
-(SCC of size 1 with a self edge) keeps the existing `while` loop. -/
+A matched tail call to a collected callee `c` returns a `{__tc:1, f: tcRef c, a}`
+thunk instead of stacking a JS frame; the callee's wrapper drives `lean_trampoline`
+to unroll the chain. This covers self-recursion (self edge loops via `continue`),
+mutual recursion (each member is a tail target of another), AND acyclic DAG tail
+chains (f→g→h, distinct size-1 SCCs), all in constant JS stack. The thunk-target
+set is just every function that is the target of some collected tail edge. -/
 
-abbrev SccMap := Std.HashMap Name (Std.HashSet Name)
-
-/-- Tarjan's SCC over the tail-edge graph; returns, for each node, the set of
-    names in its component (including itself). Only edges whose target is also a
-    collected decl are followed. -/
-partial def computeTailSccs (decls : Array Decl) : SccMap := Id.run do
-  let names : Std.HashSet Name := decls.foldl (·.insert ·.name) {}
-  let edges : Std.HashMap Name (Array Name) :=
-    decls.foldl (fun m d =>
-      m.insert d.name ((declTailEdges d).filter names.contains)) {}
-  let mut index : Std.HashMap Name Nat := {}
-  let mut low : Std.HashMap Name Nat := {}
-  let mut onStack : Std.HashSet Name := {}
-  let mut stack : Array Name := #[]
-  let mut counter : Nat := 0
-  let mut comp : SccMap := {}
-  -- iterative-friendly recursion via fuel-free partial def
-  let rec strongConnect (v : Name)
-      (index : Std.HashMap Name Nat) (low : Std.HashMap Name Nat)
-      (onStack : Std.HashSet Name) (stack : Array Name) (counter : Nat)
-      (comp : SccMap) :
-      (Std.HashMap Name Nat × Std.HashMap Name Nat × Std.HashSet Name ×
-        Array Name × Nat × SccMap) := Id.run do
-    let mut index := index.insert v counter
-    let mut low := low.insert v counter
-    let mut counter := counter + 1
-    let mut stack := stack.push v
-    let mut onStack := onStack.insert v
-    let mut comp := comp
-    for w in (edges.getD v #[]) do
-      if !index.contains w then
-        let (i2, l2, o2, s2, c2, cm2) := strongConnect w index low onStack stack counter comp
-        index := i2; low := l2; onStack := o2; stack := s2; counter := c2; comp := cm2
-        low := low.insert v (Nat.min (low.getD v 0) (low.getD w 0))
-      else if onStack.contains w then
-        low := low.insert v (Nat.min (low.getD v 0) (index.getD w 0))
-    if low.getD v 0 == index.getD v 0 then
-      let mut members : Std.HashSet Name := {}
-      let mut done := false
-      repeat
-        match stack.back? with
-        | none => done := true
-        | some w =>
-          stack := stack.pop
-          onStack := onStack.erase w
-          members := members.insert w
-          if w == v then done := true
-        if done then break
-      for w in members do comp := comp.insert w members
-    return (index, low, onStack, stack, counter, comp)
+/-- Names that are the *target* of some collected decl's tail edge (cyclic OR
+    acyclic). Every such function gets a `__tc` core so a caller's matched tail
+    call can return a `{__tc}` thunk naming `tcRef`, and the trampoline unrolls
+    the whole chain with no JS stack growth. This subsumes the SCC machinery:
+    mutual-recursion members are each a target of another, and a self-recursive
+    function is its own target. Acyclic DAG chains (f→g→h, distinct size-1 SCCs)
+    are now covered too — each chain link is a target. -/
+def computeCoreTargets (decls : Array Decl) : Std.HashSet Name := Id.run do
+  -- A thunk target must be emitted as a real `funRef` function, i.e. a collected
+  -- `.fdecl` (NOT an `.extern`, which lowers to an inline op or a prelude call
+  -- with no `__tc` core). Restricting the candidate names to fdecls prevents
+  -- thunking a tail-positioned `Nat.add`/extern (which has no `__tc` core).
+  let names : Std.HashSet Name := decls.foldl (fun s d =>
+    match d with | .fdecl .. => s.insert d.name | .extern .. => s) {}
+  let mut targets : Std.HashSet Name := {}
   for d in decls do
-    if !index.contains d.name then
-      let (i2, l2, o2, s2, c2, cm2) :=
-        strongConnect d.name index low onStack stack counter comp
-      index := i2; low := l2; onStack := o2; stack := s2; counter := c2; comp := cm2
-  return comp
+    for c in (declTailEdges d).filter names.contains do
+      targets := targets.insert c
+  return targets
 
-/-- Emit a top-level `Decl` as a TS function. `sccs` carries each decl's
-    tail-call component; a component of size ≥ 2 is trampolined. -/
-def emitDeclWith (sccs : SccMap) : Decl → EmitM Unit
-  | .fdecl f xs _ body _ => do
+/-- A function needs a trampolined core+wrapper iff it is a thunk target, or it
+    makes any tail call to a thunk target (so its body returns `{__tc}` thunks
+    that the wrapper must unroll), or it self-tail-calls (loop). Anything else is
+    a plain function with no tail edges in or out of the trampoline. -/
+def needsCore (cores : Std.HashSet Name) (d : Decl) : Bool :=
+  match d with
+  | .fdecl (body := b) .. =>
+    cores.contains d.name
+      || hasSelfTailCall d.name b
+      || (tailCallTargets b).any cores.contains
+  | .extern .. => false
+
+/-- Emit a top-level `Decl` as a TS function. `cores` is the set of names that
+    have a `__tc` core (thunk targets); a tail call to a member returns a thunk
+    and the wrapper drives the trampoline, so cyclic AND acyclic cross-function
+    tail chains run in constant JS stack. -/
+def emitDeclWith (cores : Std.HashSet Name) : Decl → EmitM Unit
+  | d@(.fdecl f xs _ body _) => do
     let params := xs.toList.filter (fun p => !p.ty.isErased && !p.ty.isVoid)
     let paramStr := String.intercalate ", " (params.map (fun p => varName p.x))
-    let scc := sccs.getD f {}
-    if scc.size ≥ 2 then
-      -- trampolined core: SCC-internal tail edges return thunks; self edges loop
+    if needsCore cores d then
+      -- trampolined core: tail edges to any core target return thunks; self
+      -- edges loop (`continue`); the wrapper unrolls returned thunks.
       line ("function " ++ tcRef f ++ "(" ++ paramStr ++ ") {")
       withIndent do
         line "while (true) {"
-        withIndent (emitFnBodyLoop f scc xs {} body)
+        withIndent (emitFnBodyLoop f cores xs {} body)
         line "}"
       line "}"
       -- public wrapper drives the trampoline
@@ -903,13 +881,7 @@ def emitDeclWith (sccs : SccMap) : Decl → EmitM Unit
       line "}"
     else
       line ("function " ++ funRef f ++ "(" ++ paramStr ++ ") {")
-      withIndent do
-        if hasSelfTailCall f body then
-          line "while (true) {"
-          withIndent (emitFnBodyLoop f {} xs {} body)
-          line "}"
-        else
-          emitFnBody body
+      withIndent (emitFnBody body)
       line "}"
   | .extern f _ _ _ =>
     line s!"// extern {funRef f} -> runtime prelude"
@@ -1040,10 +1012,10 @@ def renderChecked (env : Environment) (decls : Array Decl) : Except String Strin
       ("unmapped externs (no prelude symbol; would emit a dangling call):\n"
         ++ String.intercalate "\n" lines)
   let arityMap := buildArityMap decls
-  let sccs := computeTailSccs decls
+  let cores := computeCoreTargets decls
   let act : EmitM Unit := do
     for d in decls do
-      emitDeclWith sccs d
+      emitDeclWith cores d
       line ""
   let (_, st) := act.run { externMap, arityMap }
   return .ok st.out
@@ -1052,10 +1024,10 @@ def renderChecked (env : Environment) (decls : Array Decl) : Except String Strin
     have already validated, or for tests. -/
 def render (decls : Array Decl) : String := Id.run do
   let arityMap := buildArityMap decls
-  let sccs := computeTailSccs decls
+  let cores := computeCoreTargets decls
   let act : EmitM Unit := do
     for d in decls do
-      emitDeclWith sccs d
+      emitDeclWith cores d
       line ""
   let (_, st) := act.run { arityMap }
   return st.out
@@ -1132,10 +1104,10 @@ def renderProgramChecked (env : Environment) (mainName : Name) : Except String S
       ("unmapped externs (no prelude symbol; would emit a dangling call):\n"
         ++ String.intercalate "\n" lines)
   let arityMap := buildArityMap decls
-  let sccs := computeTailSccs decls
+  let cores := computeCoreTargets decls
   let act : EmitM Unit := do
     for d in decls do
-      emitDeclWith sccs d
+      emitDeclWith cores d
       line ""
     -- Module-init chain (analogue of EmitC.emitInitFn / emitDeclInit). For each
     -- reached decl carrying an `@[init]` / `builtin_initialize` init fn, register
