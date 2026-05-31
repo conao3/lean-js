@@ -14,6 +14,47 @@ const L_bool = (b) => (b ? 1 : 0);
 // ctors with fields are objects { tag, fields }. lean_obj_tag handles both.
 const lean_tag = (x) => (typeof x === 'number' ? x : x.tag);
 
+// ---- constructor objects: three regions mirroring lean_alloc_ctor ----
+// A heap ctor is one block with header + object/usize word slots + packed
+// scalar bytes (Lean.Compiler.IR.Basic CtorInfo {size, usize, ssize}):
+//   fields : word slots. fields[0..size) are object pointers (proj/set),
+//            fields[size..size+usize) are USize values (uproj/uset). Both use
+//            the IR word index directly, exactly as lean_ctor_get / _get_usize.
+//   sdata  : a DataView of `ssize` packed scalar bytes (sproj/sset), addressed
+//            by byte offset (the IR's word-prefix `n` is dropped; sdata starts
+//            at its own offset 0). Little-endian to match native x86_64.
+// A fully-scalar ctor (size==usize==ssize==0) is a bare number cidx (lean_box).
+const lean_alloc_ctor = (tag, size, usize, ssize) => ({
+  tag,
+  fields: new Array(size + usize).fill(undefined),
+  sdata: ssize > 0 ? new DataView(new ArrayBuffer(ssize)) : null,
+});
+// Allocate a ctor and fill its object region positionally (mirrors emitCtor +
+// emitCtorSetArgs); usize/scalar fields are filled later by uset/sset.
+const lean_ctor = (tag, size, usize, ssize, ...objs) => {
+  const c = lean_alloc_ctor(tag, size, usize, ssize);
+  for (let i = 0; i < objs.length; i++) c.fields[i] = objs[i];
+  return c;
+};
+
+// Packed-scalar get/set into region S (sproj/sset), byte offset addressed,
+// width chosen by IR type. u8/u16/u32 -> number; u64/usize -> bigint; floats
+// -> number. Little-endian to match the native ABI.
+// u8/u16/u32 are plain JS numbers (matching scalar literal emission and
+// `switch` on Bool); u64/usize are bigint; floats are numbers.
+const lean_ctor_get_u8  = (x, o) => x.sdata.getUint8(o);
+const lean_ctor_get_u16 = (x, o) => x.sdata.getUint16(o, true);
+const lean_ctor_get_u32 = (x, o) => x.sdata.getUint32(o, true);
+const lean_ctor_get_u64 = (x, o) => x.sdata.getBigUint64(o, true);
+const lean_ctor_get_f64 = (x, o) => x.sdata.getFloat64(o, true);
+const lean_ctor_get_f32 = (x, o) => x.sdata.getFloat32(o, true);
+const lean_ctor_set_u8  = (x, o, v) => x.sdata.setUint8(o, Number(v) & 0xff);
+const lean_ctor_set_u16 = (x, o, v) => x.sdata.setUint16(o, Number(v) & 0xffff, true);
+const lean_ctor_set_u32 = (x, o, v) => x.sdata.setUint32(o, Number(v) >>> 0, true);
+const lean_ctor_set_u64 = (x, o, v) => x.sdata.setBigUint64(o, BigInt.asUintN(64, v), true);
+const lean_ctor_set_f64 = (x, o, v) => x.sdata.setFloat64(o, v, true);
+const lean_ctor_set_f32 = (x, o, v) => x.sdata.setFloat32(o, Math.fround(v), true);
+
 // ---- closure application (pap/ap model) ----
 function lean_apply(clo, more) {
   if (typeof clo === 'function') return clo(...more);

@@ -14,6 +14,47 @@ const L_bool = (b) => (b ? 1 : 0);
 // ctors with fields are objects { tag, fields }. lean_obj_tag handles both.
 const lean_tag = (x) => (typeof x === 'number' ? x : x.tag);
 
+// ---- constructor objects: three regions mirroring lean_alloc_ctor ----
+// A heap ctor is one block with header + object/usize word slots + packed
+// scalar bytes (Lean.Compiler.IR.Basic CtorInfo {size, usize, ssize}):
+//   fields : word slots. fields[0..size) are object pointers (proj/set),
+//            fields[size..size+usize) are USize values (uproj/uset). Both use
+//            the IR word index directly, exactly as lean_ctor_get / _get_usize.
+//   sdata  : a DataView of `ssize` packed scalar bytes (sproj/sset), addressed
+//            by byte offset (the IR's word-prefix `n` is dropped; sdata starts
+//            at its own offset 0). Little-endian to match native x86_64.
+// A fully-scalar ctor (size==usize==ssize==0) is a bare number cidx (lean_box).
+const lean_alloc_ctor = (tag, size, usize, ssize) => ({
+  tag,
+  fields: new Array(size + usize).fill(undefined),
+  sdata: ssize > 0 ? new DataView(new ArrayBuffer(ssize)) : null,
+});
+// Allocate a ctor and fill its object region positionally (mirrors emitCtor +
+// emitCtorSetArgs); usize/scalar fields are filled later by uset/sset.
+const lean_ctor = (tag, size, usize, ssize, ...objs) => {
+  const c = lean_alloc_ctor(tag, size, usize, ssize);
+  for (let i = 0; i < objs.length; i++) c.fields[i] = objs[i];
+  return c;
+};
+
+// Packed-scalar get/set into region S (sproj/sset), byte offset addressed,
+// width chosen by IR type. u8/u16/u32 -> number; u64/usize -> bigint; floats
+// -> number. Little-endian to match the native ABI.
+// u8/u16/u32 are plain JS numbers (matching scalar literal emission and
+// `switch` on Bool); u64/usize are bigint; floats are numbers.
+const lean_ctor_get_u8  = (x, o) => x.sdata.getUint8(o);
+const lean_ctor_get_u16 = (x, o) => x.sdata.getUint16(o, true);
+const lean_ctor_get_u32 = (x, o) => x.sdata.getUint32(o, true);
+const lean_ctor_get_u64 = (x, o) => x.sdata.getBigUint64(o, true);
+const lean_ctor_get_f64 = (x, o) => x.sdata.getFloat64(o, true);
+const lean_ctor_get_f32 = (x, o) => x.sdata.getFloat32(o, true);
+const lean_ctor_set_u8  = (x, o, v) => x.sdata.setUint8(o, Number(v) & 0xff);
+const lean_ctor_set_u16 = (x, o, v) => x.sdata.setUint16(o, Number(v) & 0xffff, true);
+const lean_ctor_set_u32 = (x, o, v) => x.sdata.setUint32(o, Number(v) >>> 0, true);
+const lean_ctor_set_u64 = (x, o, v) => x.sdata.setBigUint64(o, BigInt.asUintN(64, v), true);
+const lean_ctor_set_f64 = (x, o, v) => x.sdata.setFloat64(o, v, true);
+const lean_ctor_set_f32 = (x, o, v) => x.sdata.setFloat32(o, Math.fround(v), true);
+
 // ---- closure application (pap/ap model) ----
 function lean_apply(clo, more) {
   if (typeof clo === 'function') return clo(...more);
@@ -111,7 +152,7 @@ function LeanJs_Demo_mkShifted(x_1) {
       const x_10 = 1n;
       const x_11 = (x_8 + x_10);
       const x_12 = (x_9 + x_8);
-      const x_13 = { tag: 0, fields: [x_11, x_12] };
+      const x_13 = lean_ctor(0, 2, 0, 0, x_11, x_12);
       return x_13;
     }
     default: { throw new Error("no matching case"); }
@@ -181,9 +222,9 @@ function LeanTodo_TodoList_add(x_1, x_2) {
       const x_4 = x_1.fields[0];
       const x_5 = x_1.fields[1];
       const x_6 = 0;
-      const x_7 = { tag: 0, fields: [x_5, x_2] };
-      x_7.fields[2] = x_6;
-      const x_8 = { tag: 1, fields: [x_7, x_4] };
+      const x_7 = lean_ctor(0, 2, 0, 1, x_5, x_2);
+      lean_ctor_set_u8(x_7, 0, x_6);
+      const x_8 = lean_ctor(1, 2, 0, 0, x_7, x_4);
       const x_9 = 1n;
       const x_10 = (x_5 + x_9);
       x_1.fields[1] = x_10;
@@ -194,12 +235,12 @@ function LeanTodo_TodoList_add(x_1, x_2) {
       const x_11 = x_1.fields[0];
       const x_12 = x_1.fields[1];
       const x_13 = 0;
-      const x_14 = { tag: 0, fields: [x_12, x_2] };
-      x_14.fields[2] = x_13;
-      const x_15 = { tag: 1, fields: [x_14, x_11] };
+      const x_14 = lean_ctor(0, 2, 0, 1, x_12, x_2);
+      lean_ctor_set_u8(x_14, 0, x_13);
+      const x_15 = lean_ctor(1, 2, 0, 0, x_14, x_11);
       const x_16 = 1n;
       const x_17 = (x_12 + x_16);
-      const x_18 = { tag: 0, fields: [x_15, x_17] };
+      const x_18 = lean_ctor(0, 2, 0, 0, x_15, x_17);
       return x_18;
     }
     default: { throw new Error("no matching case"); }
@@ -219,12 +260,12 @@ function List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_1, x_2, x_3) {
         const x_7 = null;
         const x_12 = x_5.fields[0];
         const x_13 = x_5.fields[1];
-        const x_14 = x_5.fields[2];
+        const x_14 = lean_ctor_get_u8(x_5, 0);
         const x_15 = lean_nat_dec_eq(x_12, x_1);
         switch (x_15) {
           case 0: {
             const x_8 = x_5;
-            const x_9 = { tag: 1, fields: [x_8, x_3] };
+            const x_9 = lean_ctor(1, 2, 0, 0, x_8, x_3);
             const __t_1 = x_1;
             const __t_2 = x_6;
             const __t_3 = x_9;
@@ -241,9 +282,9 @@ function List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_1, x_2, x_3) {
                 const x_18 = x_5.fields[0];
                 switch (x_14) {
                   case 0: {
-                    x_5.fields[2] = x_15;
+                    lean_ctor_set_u8(x_5, 0, x_15);
                     const x_8 = x_5;
-                    const x_9 = { tag: 1, fields: [x_8, x_3] };
+                    const x_9 = lean_ctor(1, 2, 0, 0, x_8, x_3);
                     const __t_1 = x_1;
                     const __t_2 = x_6;
                     const __t_3 = x_9;
@@ -254,9 +295,9 @@ function List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_1, x_2, x_3) {
                   }
                   case 1: {
                     const x_19 = 0;
-                    x_5.fields[2] = x_19;
+                    lean_ctor_set_u8(x_5, 0, x_19);
                     const x_8 = x_5;
-                    const x_9 = { tag: 1, fields: [x_8, x_3] };
+                    const x_9 = lean_ctor(1, 2, 0, 0, x_8, x_3);
                     const __t_1 = x_1;
                     const __t_2 = x_6;
                     const __t_3 = x_9;
@@ -271,10 +312,10 @@ function List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_1, x_2, x_3) {
               case 1: {
                 switch (x_14) {
                   case 0: {
-                    const x_20 = { tag: 0, fields: [x_12, x_13] };
-                    x_20.fields[2] = x_15;
+                    const x_20 = lean_ctor(0, 2, 0, 1, x_12, x_13);
+                    lean_ctor_set_u8(x_20, 0, x_15);
                     const x_8 = x_20;
-                    const x_9 = { tag: 1, fields: [x_8, x_3] };
+                    const x_9 = lean_ctor(1, 2, 0, 0, x_8, x_3);
                     const __t_1 = x_1;
                     const __t_2 = x_6;
                     const __t_3 = x_9;
@@ -285,10 +326,10 @@ function List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_1, x_2, x_3) {
                   }
                   case 1: {
                     const x_21 = 0;
-                    const x_22 = { tag: 0, fields: [x_12, x_13] };
-                    x_22.fields[2] = x_21;
+                    const x_22 = lean_ctor(0, 2, 0, 1, x_12, x_13);
+                    lean_ctor_set_u8(x_22, 0, x_21);
                     const x_8 = x_22;
-                    const x_9 = { tag: 1, fields: [x_8, x_3] };
+                    const x_9 = lean_ctor(1, 2, 0, 0, x_8, x_3);
                     const __t_1 = x_1;
                     const __t_2 = x_6;
                     const __t_3 = x_9;
@@ -326,7 +367,7 @@ function LeanTodo_TodoList_toggle(x_1, x_2) {
       const x_8 = x_1.fields[1];
       const x_9 = 0;
       const x_10 = List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_2, x_7, x_9);
-      const x_11 = { tag: 0, fields: [x_10, x_8] };
+      const x_11 = lean_ctor(0, 2, 0, 0, x_10, x_8);
       return x_11;
     }
     default: { throw new Error("no matching case"); }
@@ -354,7 +395,7 @@ function List_reverseAux__redArg(x_1, x_2) {
           case 1: {
             const x_6 = x_1.fields[0];
             const x_7 = x_1.fields[1];
-            const x_8 = { tag: 1, fields: [x_6, x_2] };
+            const x_8 = lean_ctor(1, 2, 0, 0, x_6, x_2);
             const __t_1 = x_7;
             const __t_2 = x_8;
             x_1 = __t_1;
@@ -422,7 +463,7 @@ function List_filterTR_loop__at__LeanTodo_TodoList_remove_spec_0(x_1, x_2, x_3) 
             const x_15 = lean_nat_dec_eq(x_14, x_1);
             switch (x_15) {
               case 0: {
-                const x_16 = { tag: 1, fields: [x_12, x_3] };
+                const x_16 = lean_ctor(1, 2, 0, 0, x_12, x_3);
                 const __t_1 = x_1;
                 const __t_2 = x_13;
                 const __t_3 = x_16;
@@ -466,7 +507,7 @@ function LeanTodo_TodoList_remove(x_1, x_2) {
       const x_8 = x_1.fields[1];
       const x_9 = 0;
       const x_10 = List_filterTR_loop__at__LeanTodo_TodoList_remove_spec_0(x_2, x_7, x_9);
-      const x_11 = { tag: 0, fields: [x_10, x_8] };
+      const x_11 = lean_ctor(0, 2, 0, 0, x_10, x_8);
       return x_11;
     }
     default: { throw new Error("no matching case"); }

@@ -126,12 +126,34 @@ def emitKnownFap (c : FunId) (ys : Array Arg) : Option String :=
   | _ => none
 
 def ctorLit (i : CtorInfo) (ys : Array Arg) : String :=
-  let fields := String.intercalate ", " (ys.toList.map argToJs)
   if i.size == 0 && i.usize == 0 && i.ssize == 0 then
     -- nullary ctor / enum: mirror lean_box(cidx)
     s!"{i.cidx}"
   else
-    "{ tag: " ++ toString i.cidx ++ ", fields: [" ++ fields ++ "] }"
+    -- mirror lean_alloc_ctor: object pointers and USize slots live in `fields`
+    -- (word-indexed); packed scalars in a byte-addressed DataView `sdata`.
+    -- Only the object args are passed positionally (emitCtorSetArgs); USize and
+    -- scalar fields are filled by separate uset/sset.
+    let objs := String.intercalate ", " (ys.toList.map argToJs)
+    let head := s!"lean_ctor({i.cidx}, {i.size}, {i.usize}, {i.ssize}"
+    if objs.isEmpty then s!"{head})" else s!"{head}, {objs})"
+
+/-- Byte width of a packed scalar IRType, and the runtime get/set suffix used
+    by `lean_ctor_get_*` / `lean_ctor_set_*` for region S (sproj/sset). -/
+def sscalarSuffix : IRType → String
+  | .uint8   => "u8"
+  | .uint16  => "u16"
+  | .uint32  => "u32"
+  | .uint64  => "u64"
+  | .usize   => "u64"
+  | .float   => "f64"
+  | .float32 => "f32"
+  | _        => "u8"
+
+/-- Byte offset of a scalar field: `sizeof(void*)*n + offset` in C, but in the
+    split layout region S starts at its own offset 0, so the word-prefix `n` is
+    dropped and only the intra-region byte `offset` is used. -/
+def sbyteOffset (_n : Nat) (offset : Nat) : String := toString offset
 
 /-- Emit an expression. `ty` is the declared IR type of the binding, used to
     pick the JS representation of a numeric literal: scalar types (`u8`/`u16`/
@@ -143,7 +165,7 @@ def emitExpr (ty : IRType := .object) : IR.Expr → String
   | .reuse _ i _ ys => ctorLit i ys    -- GC: identical to a fresh ctor
   | .proj i x       => s!"{varName x}.fields[{i}]"
   | .uproj i x      => s!"{varName x}.fields[{i}]"
-  | .sproj n _ x    => s!"{varName x}.fields[{n}]"
+  | .sproj n offset x => s!"lean_ctor_get_{sscalarSuffix ty}({varName x}, {sbyteOffset n offset})"
   | .fap c ys       =>
     match emitKnownFap c ys with
     | some s => s
@@ -226,8 +248,8 @@ partial def emitFnBodyLoop (self : FunId) (params : Array Param) (jps : JpEnv) :
       | .uset x i y k => do
         line s!"{varName x}.fields[{i}] = {varName y};"
         emitFnBodyLoop self params jps k
-      | .sset x i _ y _ k => do
-        line s!"{varName x}.fields[{i}] = {varName y};"
+      | .sset x i offset y ty k => do
+        line s!"lean_ctor_set_{sscalarSuffix ty}({varName x}, {sbyteOffset i offset}, {varName y});"
         emitFnBodyLoop self params jps k
       | .inc _ _ _ _ k => emitFnBodyLoop self params jps k
       | .dec _ _ _ _ k => emitFnBodyLoop self params jps k
@@ -286,8 +308,8 @@ partial def emitPrefixThenTail (self : FunId) (params : Array Param) (jps : JpEn
   | .uset x i y k, args => do
     line s!"{varName x}.fields[{i}] = {varName y};"
     emitPrefixThenTail self params jps k args
-  | .sset x i _ y _ k, args => do
-    line s!"{varName x}.fields[{i}] = {varName y};"
+  | .sset x i offset y ty k, args => do
+    line s!"lean_ctor_set_{sscalarSuffix ty}({varName x}, {sbyteOffset i offset}, {varName y});"
     emitPrefixThenTail self params jps k args
   | .inc _ _ _ _ k, args => emitPrefixThenTail self params jps k args
   | .dec _ _ _ _ k, args => emitPrefixThenTail self params jps k args
@@ -324,8 +346,8 @@ partial def emitFnBody : FnBody → EmitM Unit
   | .uset x i y b => do
     line s!"{varName x}.fields[{i}] = {varName y};"
     emitFnBody b
-  | .sset x i _ y _ b => do
-    line s!"{varName x}.fields[{i}] = {varName y};"
+  | .sset x i offset y ty b => do
+    line s!"lean_ctor_set_{sscalarSuffix ty}({varName x}, {sbyteOffset i offset}, {varName y});"
     emitFnBody b
   | .inc _ _ _ _ b => emitFnBody b
   | .dec _ _ _ _ b => emitFnBody b

@@ -58,7 +58,9 @@ const listToArr = (l) => {
   }
   return out;
 };
-const showTodo = (t) => `${t.fields[0]}:${t.fields[1]}:${t.fields[2] ? 'x' : ' '}`;
+// Todo: { tag:0, fields:[id, title], sdata:[done:u8 @0] } — done is a packed
+// scalar in region S, read via the byte-addressed DataView (sproj layout).
+const showTodo = (t) => `${t.fields[0]}:${t.fields[1]}:${t.sdata.getUint8(0) ? 'x' : ' '}`;
 const showList = (l) =>
   '[' + listToArr(l.fields[0]).map(showTodo).join(',') + ']@' + l.fields[1];
 
