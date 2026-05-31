@@ -1,6 +1,13 @@
 name = "lean-js"
 defaultTargets = ["lean-js"]
 
+[[require]]
+name = "lean_todo"
+path = "../lean-todo-app/backend"
+
+[[lean_lib]]
+name = "LeanJs"
+
 [[lean_exe]]
 name = "lean-js"
 root = "Main"
