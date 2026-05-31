@@ -112,6 +112,29 @@ function lean_apply(clo, more) {
   return cur;
 }
 
+// ---- panic (matches runtime/object.cpp lean_panic_fn) ----
+// `panicCore`/`panic`/`panic!`/`unreachable!` compile to a call to
+// `lean_panic_fn(default_val, msg)`: it prints the message to stderr (unless
+// suppressed), then RETURNS the Inhabited default — it does NOT abort or exit by
+// default, so the program stays logically total and continues. Mutable flags
+// mirror the C globals; init wraps suppression around the closed-term phase.
+let _leanPanicMessages = true;
+let _leanExitOnPanic = false;
+const lean_set_panic_messages = (b) => { _leanPanicMessages = b ? 1 : 0; };
+const lean_set_exit_on_panic = (b) => { _leanExitOnPanic = b ? 1 : 0; };
+const lean_panic_fn = (defaultVal, msg) => {
+  if (_leanPanicMessages) process.stderr.write(String(msg) + '\n');
+  if (_leanExitOnPanic) process.exit(1);
+  return defaultVal;
+};
+// FnBody.unreachable -> lean_internal_panic_unreachable: FATAL. Dead match arms
+// are never meant to run; print and terminate (never fall through).
+const lean_internal_panic = (msg) => {
+  process.stderr.write('INTERNAL PANIC: ' + String(msg) + '\n');
+  process.exit(1);
+};
+const lean_internal_panic_unreachable = () => lean_internal_panic('unreachable code has been reached');
+
 // ---- Nat (bigint, total: /0 and %0 -> 0/lhs; sub is truncated monus) ----
 const lean_nat_pow = (a, b) => a ** b;
 const lean_nat_pred = (a) => (a > 0n ? a - 1n : 0n);
@@ -465,6 +488,7 @@ const lean_nat_xor = (a, b) => a ^ b;
 // ---- Int / Nat conversions ----
 const lean_int_of_nat = (n) => n;
 const lean_int_to_nat = (i) => (i < 0n ? 0n : i);
+const lean_nat_abs = (i) => (i < 0n ? -i : i);
 const lean_uint32_of_nat2 = (n) => Number(BigInt.asUintN(32, n));
 const lean_uint64_to_float = (a) => Number(a);
 const lean_uint32_to_float = (a) => Number(a);

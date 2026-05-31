@@ -118,7 +118,7 @@ def preludeSymbols : Std.HashSet String := Std.HashSet.ofList [
   "lean_nat_land", "lean_nat_lor", "lean_nat_xor",
   "lean_int_neg", "lean_int_div", "lean_int_mod", "lean_int_ediv", "lean_int_emod",
   "lean_int_dec_eq", "lean_int_dec_lt", "lean_int_dec_le",
-  "lean_int_of_nat", "lean_int_to_nat",
+  "lean_int_of_nat", "lean_int_to_nat", "lean_nat_abs",
   "lean_nat_dec_eq", "lean_nat_dec_lt", "lean_nat_dec_le",
   -- UInt / USize
   "lean_uint8_of_nat", "lean_uint16_of_nat", "lean_uint64_of_nat",
@@ -198,8 +198,8 @@ def preludeSymbols : Std.HashSet String := Std.HashSet.ofList [
   "lean_array_get_size", "lean_array_get", "lean_array_fget", "lean_array_set",
   "lean_array_push", "lean_array_pop", "lean_array_swap", "lean_array_uget",
   "lean_array_uset", "lean_array_usize", "lean_array_to_list", "lean_mk_array", "lean_array_mk",
-  -- platform
-  "lean_system_platform_nbits",
+  -- platform / panic
+  "lean_system_platform_nbits", "lean_panic_fn",
   -- IO / ST / FS
   "lean_get_stdout", "lean_get_stderr", "lean_get_stdin",
   "lean_get_set_stdout", "lean_get_set_stderr", "lean_get_set_stdin",
@@ -690,7 +690,7 @@ partial def emitNonTail (self : FunId) (scc : Std.HashSet Name)
     | none =>
       let args := String.intercalate ", " (ys.toList.map argToJs)
       line s!"return {jpName j}({args});"
-  | .unreachable => line "throw new Error(\"unreachable\");"
+  | .unreachable => line "lean_internal_panic_unreachable();"
   | .case _ x xType alts => do
     let scrut := if xType.isScalar then varName x else s!"lean_tag({varName x})"
     line ("switch (" ++ scrut ++ ") {")
@@ -795,7 +795,7 @@ partial def emitFnBody : FnBody → EmitM Unit
   | .jmp j ys =>
     let args := String.intercalate ", " (ys.toList.map argToJs)
     line s!"return {jpName j}({args});"
-  | .unreachable => line "throw new Error(\"unreachable\");"
+  | .unreachable => line "lean_internal_panic_unreachable();"
   | .case _ x xType alts => do
     let scrut := if xType.isScalar then varName x else s!"lean_tag({varName x})"
     line ("switch (" ++ scrut ++ ") {")

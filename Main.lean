@@ -82,3 +82,4 @@ def main (args : List String) : IO Unit := do
     | .error e => throw (IO.userError s!"lean-js: {e}")
   emitProg `LeanJs.DemoIO.stdinEcho "out-stdin.mjs"
   emitProg `LeanJs.DemoIO.errMain "out-err.mjs"
+  emitProg `LeanJs.DemoIO.panicMain "out-panic.mjs"

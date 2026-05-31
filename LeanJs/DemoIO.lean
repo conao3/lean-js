@@ -76,4 +76,22 @@ def errMain : IO Unit := do
   IO.println "before error"
   throw (IO.userError "boom from lean-js")
 
+/-- A function with a `panic!` reached on one branch. `panic!` returns the
+    `Inhabited` default and the program CONTINUES (it does not abort), so callers
+    can observe the returned default after the message hits stderr. -/
+def clampPos (n : Int) : Nat :=
+  if n < 0 then panic! "clampPos: negative" else n.toNat
+
+/-- Panic program: triggers a `panic!` (message to stderr) and a `List.head!` on
+    `[]` (another panic), proving compiled panic prints to stderr, returns the
+    default, and the program keeps running to print the post-panic lines and exit
+    0. Diff-tested for stdout, stderr, and exit code against `lean --run`. -/
+def panicMain : IO Unit := do
+  IO.println "before panic"
+  let d := clampPos (-5)
+  IO.println s!"clampPos(-5) = {d}"
+  let h := ([] : List Nat).head!
+  IO.println s!"head! [] = {h}"
+  IO.println "after panic"
+
 end LeanJs.DemoIO

@@ -67,3 +67,24 @@ else
   echo "--- stderr diff ---"; diff /tmp/lean-err.err /tmp/ts-err.err || true
   exit 1
 fi
+
+# Panic program: compiled `panic!`/`List.head!` must print the PANIC message to
+# stderr, return the Inhabited default, and CONTINUE (no abort, exit 0), exactly
+# like Lean. `LEAN_BACKTRACE=0` suppresses Lean's synthetic backtrace so only the
+# PANIC lines remain (node emits no backtrace); stdout+stderr+exit are diffed.
+LEAN_EC=0; LEAN_BACKTRACE=0 lake env lean --run expected-panic.lean > /tmp/lean-panic.out 2> /tmp/lean-panic.err || LEAN_EC=$?
+NODE_EC=0; LEAN_BACKTRACE=0 node out-panic.mjs > /tmp/ts-panic.out 2> /tmp/ts-panic.err || NODE_EC=$?
+echo "=== PANIC LEAN stdout ==="; cat /tmp/lean-panic.out
+echo "=== PANIC LEAN stderr ==="; cat /tmp/lean-panic.err
+echo "=== PANIC node stdout ===";  cat /tmp/ts-panic.out
+echo "=== PANIC node stderr ===";  cat /tmp/ts-panic.err
+if diff -q /tmp/lean-panic.out /tmp/ts-panic.out >/dev/null \
+   && diff -q /tmp/lean-panic.err /tmp/ts-panic.err >/dev/null \
+   && [ "$LEAN_EC" = "$NODE_EC" ]; then
+  echo "PANIC-DIFF-TEST PASS: stdout+stderr+exit($LEAN_EC) identical"
+else
+  echo "PANIC-DIFF-TEST FAIL (lean exit=$LEAN_EC node exit=$NODE_EC)"
+  echo "--- stdout diff ---"; diff /tmp/lean-panic.out /tmp/ts-panic.out || true
+  echo "--- stderr diff ---"; diff /tmp/lean-panic.err /tmp/ts-panic.err || true
+  exit 1
+fi
