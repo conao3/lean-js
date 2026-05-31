@@ -76,10 +76,40 @@ function lean_trampoline(t) {
 }
 
 // ---- closure application (pap/ap model) ----
+// A closure value records the worker's FULL arity so apply can do the C runtime's
+// three-way dispatch (Lean's lean_apply_n): exact, under (accumulate into a new
+// closure), and over (saturate, then re-apply the result to the leftover args).
+// pap c ys -> lean_closure(<funRef c>, ARITY, [ys...]) where ARITY is c's full
+// IR arity (the param count emitted for funRef c), so apply can branch on
+// (arity - args.length) vs the number of args supplied.
+function lean_closure(fn, arity, args) {
+  return { fn, arity, args };
+}
+
 function lean_apply(clo, more) {
+  // Bare JS function: treat as a fully-applied call (IR wraps fn values in pap,
+  // but FS.Stream fields and other prelude closures are bare functions).
   if (typeof clo === 'function') return clo(...more);
-  const all = clo.args.concat(more);
-  return clo.fn(...all);
+  // A closure without a recorded arity (legacy/erased) falls back to a single
+  // concat-and-call; arity-bearing closures use the full three-way dispatch.
+  if (typeof clo.arity !== 'number') return clo.fn(...clo.args.concat(more));
+  let cur = clo;
+  let i = 0;
+  while (i < more.length) {
+    const need = cur.arity - cur.args.length;
+    const avail = more.length - i;
+    if (avail < need) {
+      return lean_closure(cur.fn, cur.arity, cur.args.concat(more.slice(i)));
+    }
+    const callArgs = cur.args.concat(more.slice(i, i + need));
+    const res = cur.fn(...callArgs);
+    i += need;
+    if (i === more.length) return res;
+    cur = res;
+    if (typeof cur === 'function') return cur(...more.slice(i));
+    if (typeof cur.arity !== 'number') return cur.fn(...cur.args.concat(more.slice(i)));
+  }
+  return cur;
 }
 
 // ---- Nat (bigint, total: /0 and %0 -> 0/lhs; sub is truncated monus) ----
@@ -370,6 +400,14 @@ const lean_string_utf8_extract = (s, lo, hi) => {
   if (z > bytes.length) z = bytes.length;
   if (a > z) a = z;
   return _utf8dec.decode(bytes.slice(a, z));
+};
+// String.set : replace the char starting at byte pos p with codepoint c. A pos
+// that is out of range or mid-char leaves the string unchanged (Lean returns s).
+const lean_string_utf8_set = (s, p, c) => {
+  const b = _utf8enc.encode(s), i = Number(p);
+  if (i < 0 || i >= b.length || !_u8isFirst(b[i])) return s;
+  const n = _decodeAt(b, i)[1];
+  return _utf8dec.decode(b.slice(0, i)) + String.fromCodePoint(c) + _utf8dec.decode(b.slice(i + n));
 };
 // String.posOf : byte pos of first occurrence of c, else utf8ByteSize.
 const lean_string_utf8_pos_of = (s, c) => {

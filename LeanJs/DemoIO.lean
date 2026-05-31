@@ -20,6 +20,14 @@ def showTodo (t : Todo) : String :=
 def showList (l : TodoList) : String :=
   "[" ++ String.intercalate "," (l.items.map showTodo) ++ "]@" ++ toString l.nextId
 
+/-- IO try/catch over a thrown `IO.userError`: the throw lands in the io_result
+    error arm and `tryCatch` recovers it, proving the EST/EIO error channel. -/
+def tryCatchIO : IO String := do
+  try
+    throw (IO.userError "boom")
+  catch e =>
+    pure s!"caught: {e.toString}"
+
 def main : IO Unit := do
   IO.println "lean-js IO demo"
   IO.println s!"fib 10 = {fib 10}"
@@ -42,6 +50,8 @@ def main : IO Unit := do
   let l2 := l1.add "walk dog"
   let l3 := l2.toggle 0
   IO.println s!"todo = {showList l3}"
+  let caught ← tryCatchIO
+  IO.println s!"trycatch = {caught}"
   IO.eprintln "diagnostic to stderr"
 
 /-- Stdin-echo program: reads all lines from stdin (IO.getStdin / Stream.getLine)

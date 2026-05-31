@@ -76,10 +76,40 @@ function lean_trampoline(t) {
 }
 
 // ---- closure application (pap/ap model) ----
+// A closure value records the worker's FULL arity so apply can do the C runtime's
+// three-way dispatch (Lean's lean_apply_n): exact, under (accumulate into a new
+// closure), and over (saturate, then re-apply the result to the leftover args).
+// pap c ys -> lean_closure(<funRef c>, ARITY, [ys...]) where ARITY is c's full
+// IR arity (the param count emitted for funRef c), so apply can branch on
+// (arity - args.length) vs the number of args supplied.
+function lean_closure(fn, arity, args) {
+  return { fn, arity, args };
+}
+
 function lean_apply(clo, more) {
+  // Bare JS function: treat as a fully-applied call (IR wraps fn values in pap,
+  // but FS.Stream fields and other prelude closures are bare functions).
   if (typeof clo === 'function') return clo(...more);
-  const all = clo.args.concat(more);
-  return clo.fn(...all);
+  // A closure without a recorded arity (legacy/erased) falls back to a single
+  // concat-and-call; arity-bearing closures use the full three-way dispatch.
+  if (typeof clo.arity !== 'number') return clo.fn(...clo.args.concat(more));
+  let cur = clo;
+  let i = 0;
+  while (i < more.length) {
+    const need = cur.arity - cur.args.length;
+    const avail = more.length - i;
+    if (avail < need) {
+      return lean_closure(cur.fn, cur.arity, cur.args.concat(more.slice(i)));
+    }
+    const callArgs = cur.args.concat(more.slice(i, i + need));
+    const res = cur.fn(...callArgs);
+    i += need;
+    if (i === more.length) return res;
+    cur = res;
+    if (typeof cur === 'function') return cur(...more.slice(i));
+    if (typeof cur.arity !== 'number') return cur.fn(...cur.args.concat(more.slice(i)));
+  }
+  return cur;
 }
 
 // ---- Nat (bigint, total: /0 and %0 -> 0/lhs; sub is truncated monus) ----
@@ -370,6 +400,14 @@ const lean_string_utf8_extract = (s, lo, hi) => {
   if (z > bytes.length) z = bytes.length;
   if (a > z) a = z;
   return _utf8dec.decode(bytes.slice(a, z));
+};
+// String.set : replace the char starting at byte pos p with codepoint c. A pos
+// that is out of range or mid-char leaves the string unchanged (Lean returns s).
+const lean_string_utf8_set = (s, p, c) => {
+  const b = _utf8enc.encode(s), i = Number(p);
+  if (i < 0 || i >= b.length || !_u8isFirst(b[i])) return s;
+  const n = _decodeAt(b, i)[1];
+  return _utf8dec.decode(b.slice(0, i)) + String.fromCodePoint(c) + _utf8dec.decode(b.slice(i + n));
 };
 // String.posOf : byte pos of first occurrence of c, else utf8ByteSize.
 const lean_string_utf8_pos_of = (s, c) => {
@@ -857,10 +895,6 @@ function LeanJs_Demo_intNeg(x_1) {
 
 // extern Nat_shiftLeft -> runtime prelude
 
-// extern Nat_pow -> runtime prelude
-
-// extern Nat_div -> runtime prelude
-
 function Float_ofScientific__closed_0() {
   const x_1 = 4n;
   const x_2 = lean_int_of_nat(x_1);
@@ -1033,16 +1067,6 @@ function LeanJs_Demo_arrSum(x_1) {
   }
 }
 
-// extern Array_usize -> runtime prelude
-
-// extern USize_decLt -> runtime prelude
-
-// extern Array_uget -> runtime prelude
-
-// extern Nat_mul -> runtime prelude
-
-// extern Array_uset -> runtime prelude
-
 function _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_Demo_arrMapSum_spec_0(x_1, x_2, x_3) {
   while (true) {
     const x_4 = lean_usize_dec_lt(x_2, x_1);
@@ -1148,7 +1172,7 @@ function Array_range__lam_0__boxed(x_1) {
 }
 
 function Array_range__closed_0() {
-  const x_1 = { fn: Array_range__lam_0__boxed, args: [] };
+  const x_1 = lean_closure(Array_range__lam_0__boxed, 1, []);
   return x_1;
 }
 
@@ -1219,21 +1243,13 @@ function LeanJs_Demo_arrGetD(x_1, x_2) {
   }
 }
 
-// extern Array_size -> runtime prelude
-
-// extern Nat_decLt -> runtime prelude
-
 // extern Nat_decLe -> runtime prelude
-
-// extern USize_ofNat -> runtime prelude
 
 // extern USize_decEq -> runtime prelude
 
 // extern Array_ugetBorrowed -> runtime prelude
 
 // extern Array_push -> runtime prelude
-
-// extern USize_add -> runtime prelude
 
 function _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__Array_append_spec_0__redArg(x_1, x_2, x_3, x_4) {
   while (true) {
@@ -1473,8 +1489,6 @@ function LeanJs_Demo_parityOdd(x_1) {
   return x_2;
 }
 
-// extern Nat_sub -> runtime prelude
-
 function LeanJs_Demo_m3c__tc(x_1) {
   while (true) {
     const x_2 = 0n;
@@ -1689,6 +1703,985 @@ function LeanJs_Demo_spackSum(x_1) {
   const x_11 = lean_int64_to_int_sint(x_5);
   const x_12 = (x_10 + x_11);
   return x_12;
+}
+
+function LeanJs_DemoHO_hofApply__lam_0(x_1) {
+  const x_2 = 2n;
+  const x_3 = (x_1 * x_2);
+  const x_4 = 1n;
+  const x_5 = (x_3 + x_4);
+  return x_5;
+}
+
+function LeanJs_DemoHO_hofApply__lam_0__boxed(x_1) {
+  const x_2 = LeanJs_DemoHO_hofApply__lam_0(x_1);
+  return x_2;
+}
+
+function LeanJs_DemoHO_hofApply__closed_0() {
+  const x_1 = lean_closure(LeanJs_DemoHO_hofApply__lam_0__boxed, 1, []);
+  return x_1;
+}
+
+function LeanJs_DemoHO_applyTwice(x_1, x_2) {
+  const x_3 = lean_apply(x_1, [x_2]);
+  const x_4 = lean_apply(x_1, [x_3]);
+  return x_4;
+}
+
+function LeanJs_DemoHO_hofApply__closed_1() {
+  const x_1 = 5n;
+  const x_2 = LeanJs_DemoHO_hofApply__closed_0();
+  const x_3 = LeanJs_DemoHO_applyTwice(x_2, x_1);
+  return x_3;
+}
+
+function LeanJs_DemoHO_hofApply() {
+  const x_1 = LeanJs_DemoHO_hofApply__closed_1();
+  return x_1;
+}
+
+function List_mapTR_loop__at__LeanJs_DemoHO_listMapLam_spec_0(x_1, x_2) {
+  while (true) {
+    switch (lean_tag(x_1)) {
+      case 0: {
+        const x_3 = List_reverse__redArg(x_2);
+        return x_3;
+      }
+      case 1: {
+        const x_4 = 1;
+        switch (x_4) {
+          case 0: {
+            const x_5 = x_1.fields[0];
+            const x_6 = x_1.fields[1];
+            const x_7 = 10n;
+            const x_8 = (x_5 + x_7);
+            x_1.fields[1] = x_2;
+            x_1.fields[0] = x_8;
+            const __t_1 = x_6;
+            const __t_2 = x_1;
+            x_1 = __t_1;
+            x_2 = __t_2;
+            continue;
+          }
+          case 1: {
+            const x_10 = x_1.fields[0];
+            const x_11 = x_1.fields[1];
+            const x_12 = 10n;
+            const x_13 = (x_10 + x_12);
+            const x_14 = lean_ctor(1, 2, 0, 0, x_13, x_2);
+            const __t_1 = x_11;
+            const __t_2 = x_14;
+            x_1 = __t_1;
+            x_2 = __t_2;
+            continue;
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function LeanJs_DemoHO_listMapLam(x_1) {
+  const x_2 = 0;
+  const x_3 = List_mapTR_loop__at__LeanJs_DemoHO_listMapLam_spec_0(x_1, x_2);
+  return x_3;
+}
+
+function List_filterTR_loop__at__LeanJs_DemoHO_listFilterLam_spec_0(x_1, x_2) {
+  while (true) {
+    switch (lean_tag(x_1)) {
+      case 0: {
+        const x_3 = List_reverse__redArg(x_2);
+        return x_3;
+      }
+      case 1: {
+        const x_4 = 1;
+        switch (x_4) {
+          case 0: {
+            const x_5 = x_1.fields[0];
+            const x_6 = x_1.fields[1];
+            const x_7 = 2n;
+            const x_8 = (x_7 === 0n ? x_5 : x_5 % x_7);
+            const x_9 = 0n;
+            const x_10 = lean_nat_dec_eq(x_8, x_9);
+            switch (x_10) {
+              case 0: {
+                const __t_1 = x_6;
+                const __t_2 = x_2;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                x_1.fields[1] = x_2;
+                const __t_1 = x_6;
+                const __t_2 = x_1;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          }
+          case 1: {
+            const x_13 = x_1.fields[0];
+            const x_14 = x_1.fields[1];
+            const x_15 = 2n;
+            const x_16 = (x_15 === 0n ? x_13 : x_13 % x_15);
+            const x_17 = 0n;
+            const x_18 = lean_nat_dec_eq(x_16, x_17);
+            switch (x_18) {
+              case 0: {
+                const __t_1 = x_14;
+                const __t_2 = x_2;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_20 = lean_ctor(1, 2, 0, 0, x_13, x_2);
+                const __t_1 = x_14;
+                const __t_2 = x_20;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function LeanJs_DemoHO_listFilterLam(x_1) {
+  const x_2 = 0;
+  const x_3 = List_filterTR_loop__at__LeanJs_DemoHO_listFilterLam_spec_0(x_1, x_2);
+  return x_3;
+}
+
+function List_foldl__at__LeanJs_DemoHO_listFoldlLam_spec_0(x_1, x_2) {
+  while (true) {
+    switch (lean_tag(x_2)) {
+      case 0: {
+        return x_1;
+      }
+      case 1: {
+        const x_3 = x_2.fields[0];
+        const x_4 = x_2.fields[1];
+        const x_5 = 10n;
+        const x_6 = (x_1 * x_5);
+        const x_7 = (x_6 + x_3);
+        const __t_1 = x_7;
+        const __t_2 = x_4;
+        x_1 = __t_1;
+        x_2 = __t_2;
+        continue;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function LeanJs_DemoHO_listFoldlLam(x_1) {
+  const x_2 = 0n;
+  const x_3 = List_foldl__at__LeanJs_DemoHO_listFoldlLam_spec_0(x_2, x_1);
+  return x_3;
+}
+
+// extern Array_usize -> runtime prelude
+
+// extern USize_decLt -> runtime prelude
+
+// extern Array_uget -> runtime prelude
+
+// extern Nat_mul -> runtime prelude
+
+// extern USize_add -> runtime prelude
+
+// extern Array_uset -> runtime prelude
+
+function _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_DemoHO_arrMapLam_spec_0(x_1, x_2, x_3) {
+  while (true) {
+    const x_4 = lean_usize_dec_lt(x_2, x_1);
+    switch (x_4) {
+      case 0: {
+        return x_3;
+      }
+      case 1: {
+        const x_5 = lean_array_uget(x_3, x_2);
+        const x_6 = 0n;
+        const x_7 = lean_array_uset(x_3, x_2, x_6);
+        const x_8 = (x_5 * x_5);
+        const x_9 = 1n;
+        const x_10 = lean_usize_add(x_2, x_9);
+        const x_11 = lean_array_uset(x_7, x_2, x_8);
+        const __t_1 = x_1;
+        const __t_2 = x_10;
+        const __t_3 = x_11;
+        x_1 = __t_1;
+        x_2 = __t_2;
+        x_3 = __t_3;
+        continue;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function LeanJs_DemoHO_arrMapLam(x_1) {
+  const x_2 = lean_array_usize(x_1);
+  const x_3 = 0n;
+  const x_4 = _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_DemoHO_arrMapLam_spec_0(x_2, x_3, x_1);
+  return x_4;
+}
+
+function LeanJs_DemoHO_applyAdders__closed_2() {
+  const x_1 = 100n;
+  const x_2 = lean_closure(LeanJs_DemoHO_applyAdders__lam_0__boxed, 2, [x_1]);
+  return x_2;
+}
+
+function LeanJs_DemoHO_applyAdders__closed_3() {
+  const x_1 = 0;
+  const x_2 = LeanJs_DemoHO_applyAdders__closed_2();
+  const x_3 = lean_ctor(1, 2, 0, 0, x_2, x_1);
+  return x_3;
+}
+
+function LeanJs_DemoHO_applyAdders__closed_1() {
+  const x_1 = 10n;
+  const x_2 = lean_closure(LeanJs_DemoHO_applyAdders__lam_0__boxed, 2, [x_1]);
+  return x_2;
+}
+
+function LeanJs_DemoHO_applyAdders__closed_4() {
+  const x_1 = LeanJs_DemoHO_applyAdders__closed_3();
+  const x_2 = LeanJs_DemoHO_applyAdders__closed_1();
+  const x_3 = lean_ctor(1, 2, 0, 0, x_2, x_1);
+  return x_3;
+}
+
+function LeanJs_DemoHO_applyAdders__lam_0(x_1, x_2) {
+  const x_3 = (x_2 + x_1);
+  return x_3;
+}
+
+function LeanJs_DemoHO_applyAdders__lam_0__boxed(x_1, x_2) {
+  const x_3 = LeanJs_DemoHO_applyAdders__lam_0(x_1, x_2);
+  return x_3;
+}
+
+function LeanJs_DemoHO_applyAdders__closed_0() {
+  const x_1 = 1n;
+  const x_2 = lean_closure(LeanJs_DemoHO_applyAdders__lam_0__boxed, 2, [x_1]);
+  return x_2;
+}
+
+function LeanJs_DemoHO_applyAdders__closed_5() {
+  const x_1 = LeanJs_DemoHO_applyAdders__closed_4();
+  const x_2 = LeanJs_DemoHO_applyAdders__closed_0();
+  const x_3 = lean_ctor(1, 2, 0, 0, x_2, x_1);
+  return x_3;
+}
+
+function List_mapTR_loop__at__LeanJs_DemoHO_applyAdders_spec_0(x_1, x_2, x_3) {
+  while (true) {
+    switch (lean_tag(x_2)) {
+      case 0: {
+        const x_4 = List_reverse__redArg(x_3);
+        return x_4;
+      }
+      case 1: {
+        const x_5 = 1;
+        switch (x_5) {
+          case 0: {
+            const x_6 = x_2.fields[0];
+            const x_7 = x_2.fields[1];
+            const x_8 = lean_apply(x_6, [x_1]);
+            x_2.fields[1] = x_3;
+            x_2.fields[0] = x_8;
+            const __t_1 = x_1;
+            const __t_2 = x_7;
+            const __t_3 = x_2;
+            x_1 = __t_1;
+            x_2 = __t_2;
+            x_3 = __t_3;
+            continue;
+          }
+          case 1: {
+            const x_10 = x_2.fields[0];
+            const x_11 = x_2.fields[1];
+            const x_12 = lean_apply(x_10, [x_1]);
+            const x_13 = lean_ctor(1, 2, 0, 0, x_12, x_3);
+            const __t_1 = x_1;
+            const __t_2 = x_11;
+            const __t_3 = x_13;
+            x_1 = __t_1;
+            x_2 = __t_2;
+            x_3 = __t_3;
+            continue;
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function List_foldl__at__LeanJs_DemoHO_applyAdders_spec_1(x_1, x_2) {
+  while (true) {
+    switch (lean_tag(x_2)) {
+      case 0: {
+        return x_1;
+      }
+      case 1: {
+        const x_3 = x_2.fields[0];
+        const x_4 = x_2.fields[1];
+        const x_5 = (x_1 + x_3);
+        const __t_1 = x_5;
+        const __t_2 = x_4;
+        x_1 = __t_1;
+        x_2 = __t_2;
+        continue;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function LeanJs_DemoHO_applyAdders(x_1) {
+  const x_2 = 0;
+  const x_3 = LeanJs_DemoHO_applyAdders__closed_5();
+  const x_4 = 0n;
+  const x_5 = List_mapTR_loop__at__LeanJs_DemoHO_applyAdders_spec_0(x_1, x_3, x_2);
+  const x_6 = List_foldl__at__LeanJs_DemoHO_applyAdders_spec_1(x_4, x_5);
+  return x_6;
+}
+
+function LeanJs_DemoHO_add3(x_1, x_2, x_3) {
+  const x_4 = (x_1 + x_2);
+  const x_5 = (x_4 + x_3);
+  return x_5;
+}
+
+function LeanJs_DemoHO_currySplit(x_1) {
+  const x_2 = 100n;
+  const x_3 = 7n;
+  const x_4 = LeanJs_DemoHO_add3(x_1, x_2, x_3);
+  return x_4;
+}
+
+function LeanJs_DemoHO_optSeq__closed_0() {
+  const x_1 = 21n;
+  const x_2 = lean_ctor(1, 1, 0, 0, x_1);
+  return x_2;
+}
+
+function LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_optSeq_spec_0(x_1) {
+  switch (lean_tag(x_1)) {
+    case 0: {
+      return x_1;
+    }
+    case 1: {
+      const x_2 = 1;
+      switch (x_2) {
+        case 0: {
+          const x_3 = x_1.fields[0];
+          const x_4 = (x_3 + x_3);
+          x_1.fields[0] = x_4;
+          return x_1;
+        }
+        case 1: {
+          const x_5 = x_1.fields[0];
+          const x_6 = (x_5 + x_5);
+          const x_7 = lean_ctor(1, 1, 0, 0, x_6);
+          return x_7;
+        }
+        default: { throw new Error("no matching case"); }
+      }
+    }
+    default: { throw new Error("no matching case"); }
+  }
+}
+
+function LeanJs_DemoHO_optSeq__closed_1() {
+  const x_1 = LeanJs_DemoHO_optSeq__closed_0();
+  const x_2 = LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_optSeq_spec_0(x_1);
+  return x_2;
+}
+
+function LeanJs_DemoHO_optSeq() {
+  const x_1 = LeanJs_DemoHO_optSeq__closed_1();
+  return x_1;
+}
+
+function LeanJs_DemoHO_exSeq__closed_0() {
+  const x_1 = 21n;
+  const x_2 = lean_ctor(1, 1, 0, 0, x_1);
+  return x_2;
+}
+
+function LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_exSeq_spec_0(x_1) {
+  switch (lean_tag(x_1)) {
+    case 0: {
+      return x_1;
+    }
+    case 1: {
+      const x_2 = 1;
+      switch (x_2) {
+        case 0: {
+          const x_3 = x_1.fields[0];
+          const x_4 = (x_3 + x_3);
+          x_1.fields[0] = x_4;
+          return x_1;
+        }
+        case 1: {
+          const x_5 = x_1.fields[0];
+          const x_6 = (x_5 + x_5);
+          const x_7 = lean_ctor(1, 1, 0, 0, x_6);
+          return x_7;
+        }
+        default: { throw new Error("no matching case"); }
+      }
+    }
+    default: { throw new Error("no matching case"); }
+  }
+}
+
+function LeanJs_DemoHO_exSeq__closed_1() {
+  const x_1 = LeanJs_DemoHO_exSeq__closed_0();
+  const x_2 = LeanJs_DemoHO_twiceM__at__LeanJs_DemoHO_exSeq_spec_0(x_1);
+  return x_2;
+}
+
+function LeanJs_DemoHO_exSeq() {
+  const x_1 = LeanJs_DemoHO_exSeq__closed_1();
+  return x_1;
+}
+
+function List_mapTR_loop__at__LeanJs_DemoHO_fmapList_spec_0(x_1, x_2) {
+  while (true) {
+    switch (lean_tag(x_1)) {
+      case 0: {
+        const x_3 = List_reverse__redArg(x_2);
+        return x_3;
+      }
+      case 1: {
+        const x_4 = 1;
+        switch (x_4) {
+          case 0: {
+            const x_5 = x_1.fields[0];
+            const x_6 = x_1.fields[1];
+            const x_7 = 1n;
+            const x_8 = (x_5 + x_7);
+            x_1.fields[1] = x_2;
+            x_1.fields[0] = x_8;
+            const __t_1 = x_6;
+            const __t_2 = x_1;
+            x_1 = __t_1;
+            x_2 = __t_2;
+            continue;
+          }
+          case 1: {
+            const x_10 = x_1.fields[0];
+            const x_11 = x_1.fields[1];
+            const x_12 = 1n;
+            const x_13 = (x_10 + x_12);
+            const x_14 = lean_ctor(1, 2, 0, 0, x_13, x_2);
+            const __t_1 = x_11;
+            const __t_2 = x_14;
+            x_1 = __t_1;
+            x_2 = __t_2;
+            continue;
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function LeanJs_DemoHO_fmapList(x_1) {
+  const x_2 = 0;
+  const x_3 = List_mapTR_loop__at__LeanJs_DemoHO_fmapList_spec_0(x_1, x_2);
+  return x_3;
+}
+
+function LeanJs_DemoHO_safeDiv__closed_0() {
+  const x_1 = "div0";
+  return x_1;
+}
+
+function LeanJs_DemoHO_safeDiv__closed_1() {
+  const x_1 = LeanJs_DemoHO_safeDiv__closed_0();
+  const x_2 = lean_ctor(0, 1, 0, 0, x_1);
+  return x_2;
+}
+
+function LeanJs_DemoHO_safeDiv(x_1, x_2) {
+  const x_3 = 0n;
+  const x_4 = lean_nat_dec_eq(x_2, x_3);
+  switch (x_4) {
+    case 0: {
+      const x_5 = (x_2 === 0n ? 0n : x_1 / x_2);
+      const x_6 = lean_ctor(1, 1, 0, 0, x_5);
+      return x_6;
+    }
+    case 1: {
+      const x_7 = LeanJs_DemoHO_safeDiv__closed_1();
+      return x_7;
+    }
+    default: { throw new Error("no matching case"); }
+  }
+}
+
+function LeanJs_DemoHO_safeDivStr__closed_0() {
+  const x_1 = "err ";
+  return x_1;
+}
+
+function LeanJs_DemoHO_safeDivStr__closed_1() {
+  const x_1 = "ok ";
+  return x_1;
+}
+
+function List_range_loop(x_1, x_2) {
+  while (true) {
+    const x_3 = 0n;
+    const x_4 = lean_nat_dec_eq(x_1, x_3);
+    switch (x_4) {
+      case 1: {
+        return x_2;
+      }
+      case 0: {
+        const x_5 = 1n;
+        const x_6 = (x_1 > x_5 ? x_1 - x_5 : 0n);
+        const x_7 = lean_ctor(1, 2, 0, 0, x_6, x_2);
+        const __t_1 = x_6;
+        const __t_2 = x_7;
+        x_1 = __t_1;
+        x_2 = __t_2;
+        continue;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function List_range(x_1) {
+  const x_2 = 0;
+  const x_3 = List_range_loop(x_1, x_2);
+  return x_3;
+}
+
+function _private_Init_Data_Repr_0_Nat_reprArray__closed_0() {
+  const x_1 = 128n;
+  const x_2 = List_range(x_1);
+  return x_2;
+}
+
+// extern USize_ofNat -> runtime prelude
+
+function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0(x_1, x_2) {
+  while (true) {
+    switch (lean_tag(x_1)) {
+      case 0: {
+        const x_3 = List_reverse__redArg(x_2);
+        return x_3;
+      }
+      case 1: {
+        const x_4 = 1;
+        switch (x_4) {
+          case 0: {
+            const x_5 = x_1.fields[0];
+            const x_6 = x_1.fields[1];
+            const x_7 = lean_usize_of_nat(x_5);
+            const x_8 = lean_string_of_usize(x_7);
+            x_1.fields[1] = x_2;
+            x_1.fields[0] = x_8;
+            const __t_1 = x_6;
+            const __t_2 = x_1;
+            x_1 = __t_1;
+            x_2 = __t_2;
+            continue;
+          }
+          case 1: {
+            const x_10 = x_1.fields[0];
+            const x_11 = x_1.fields[1];
+            const x_12 = lean_usize_of_nat(x_10);
+            const x_13 = lean_string_of_usize(x_12);
+            const x_14 = lean_ctor(1, 2, 0, 0, x_13, x_2);
+            const __t_1 = x_11;
+            const __t_2 = x_14;
+            x_1 = __t_1;
+            x_2 = __t_2;
+            continue;
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function _private_Init_Data_Repr_0_Nat_reprArray__closed_1() {
+  const x_1 = 0;
+  const x_2 = _private_Init_Data_Repr_0_Nat_reprArray__closed_0();
+  const x_3 = List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0(x_2, x_1);
+  return x_3;
+}
+
+// extern Array_mk -> runtime prelude
+
+function _private_Init_Data_Repr_0_Nat_reprArray__closed_2() {
+  const x_1 = _private_Init_Data_Repr_0_Nat_reprArray__closed_1();
+  const x_2 = lean_array_mk(x_1);
+  return x_2;
+}
+
+function _private_Init_Data_Repr_0_Nat_reprArray() {
+  const x_1 = _private_Init_Data_Repr_0_Nat_reprArray__closed_2();
+  return x_1;
+}
+
+// extern Array_size -> runtime prelude
+
+function Nat_reprFast__closed_0() {
+  const x_1 = _private_Init_Data_Repr_0_Nat_reprArray();
+  const x_2 = lean_array_get_size(x_1);
+  return x_2;
+}
+
+// extern System_Platform_getNumBits -> runtime prelude
+
+function System_Platform_numBits__closed_0() {
+  const x_1 = 0;
+  const x_2 = lean_system_platform_nbits(x_1);
+  return x_2;
+}
+
+function System_Platform_numBits() {
+  const x_1 = System_Platform_numBits__closed_0();
+  return x_1;
+}
+
+// extern Nat_pow -> runtime prelude
+
+function Nat_reprFast__closed_1() {
+  const x_1 = System_Platform_numBits();
+  const x_2 = 2n;
+  const x_3 = lean_nat_pow(x_2, x_1);
+  return x_3;
+}
+
+// extern Nat_decLt -> runtime prelude
+
+// extern Nat_mod -> runtime prelude
+
+function Nat_digitChar(x_1) {
+  const x_2 = 0n;
+  const x_3 = lean_nat_dec_eq(x_1, x_2);
+  switch (x_3) {
+    case 0: {
+      const x_4 = 1n;
+      const x_5 = lean_nat_dec_eq(x_1, x_4);
+      switch (x_5) {
+        case 0: {
+          const x_6 = 2n;
+          const x_7 = lean_nat_dec_eq(x_1, x_6);
+          switch (x_7) {
+            case 0: {
+              const x_8 = 3n;
+              const x_9 = lean_nat_dec_eq(x_1, x_8);
+              switch (x_9) {
+                case 0: {
+                  const x_10 = 4n;
+                  const x_11 = lean_nat_dec_eq(x_1, x_10);
+                  switch (x_11) {
+                    case 0: {
+                      const x_12 = 5n;
+                      const x_13 = lean_nat_dec_eq(x_1, x_12);
+                      switch (x_13) {
+                        case 0: {
+                          const x_14 = 6n;
+                          const x_15 = lean_nat_dec_eq(x_1, x_14);
+                          switch (x_15) {
+                            case 0: {
+                              const x_16 = 7n;
+                              const x_17 = lean_nat_dec_eq(x_1, x_16);
+                              switch (x_17) {
+                                case 0: {
+                                  const x_18 = 8n;
+                                  const x_19 = lean_nat_dec_eq(x_1, x_18);
+                                  switch (x_19) {
+                                    case 0: {
+                                      const x_20 = 9n;
+                                      const x_21 = lean_nat_dec_eq(x_1, x_20);
+                                      switch (x_21) {
+                                        case 0: {
+                                          const x_22 = 10n;
+                                          const x_23 = lean_nat_dec_eq(x_1, x_22);
+                                          switch (x_23) {
+                                            case 0: {
+                                              const x_24 = 11n;
+                                              const x_25 = lean_nat_dec_eq(x_1, x_24);
+                                              switch (x_25) {
+                                                case 0: {
+                                                  const x_26 = 12n;
+                                                  const x_27 = lean_nat_dec_eq(x_1, x_26);
+                                                  switch (x_27) {
+                                                    case 0: {
+                                                      const x_28 = 13n;
+                                                      const x_29 = lean_nat_dec_eq(x_1, x_28);
+                                                      switch (x_29) {
+                                                        case 0: {
+                                                          const x_30 = 14n;
+                                                          const x_31 = lean_nat_dec_eq(x_1, x_30);
+                                                          switch (x_31) {
+                                                            case 0: {
+                                                              const x_32 = 15n;
+                                                              const x_33 = lean_nat_dec_eq(x_1, x_32);
+                                                              switch (x_33) {
+                                                                case 0: {
+                                                                  const x_34 = 42;
+                                                                  return x_34;
+                                                                }
+                                                                case 1: {
+                                                                  const x_35 = 102;
+                                                                  return x_35;
+                                                                }
+                                                                default: { throw new Error("no matching case"); }
+                                                              }
+                                                            }
+                                                            case 1: {
+                                                              const x_36 = 101;
+                                                              return x_36;
+                                                            }
+                                                            default: { throw new Error("no matching case"); }
+                                                          }
+                                                        }
+                                                        case 1: {
+                                                          const x_37 = 100;
+                                                          return x_37;
+                                                        }
+                                                        default: { throw new Error("no matching case"); }
+                                                      }
+                                                    }
+                                                    case 1: {
+                                                      const x_38 = 99;
+                                                      return x_38;
+                                                    }
+                                                    default: { throw new Error("no matching case"); }
+                                                  }
+                                                }
+                                                case 1: {
+                                                  const x_39 = 98;
+                                                  return x_39;
+                                                }
+                                                default: { throw new Error("no matching case"); }
+                                              }
+                                            }
+                                            case 1: {
+                                              const x_40 = 97;
+                                              return x_40;
+                                            }
+                                            default: { throw new Error("no matching case"); }
+                                          }
+                                        }
+                                        case 1: {
+                                          const x_41 = 57;
+                                          return x_41;
+                                        }
+                                        default: { throw new Error("no matching case"); }
+                                      }
+                                    }
+                                    case 1: {
+                                      const x_42 = 56;
+                                      return x_42;
+                                    }
+                                    default: { throw new Error("no matching case"); }
+                                  }
+                                }
+                                case 1: {
+                                  const x_43 = 55;
+                                  return x_43;
+                                }
+                                default: { throw new Error("no matching case"); }
+                              }
+                            }
+                            case 1: {
+                              const x_44 = 54;
+                              return x_44;
+                            }
+                            default: { throw new Error("no matching case"); }
+                          }
+                        }
+                        case 1: {
+                          const x_45 = 53;
+                          return x_45;
+                        }
+                        default: { throw new Error("no matching case"); }
+                      }
+                    }
+                    case 1: {
+                      const x_46 = 52;
+                      return x_46;
+                    }
+                    default: { throw new Error("no matching case"); }
+                  }
+                }
+                case 1: {
+                  const x_47 = 51;
+                  return x_47;
+                }
+                default: { throw new Error("no matching case"); }
+              }
+            }
+            case 1: {
+              const x_48 = 50;
+              return x_48;
+            }
+            default: { throw new Error("no matching case"); }
+          }
+        }
+        case 1: {
+          const x_49 = 49;
+          return x_49;
+        }
+        default: { throw new Error("no matching case"); }
+      }
+    }
+    case 1: {
+      const x_50 = 48;
+      return x_50;
+    }
+    default: { throw new Error("no matching case"); }
+  }
+}
+
+// extern Nat_div -> runtime prelude
+
+// extern Nat_sub -> runtime prelude
+
+function Nat_toDigitsCore(x_1, x_2, x_3, x_4) {
+  while (true) {
+    const x_5 = 0n;
+    const x_6 = lean_nat_dec_eq(x_2, x_5);
+    switch (x_6) {
+      case 1: {
+        return x_4;
+      }
+      case 0: {
+        const x_7 = (x_1 === 0n ? x_3 : x_3 % x_1);
+        const x_8 = Nat_digitChar(x_7);
+        const x_9 = (x_1 === 0n ? 0n : x_3 / x_1);
+        const x_10 = lean_nat_dec_eq(x_9, x_5);
+        switch (x_10) {
+          case 0: {
+            const x_11 = 1n;
+            const x_12 = (x_2 > x_11 ? x_2 - x_11 : 0n);
+            const x_13 = x_8;
+            const x_14 = lean_ctor(1, 2, 0, 0, x_13, x_4);
+            const __t_1 = x_1;
+            const __t_2 = x_12;
+            const __t_3 = x_9;
+            const __t_4 = x_14;
+            x_1 = __t_1;
+            x_2 = __t_2;
+            x_3 = __t_3;
+            x_4 = __t_4;
+            continue;
+          }
+          case 1: {
+            const x_16 = x_8;
+            const x_17 = lean_ctor(1, 2, 0, 0, x_16, x_4);
+            return x_17;
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+
+function Nat_toDigits(x_1, x_2) {
+  const x_3 = 1n;
+  const x_4 = (x_2 + x_3);
+  const x_5 = 0;
+  const x_6 = Nat_toDigitsCore(x_1, x_4, x_2, x_5);
+  return x_6;
+}
+
+// extern String_ofList -> runtime prelude
+
+// extern USize_ofNatLT -> runtime prelude
+
+// extern USize_repr -> runtime prelude
+
+// extern Array_getInternal -> runtime prelude
+
+function Nat_reprFast(x_1) {
+  const x_2 = _private_Init_Data_Repr_0_Nat_reprArray();
+  const x_3 = Nat_reprFast__closed_0();
+  const x_4 = lean_nat_dec_lt(x_1, x_3);
+  switch (x_4) {
+    case 0: {
+      const x_5 = Nat_reprFast__closed_1();
+      const x_6 = lean_nat_dec_lt(x_1, x_5);
+      switch (x_6) {
+        case 0: {
+          const x_7 = 10n;
+          const x_8 = Nat_toDigits(x_7, x_1);
+          const x_9 = lean_string_mk(x_8);
+          return x_9;
+        }
+        case 1: {
+          const x_10 = lean_usize_of_nat(x_1);
+          const x_11 = lean_string_of_usize(x_10);
+          return x_11;
+        }
+        default: { throw new Error("no matching case"); }
+      }
+    }
+    case 1: {
+      const x_12 = lean_array_uget(x_2, x_1);
+      return x_12;
+    }
+    default: { throw new Error("no matching case"); }
+  }
+}
+
+// extern String_append -> runtime prelude
+
+function LeanJs_DemoHO_safeDivStr(x_1, x_2) {
+  const x_3 = LeanJs_DemoHO_safeDiv(x_1, x_2);
+  switch (lean_tag(x_3)) {
+    case 0: {
+      const x_4 = x_3.fields[0];
+      const x_5 = LeanJs_DemoHO_safeDivStr__closed_0();
+      const x_6 = lean_string_append(x_5, x_4);
+      return x_6;
+    }
+    case 1: {
+      const x_7 = x_3.fields[0];
+      const x_8 = LeanJs_DemoHO_safeDivStr__closed_1();
+      const x_9 = Nat_reprFast(x_7);
+      const x_10 = lean_string_append(x_8, x_9);
+      return x_10;
+    }
+    default: { throw new Error("no matching case"); }
+  }
 }
 
 // extern Nat_add -> runtime prelude

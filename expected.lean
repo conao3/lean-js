@@ -1,6 +1,8 @@
 import LeanTodo.Basic
+import LeanJs.DemoHO
 
 open LeanTodo
+open LeanJs.DemoHO
 
 def double (n : Nat) : Nat := n + n
 
@@ -218,6 +220,19 @@ def main : IO Unit := do
   IO.println s!"spackF = {floatStr (spackF sp)}"
   IO.println s!"spackG = {float32Str (spackG sp)}"
   IO.println s!"spackSum = {spackSum sp}"
+  -- Higher-order / closure / typeclass / exception coverage (DemoHO).
+  IO.println s!"hofApply = {hofApply}"
+  IO.println s!"listMapLam = {listMapLam [1,2,3]}"
+  IO.println s!"listFilterLam = {listFilterLam [1,2,3,4]}"
+  IO.println s!"listFoldlLam = {listFoldlLam [1,2,3]}"
+  IO.println s!"arrMapLam = {arrMapLam #[1,2,3]}"
+  IO.println s!"applyAdders = {applyAdders 5}"
+  IO.println s!"currySplit = {currySplit 1}"
+  IO.println s!"optSeq = {optSeq}"
+  IO.println s!"exSeq = {exSeq}"
+  IO.println s!"fmapList = {fmapList [1,2,3]}"
+  IO.println s!"safeDiv 10 2 = {safeDivStr 10 2}"
+  IO.println s!"safeDiv 10 0 = {safeDivStr 10 0}"
   -- TodoList sequence: add, add, add, toggle, remove
   let l0 := TodoList.empty
   let l1 := l0.add "buy milk"

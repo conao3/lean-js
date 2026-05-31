@@ -24,6 +24,10 @@ const exports = [
   'LeanJs_Demo_spackC', 'LeanJs_Demo_spackE', 'LeanJs_Demo_spackF',
   'LeanJs_Demo_spackG', 'LeanJs_Demo_spackSum',
   'lean_int8_to_int', 'lean_int16_to_int', 'lean_int32_to_int', 'lean_int64_to_int_sint',
+  'LeanJs_DemoHO_hofApply', 'LeanJs_DemoHO_listMapLam', 'LeanJs_DemoHO_listFilterLam',
+  'LeanJs_DemoHO_listFoldlLam', 'LeanJs_DemoHO_arrMapLam', 'LeanJs_DemoHO_applyAdders',
+  'LeanJs_DemoHO_currySplit', 'LeanJs_DemoHO_optSeq', 'LeanJs_DemoHO_exSeq',
+  'LeanJs_DemoHO_fmapList', 'LeanJs_DemoHO_safeDivStr',
   'LeanTodo_TodoList_add', 'LeanTodo_TodoList_toggle',
   'LeanTodo_TodoList_remove', 'LeanTodo_TodoList_step',
 ];
@@ -83,6 +87,17 @@ const {
   lean_int16_to_int: i16ToInt,
   lean_int32_to_int: i32ToInt,
   lean_int64_to_int_sint: i64ToInt,
+  LeanJs_DemoHO_hofApply: hofApply,
+  LeanJs_DemoHO_listMapLam: listMapLam,
+  LeanJs_DemoHO_listFilterLam: listFilterLam,
+  LeanJs_DemoHO_listFoldlLam: listFoldlLam,
+  LeanJs_DemoHO_arrMapLam: arrMapLam,
+  LeanJs_DemoHO_applyAdders: applyAdders,
+  LeanJs_DemoHO_currySplit: currySplit,
+  LeanJs_DemoHO_optSeq: optSeq,
+  LeanJs_DemoHO_exSeq: exSeq,
+  LeanJs_DemoHO_fmapList: fmapList,
+  LeanJs_DemoHO_safeDivStr: safeDivStr,
   LeanTodo_TodoList_add: add,
   LeanTodo_TodoList_toggle: toggle,
   LeanTodo_TodoList_remove: remove,
@@ -222,6 +237,25 @@ console.log(`spackE = ${i64ToInt(spackE(sp))}`);
 console.log(`spackF = ${floatStr(spackF(sp))}`);
 console.log(`spackG = ${float32Str(spackG(sp))}`);
 console.log(`spackSum = ${spackSum(sp)}`);
+
+// ---- Higher-order / closure / typeclass / exception (DemoHO) ----
+// Option Nat: none = 0, some x = { tag:1, fields:[x] }. Lean prints
+// `none`/`some x`. Except ε α: error = tag 0, ok = tag 1; Lean prints
+// `Except.error e`/`Except.ok v` via its Repr.
+const showOpt = (o) => (typeof o === 'number' ? 'none' : `(some ${o.fields[0]})`);
+const showExc = (e) => (e.tag === 1 ? `ok: ${e.fields[0]}` : `error: ${e.fields[0]}`);
+console.log(`hofApply = ${hofApply()}`);
+console.log(`listMapLam = ${showLst(listMapLam(lst2list([1n, 2n, 3n])))}`);
+console.log(`listFilterLam = ${showLst(listFilterLam(lst2list([1n, 2n, 3n, 4n])))}`);
+console.log(`listFoldlLam = ${listFoldlLam(lst2list([1n, 2n, 3n]))}`);
+console.log(`arrMapLam = ${showArr(arrMapLam([1n, 2n, 3n]))}`);
+console.log(`applyAdders = ${applyAdders(5n)}`);
+console.log(`currySplit = ${currySplit(1n)}`);
+console.log(`optSeq = ${showOpt(optSeq())}`);
+console.log(`exSeq = ${showExc(exSeq())}`);
+console.log(`fmapList = ${showLst(fmapList(lst2list([1n, 2n, 3n])))}`);
+console.log(`safeDiv 10 2 = ${safeDivStr(10n, 2n)}`);
+console.log(`safeDiv 10 0 = ${safeDivStr(10n, 0n)}`);
 
 // ---- TodoList JS model ----
 // List: nil = 0, cons = { tag:1, fields:[head, tail] }

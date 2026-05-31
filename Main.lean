@@ -1,5 +1,6 @@
 import LeanJs.EmitJS
 import LeanJs.Demo
+import LeanJs.DemoHO
 import LeanJs.DemoIO
 import LeanTodo.Basic
 
@@ -33,6 +34,12 @@ def rootNames : Array Name := #[
   `LeanJs.Demo.floatStr, `LeanJs.Demo.float32Str,
   `LeanJs.Demo.mkSPack, `LeanJs.Demo.spackA, `LeanJs.Demo.spackB, `LeanJs.Demo.spackC,
   `LeanJs.Demo.spackE, `LeanJs.Demo.spackF, `LeanJs.Demo.spackG, `LeanJs.Demo.spackSum,
+  `LeanJs.DemoHO.hofApply,
+  `LeanJs.DemoHO.listMapLam, `LeanJs.DemoHO.listFilterLam, `LeanJs.DemoHO.listFoldlLam,
+  `LeanJs.DemoHO.arrMapLam,
+  `LeanJs.DemoHO.applyAdders, `LeanJs.DemoHO.currySplit,
+  `LeanJs.DemoHO.optSeq, `LeanJs.DemoHO.exSeq, `LeanJs.DemoHO.fmapList,
+  `LeanJs.DemoHO.safeDivStr,
   `LeanTodo.TodoList.add,
   `LeanTodo.TodoList.toggle,
   `LeanTodo.TodoList.remove,
@@ -45,7 +52,8 @@ def main (args : List String) : IO Unit := do
   let progPath := args.getD 2 "out-io.mjs"
   initSearchPath (← findSysroot)
   let env ← importModules
-    #[{ module := `LeanJs.Demo }, { module := `LeanJs.DemoIO }, { module := `LeanTodo.Basic }] {}
+    #[{ module := `LeanJs.Demo }, { module := `LeanJs.DemoHO },
+      { module := `LeanJs.DemoIO }, { module := `LeanTodo.Basic }] {}
     (loadExts := true)
   let prelude ← IO.FS.readFile preludePath
   let decls := LeanJs.collectTransitive env rootNames

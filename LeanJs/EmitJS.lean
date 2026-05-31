@@ -17,6 +17,13 @@ structure EmitState where
   /-- Extern Lean-name → resolved C symbol map (the link table); read by the
       `.fap` emission path so extern aliases route to their prelude symbol. -/
   externMap : Std.HashMap Name String := {}
+  /-- Function name → full JS arity (count of non-erased/non-void params, the
+      same params `funRef` declares). Read by the `.pap` emission path so a
+      partial application records the worker's arity, letting `lean_apply` do the
+      C runtime's three-way exact/under/over dispatch. A name absent from the map
+      (extern, or a callee whose decl was not collected) gets no arity and falls
+      back to concat-and-call. -/
+  arityMap : Std.HashMap Name Nat := {}
 
 abbrev EmitM := StateM EmitState
 
@@ -184,6 +191,7 @@ def preludeSymbols : Std.HashSet String := Std.HashSet.ofList [
   "lean_string_utf8_byte_size", "lean_string_utf8_get", "lean_string_utf8_get_bang",
   "lean_string_utf8_get_opt", "lean_string_utf8_next", "lean_string_utf8_prev",
   "lean_string_utf8_at_end", "lean_string_utf8_extract", "lean_string_utf8_pos_of",
+  "lean_string_utf8_set",
   "lean_string_contains", "lean_string_of_usize",
   "lean_string_get_byte_fast", "lean_string_utf8_get_fast",
   -- Array
@@ -533,7 +541,8 @@ def sbyteOffset (_n : Nat) (offset : Nat) : String := toString offset
     pick the JS representation of a numeric literal: scalar types (`u8`/`u16`/
     `u32`/`u64`/`usize`) are plain JS numbers, object `Nat` literals are
     `bigint`. -/
-def emitExpr (externMap : Std.HashMap Name String) (ty : IRType := .object) : IR.Expr → String
+def emitExpr (externMap : Std.HashMap Name String) (arityMap : Std.HashMap Name Nat := {})
+    (ty : IRType := .object) : IR.Expr → String
   | .ctor i ys      => ctorLit i ys
   | .reset _ _      => "null"          -- GC: reuse token unused
   | .reuse _ i _ ys => ctorLit i ys    -- GC: identical to a fresh ctor
@@ -551,7 +560,12 @@ def emitExpr (externMap : Std.HashMap Name String) (ty : IRType := .object) : IR
       s!"{funRef c}({args})"
   | .pap c ys       =>
     let args := String.intercalate ", " (ys.toList.map argToJs)
-    "{ fn: " ++ funRef c ++ ", args: [" ++ args ++ "] }"
+    -- Record the worker's FULL arity so `lean_apply` can branch exact/under/over.
+    -- An uncollected callee or extern has no arity entry; emit a closure with no
+    -- arity (concat-and-call fallback), which is correct for the exact case only.
+    match arityMap[c]? with
+    | some n => s!"lean_closure({funRef c}, {n}, [{args}])"
+    | none   => "{ fn: " ++ funRef c ++ ", args: [" ++ args ++ "] }"
   | .ap x ys        =>
     let args := String.intercalate ", " (ys.toList.map argToJs)
     s!"lean_apply({varName x}, [{args}])"
@@ -646,8 +660,8 @@ partial def emitFnBodyLoop (self : FunId) (scc : Std.HashSet Name)
 partial def emitNonTail (self : FunId) (scc : Std.HashSet Name)
     (params : Array Param) (jps : JpEnv) : FnBody → EmitM Unit
   | .vdecl x ty e k => do
-    let em := (← get).externMap
-    line s!"const {varName x} = {emitExpr em ty e};"
+    let st ← get
+    line s!"const {varName x} = {emitExpr st.externMap st.arityMap ty e};"
     emitFnBodyLoop self scc params jps k
   | .jdecl j xs v k =>
     emitFnBodyLoop self scc params (jps.insert j.idx (xs, v)) k
@@ -710,12 +724,12 @@ partial def emitPrefixThenTail (self : FunId) (scc : Std.HashSet Name)
         let args := String.intercalate ", " (cargs.toList.map argToJs)
         line ("return { __tc: 1, f: " ++ tcRef c ++ ", a: [" ++ args ++ "] };")
     else
-      let em := (← get).externMap
-      line s!"const {varName x} = {emitExpr em ty (.fap c cargs)};"
+      let st ← get
+      line s!"const {varName x} = {emitExpr st.externMap st.arityMap ty (.fap c cargs)};"
       emitFnBodyLoop self scc params jps k
   | .vdecl x ty e k => do
-    let em := (← get).externMap
-    line s!"const {varName x} = {emitExpr em ty e};"
+    let st ← get
+    line s!"const {varName x} = {emitExpr st.externMap st.arityMap ty e};"
     emitPrefixThenTail self scc params jps k
   | .set x i y k => do
     line s!"{varName x}.fields[{i}] = {argToJs y};"
@@ -753,8 +767,8 @@ end
 /-- Non-loop emitter (no self-tail-call present). -/
 partial def emitFnBody : FnBody → EmitM Unit
   | .vdecl x ty e b => do
-    let em := (← get).externMap
-    line s!"const {varName x} = {emitExpr em ty e};"
+    let st ← get
+    line s!"const {varName x} = {emitExpr st.externMap st.arityMap ty e};"
     emitFnBody b
   | .jdecl j xs v b => do
     let params := String.intercalate ", " (xs.toList.map (fun p => varName p.x))
@@ -1001,6 +1015,20 @@ def buildExternMap (env : Environment) (decls : Array Decl)
     | .fdecl .. => pure ()
   return (map, unresolved)
 
+/-- Map each collected `.fdecl` to its full JS arity: the count of params that
+    survive into the emitted signature (non-erased, non-void), exactly the params
+    `funRef`/`emitDeclWith` declares. Read by the `.pap` path so a partial
+    application records the worker's arity for `lean_apply`'s three-way dispatch. -/
+def buildArityMap (decls : Array Decl) : Std.HashMap Name Nat := Id.run do
+  let mut m : Std.HashMap Name Nat := {}
+  for d in decls do
+    match d with
+    | .fdecl (xs := xs) .. =>
+      let n := (xs.filter (fun p => !p.ty.isErased && !p.ty.isVoid)).size
+      m := m.insert d.name n
+    | .extern .. => pure ()
+  return m
+
 /-- Run the emitter over the given decls, returning the produced TS source, or a
     link-error string naming every unresolved extern. Computes tail-call SCCs
     first so mutually tail-recursive groups trampoline. -/
@@ -1011,23 +1039,25 @@ def renderChecked (env : Environment) (decls : Array Decl) : Except String Strin
     return .error
       ("unmapped externs (no prelude symbol; would emit a dangling call):\n"
         ++ String.intercalate "\n" lines)
+  let arityMap := buildArityMap decls
   let sccs := computeTailSccs decls
   let act : EmitM Unit := do
     for d in decls do
       emitDeclWith sccs d
       line ""
-  let (_, st) := act.run { externMap }
+  let (_, st) := act.run { externMap, arityMap }
   return .ok st.out
 
 /-- Backwards-compatible pure renderer (no link check): used by callers that
     have already validated, or for tests. -/
 def render (decls : Array Decl) : String := Id.run do
+  let arityMap := buildArityMap decls
   let sccs := computeTailSccs decls
   let act : EmitM Unit := do
     for d in decls do
       emitDeclWith sccs d
       line ""
-  let (_, st) := act.run {}
+  let (_, st) := act.run { arityMap }
   return st.out
 
 /-- Collect transitively from roots and render a self-contained module body. -/
@@ -1101,6 +1131,7 @@ def renderProgramChecked (env : Environment) (mainName : Name) : Except String S
     return .error
       ("unmapped externs (no prelude symbol; would emit a dangling call):\n"
         ++ String.intercalate "\n" lines)
+  let arityMap := buildArityMap decls
   let sccs := computeTailSccs decls
   let act : EmitM Unit := do
     for d in decls do
@@ -1117,7 +1148,7 @@ def renderProgramChecked (env : Environment) (mainName : Name) : Except String S
     match decls.find? (fun d => d.name == mainName) with
     | some d => emitMainEntry env d
     | none   => pure ()
-  let (_, st) := act.run { externMap }
+  let (_, st) := act.run { externMap, arityMap }
   return .ok st.out
 
 end LeanJs
