@@ -9,7 +9,7 @@ set -euo pipefail
 lake build
 lake exe lean-js out.ts prelude.ts out-io.mjs
 # Compile every oracle program natively once; subsequent runs are lake-cached.
-lake build oracle-fns oracle-io oracle-stdin oracle-err oracle-panic oracle-init oracle-stress oracle-stress2 oracle-stress3 oracle-verify
+lake build oracle-fns oracle-io oracle-stdin oracle-err oracle-panic oracle-init oracle-stress oracle-stress2 oracle-stress3 oracle-stress4 oracle-verify
 ORACLE=.lake/build/bin
 
 # Function-level value equivalence: the native oracle prints every function
@@ -158,6 +158,27 @@ if diff -q /tmp/lean-stress3.out /tmp/ts-stress3.out >/dev/null; then
   echo "STRESS3-DIFF-TEST PASS: stdout identical"
 else
   echo "STRESS3-DIFF-TEST FAIL"; diff /tmp/lean-stress3.out /tmp/ts-stress3.out || true; exit 1
+fi
+
+# Stress4 program: Group-A reproducible externs the prior suite did not reach --
+# FloatArray (packed doubles: push/get!/set!/get/fold/toList, incl. OOB get!->0.0
+# and OOB set!->unchanged) and the debug-trace helpers (dbgTrace writes to stderr
+# then forces its thunk; dbgTraceIfShared is a no-print return). Diff BOTH stdout
+# and stderr against the native oracle (dbgTrace output lands on stderr).
+"$ORACLE/oracle-stress4" > /tmp/lean-stress4.out 2> /tmp/lean-stress4.err
+node out-stress4.mjs > /tmp/ts-stress4.out 2> /tmp/ts-stress4.err
+echo "=== STRESS4 ORACLE stdout ==="; cat /tmp/lean-stress4.out
+echo "=== STRESS4 ORACLE stderr ==="; cat /tmp/lean-stress4.err
+echo "=== STRESS4 node stdout ===";    cat /tmp/ts-stress4.out
+echo "=== STRESS4 node stderr ===";    cat /tmp/ts-stress4.err
+if diff -q /tmp/lean-stress4.out /tmp/ts-stress4.out >/dev/null \
+   && diff -q /tmp/lean-stress4.err /tmp/ts-stress4.err >/dev/null; then
+  echo "STRESS4-DIFF-TEST PASS: stdout+stderr identical"
+else
+  echo "STRESS4-DIFF-TEST FAIL"
+  echo "--- stdout diff ---"; diff /tmp/lean-stress4.out /tmp/ts-stress4.out || true
+  echo "--- stderr diff ---"; diff /tmp/lean-stress4.err /tmp/ts-stress4.err || true
+  exit 1
 fi
 
 # Verify program: an independent verifier-authored realistic program (recursive

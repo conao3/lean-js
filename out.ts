@@ -638,6 +638,64 @@ const lean_string_validate_utf8 = (b) => {
   catch { return 0; }
 };
 
+// ---- FloatArray: packed doubles -> Float64Array (mirrors ByteArray=Uint8Array).
+// The C runtime stores packed `double`s in an sarray; Float64Array is the exact
+// JS analog. Setters copy-on-write, like the Array/ByteArray externs, because JS
+// arrays are reference-shared and the compiler's unique-assumed paths would
+// otherwise corrupt the caller. lean_sarray_size above already returns the length.
+// FloatArray.mk (Array Float -> FloatArray): boxed plain array -> packed.
+const lean_float_array_mk = (a) => Float64Array.from(a);
+// FloatArray.data (FloatArray -> Array Float): packed -> boxed plain array.
+const lean_float_array_data = (a) => Array.from(a);
+const lean_copy_float_array = (a) => a.slice();
+// emptyWithCapacity: capacity is advisory only.
+const lean_mk_empty_float_array = (_cap) => new Float64Array(0);
+// size : Nat (boxed bigint). usize : USize (bigint).
+const lean_float_array_size = (a) => BigInt(a.length);
+const lean_float_array_push = (a, d) => {
+  const r = new Float64Array(a.length + 1);
+  r.set(a);
+  r[a.length] = d;          // d is a JS number (Float)
+  return r;
+};
+const lean_float_array_uget = (a, i) => a[Number(i)];
+const lean_float_array_fget = (a, i) => a[Number(i)];
+// FloatArray.get! : OOB returns 0.0 (matches lean.h lean_float_array_get).
+const lean_float_array_get = (a, i) => { const x = a[Number(i)]; return x === undefined ? 0.0 : x; };
+// uset/fset : copy-on-write (same as Array/ByteArray setters).
+const lean_float_array_uset = (a, i, d) => { const r = a.slice(); r[Number(i)] = d; return r; };
+const lean_float_array_fset = lean_float_array_uset;
+// FloatArray.set! : OOB returns the array unchanged (matches lean.h).
+const lean_float_array_set = (a, i, d) => {
+  const j = Number(i);
+  if (j < 0 || j >= a.length) return a;
+  const r = a.slice(); r[j] = d; return r;
+};
+
+// ---- dbgTrace / dbgTraceIfShared / dbgSleep ----
+// lean_dbg_trace(s, fn): write s + '\n' to stderr, then force the thunk `fn`
+// applied to Unit. Like lean_string_any, it forces a closure, so it has an
+// explicit emitKnownFap arm + an emitKnownFapSpecialNames entry.
+const lean_dbg_trace = (s, fn) => {
+  process.stderr.write(String(s) + '\n');
+  return lean_trampoline(lean_apply(fn, [0]));   // 0 = boxed Unit
+};
+// dbgTraceIfShared (s) (a): prints s only if `a` is RC-shared (RC(a) > 1). Its
+// second arg is the VALUE `a` itself (not a thunk), and it returns `a`. Refcount
+// is not modeled under JS GC, so a value is never "shared" in the RC sense:
+// never print, just return `a` -- observably identical to native here.
+const lean_dbg_trace_if_shared = (_s, a) => a;
+// A millisecond sleep is not observable in program output; just force the thunk.
+const lean_dbg_sleep = (_ms, fn) => lean_trampoline(lean_apply(fn, [0]));
+
+// ---- pointer utilities (the SAFE surface is observationally pure) ----
+// withPtrAddr's proof obligation (∀ u1 u2, k u1 = k u2) guarantees the result is
+// address-independent, so a constant address is faithful for every safe caller.
+const lean_ptr_addr = (_a) => 0n;          // USize (bigint)
+// isExclusiveUnsafe: no RC in JS; report non-exclusive (0) so copy-on-write paths
+// stay value-correct (the compiler already forced isShared elsewhere). Bool scalar.
+const lean_is_exclusive_obj = (_a) => 0;
+
 // ---- Array: JS array. get is bounds-checked w/ default; push mutates. ----
 const lean_array_get_size = (a) => BigInt(a.length);
 const lean_array_fget = (a, i) => a[Number(i)];

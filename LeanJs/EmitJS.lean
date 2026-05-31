@@ -253,6 +253,18 @@ def preludeSymbols : Std.HashSet String := Std.HashSet.ofList [
   "lean_array_push", "lean_array_pop", "lean_array_swap", "lean_array_uget",
   "lean_array_uget_borrowed",
   "lean_array_uset", "lean_array_usize", "lean_array_to_list", "lean_mk_array", "lean_array_mk",
+  -- FloatArray (packed doubles -> Float64Array)
+  "lean_float_array_mk", "lean_float_array_data", "lean_copy_float_array",
+  "lean_mk_empty_float_array", "lean_float_array_size", "lean_float_array_push",
+  "lean_float_array_uget", "lean_float_array_fget", "lean_float_array_get",
+  "lean_float_array_uset", "lean_float_array_fset", "lean_float_array_set",
+  -- dbgTrace / dbgTraceIfShared / dbgSleep (force the thunk internally, like
+  -- lean_string_any; no explicit arm needed since the prelude impl matches the
+  -- (msg/_, thunk) call shape and forces via lean_trampoline+lean_apply).
+  "lean_dbg_trace", "lean_dbg_trace_if_shared", "lean_dbg_sleep",
+  -- pointer utilities: the SAFE surface (withPtrAddr/withPtrEq) is proven
+  -- address-independent, so a constant address / non-exclusive answer is faithful.
+  "lean_ptr_addr", "lean_is_exclusive_obj",
   -- platform / panic
   "lean_system_platform_nbits", "lean_panic_fn",
   -- IO / ST / FS
