@@ -5,6 +5,10 @@ import { readFileSync } from 'node:fs';
 const src = readFileSync(new URL('./out.ts', import.meta.url), 'utf8');
 const exports = [
   'LeanJs_Demo_double', 'LeanJs_Demo_mkShifted', 'LeanJs_Demo_sumTo', 'LeanJs_Demo_fact',
+  'LeanJs_Demo_mkMixed', 'LeanJs_Demo_mixedSum',
+  'LeanJs_Demo_u32wrap', 'LeanJs_Demo_u8wrap',
+  'LeanJs_Demo_intEdiv', 'LeanJs_Demo_intEmod', 'LeanJs_Demo_intNeg',
+  'LeanJs_Demo_floatCalc',
   'LeanTodo_TodoList_add', 'LeanTodo_TodoList_toggle',
   'LeanTodo_TodoList_remove', 'LeanTodo_TodoList_step',
 ];
@@ -15,11 +19,22 @@ const {
   LeanJs_Demo_mkShifted: mkShifted,
   LeanJs_Demo_sumTo: sumTo,
   LeanJs_Demo_fact: fact,
+  LeanJs_Demo_mkMixed: mkMixed,
+  LeanJs_Demo_mixedSum: mixedSum,
+  LeanJs_Demo_u32wrap: u32wrap,
+  LeanJs_Demo_u8wrap: u8wrap,
+  LeanJs_Demo_intEdiv: intEdiv,
+  LeanJs_Demo_intEmod: intEmod,
+  LeanJs_Demo_intNeg: intNeg,
+  LeanJs_Demo_floatCalc: floatCalc,
   LeanTodo_TodoList_add: add,
   LeanTodo_TodoList_toggle: toggle,
   LeanTodo_TodoList_remove: remove,
   LeanTodo_TodoList_step: step,
 } = m;
+
+// Lean's Float.toString uses C `%f` (fixed 6 decimal places).
+const leanFloatToString = (x) => x.toFixed(6);
 
 // Point = { tag:0, fields:[x,y] }
 const P = (x, y) => ({ tag: 0, fields: [x, y] });
@@ -38,6 +53,31 @@ console.log(`sumTo 100000 = ${sumTo(100000n)}`);
 console.log(`fact 0 = ${fact(0n)}`);
 console.log(`fact 5 = ${fact(5n)}`);
 console.log(`fact 10 = ${fact(10n)}`);
+
+// ---- Mixed ctor (object + packed sub-word scalars) ----
+// Lean's layout pass packs region S as: d:UInt16 @0, b:UInt8 @2, c:UInt8 @3
+// (alignment-driven). Reading those byte offsets returns the fields distinctly,
+// where a single fields[] keyed by word-slot index would have collided them.
+const mx = mkMixed(100n, 7, 9, 1000);
+console.log(`mixed b = ${mx.sdata.getUint8(2)}`);
+console.log(`mixed c = ${mx.sdata.getUint8(3)}`);
+console.log(`mixed d = ${mx.sdata.getUint16(0, true)}`);
+console.log(`mixedSum = ${mixedSum(mx)}`);
+const m2 = mkMixed(0n, 255, 1, 65535);
+console.log(`mixed2 b = ${m2.sdata.getUint8(2)}`);
+console.log(`mixed2 c = ${m2.sdata.getUint8(3)}`);
+console.log(`mixed2 d = ${m2.sdata.getUint16(0, true)}`);
+console.log(`mixedSum2 = ${mixedSum(m2)}`);
+
+// ---- Numeric tower: UInt wrap, Int Euclidean div/mod, Float ----
+console.log(`u32wrap = ${u32wrap(4000000000, 1000000000)}`);
+console.log(`u8wrap = ${u8wrap(3, 10)}`);
+console.log(`intEdiv = ${intEdiv(-12n, 7n)}`);
+console.log(`intEmod = ${intEmod(-12n, 7n)}`);
+console.log(`intEdiv2 = ${intEdiv(12n, -7n)}`);
+console.log(`intEmod2 = ${intEmod(12n, -7n)}`);
+console.log(`intNeg = ${intNeg(42n)}`);
+console.log(`floatCalc = ${leanFloatToString(floatCalc(3.0, 4.0))}`);
 
 // ---- TodoList JS model ----
 // List: nil = 0, cons = { tag:1, fields:[head, tail] }

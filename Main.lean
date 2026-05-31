@@ -15,6 +15,10 @@ and emit a self-contained TypeScript module (prelude + generated functions). -/
     Bool, and transitive helper-decl collection together. -/
 def rootNames : Array Name := #[
   `LeanJs.Demo.double, `LeanJs.Demo.mkShifted, `LeanJs.Demo.sumTo, `LeanJs.Demo.fact,
+  `LeanJs.Demo.mkMixed, `LeanJs.Demo.mixedSum,
+  `LeanJs.Demo.u32wrap, `LeanJs.Demo.u8wrap,
+  `LeanJs.Demo.intEdiv, `LeanJs.Demo.intEmod, `LeanJs.Demo.intNeg,
+  `LeanJs.Demo.floatCalc,
   `LeanTodo.TodoList.add,
   `LeanTodo.TodoList.toggle,
   `LeanTodo.TodoList.remove,

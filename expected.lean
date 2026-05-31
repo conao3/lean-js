@@ -21,6 +21,25 @@ def fact : Nat → Nat
   | 0 => 1
   | n+1 => (n+1) * fact n
 
+structure Mixed where
+  label : Nat
+  b : UInt8
+  c : UInt8
+  d : UInt16
+
+def mkMixed (label : Nat) (b c : UInt8) (d : UInt16) : Mixed :=
+  { label := label, b := b, c := c, d := d }
+
+def mixedSum (m : Mixed) : Nat :=
+  m.label + m.b.toNat + m.c.toNat + m.d.toNat
+
+def u32wrap (a b : UInt32) : UInt32 := a + b
+def u8wrap (a b : UInt8) : UInt8 := a - b
+def intEdiv (a b : Int) : Int := a / b
+def intEmod (a b : Int) : Int := a % b
+def intNeg (a : Int) : Int := -a
+def floatCalc (a b : Float) : Float := (a + b) * 2.0 / b
+
 def showTodo (t : Todo) : String :=
   let mark := if t.done then "x" else " "
   s!"{t.id}:{t.title}:{mark}"
@@ -45,6 +64,25 @@ def main : IO Unit := do
   IO.println s!"fact 0 = {fact 0}"
   IO.println s!"fact 5 = {fact 5}"
   IO.println s!"fact 10 = {fact 10}"
+  let m := mkMixed 100 7 9 1000
+  IO.println s!"mixed b = {m.b}"
+  IO.println s!"mixed c = {m.c}"
+  IO.println s!"mixed d = {m.d}"
+  IO.println s!"mixedSum = {mixedSum m}"
+  -- packed scalars stay distinct (no fields[] collision)
+  let m2 := mkMixed 0 255 1 65535
+  IO.println s!"mixed2 b = {m2.b}"
+  IO.println s!"mixed2 c = {m2.c}"
+  IO.println s!"mixed2 d = {m2.d}"
+  IO.println s!"mixedSum2 = {mixedSum m2}"
+  IO.println s!"u32wrap = {u32wrap 4000000000 1000000000}"
+  IO.println s!"u8wrap = {u8wrap 3 10}"
+  IO.println s!"intEdiv = {intEdiv (-12) 7}"
+  IO.println s!"intEmod = {intEmod (-12) 7}"
+  IO.println s!"intEdiv2 = {intEdiv 12 (-7)}"
+  IO.println s!"intEmod2 = {intEmod 12 (-7)}"
+  IO.println s!"intNeg = {intNeg 42}"
+  IO.println s!"floatCalc = {floatCalc 3.0 4.0}"
   -- TodoList sequence: add, add, add, toggle, remove
   let l0 := TodoList.empty
   let l1 := l0.add "buy milk"
