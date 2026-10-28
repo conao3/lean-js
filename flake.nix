@@ -16,7 +16,7 @@
           packages = [
             pkgs.lean4
             pkgs.elan
-            pkgs.nodejs_22
+            pkgs.nodejs_latest
             pkgs.git
           ];
 
