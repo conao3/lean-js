@@ -121,7 +121,7 @@ def float32Str (x : Float32) : String := toString x
 
 /-- A ctor packing SIGNED fixed-width scalars (Int8/Int16/Int32/Int64) plus a
     Float and a Float32 in region S, alongside one object field (`label : Nat`).
-    At Lean 4.29.1 the signed Int* types share the storage IRType of their UInt*
+    At Lean 4.35.0 the signed Int* types share the storage IRType of their UInt*
     counterparts (no signed IRType exists), so the layout pass packs them via the
     uint8/16/32/64/float/float32 sproj/sset paths; the two's-complement bit
     pattern is preserved, so reading the same bytes back yields the signed value

@@ -144,10 +144,10 @@ def preludeSymbols : Std.HashSet String := Std.HashSet.ofList [
   "lean_nat_land", "lean_nat_lor", "lean_nat_xor",
   "lean_int_neg", "lean_int_div", "lean_int_mod", "lean_int_ediv", "lean_int_emod",
   "lean_int_dec_eq", "lean_int_dec_lt", "lean_int_dec_le",
-  "lean_int_of_nat", "lean_int_to_nat", "lean_nat_abs",
+  "lean_int_of_nat", "lean_int_neg_succ_of_nat", "lean_int_to_nat", "lean_nat_abs",
   "lean_nat_dec_eq", "lean_nat_dec_lt", "lean_nat_dec_le",
   -- UInt / USize
-  "lean_uint8_of_nat", "lean_uint16_of_nat", "lean_uint64_of_nat",
+  "lean_uint8_of_nat", "lean_uint16_of_nat", "lean_uint64_of_nat", "lean_uint64_of_nat_mk",
   "lean_uint32_of_nat2", "lean_usize_of_nat",
   "lean_uint8_add", "lean_uint8_sub", "lean_uint8_mul", "lean_uint8_div", "lean_uint8_mod",
   "lean_uint8_land", "lean_uint8_lor", "lean_uint8_xor", "lean_uint8_complement",
@@ -236,7 +236,7 @@ def preludeSymbols : Std.HashSet String := Std.HashSet.ofList [
   "lean_uint64_mix_hash",
   "lean_string_utf8_byte_size", "lean_string_utf8_get", "lean_string_utf8_get_bang",
   "lean_string_utf8_get_opt", "lean_string_utf8_next", "lean_string_utf8_prev",
-  "lean_string_utf8_at_end", "lean_string_utf8_extract", "lean_string_utf8_pos_of",
+  "lean_string_utf8_at_end", "lean_string_utf8_extract", "lean_string_utf8_extract_fast", "lean_string_utf8_pos_of",
   "lean_string_utf8_set",
   "lean_string_contains", "lean_string_of_usize",
   "lean_string_get_byte_fast", "lean_string_utf8_get_fast",
@@ -251,7 +251,7 @@ def preludeSymbols : Std.HashSet String := Std.HashSet.ofList [
   "lean_array_get_size", "lean_array_get", "lean_array_get_borrowed",
   "lean_array_fget", "lean_array_fget_borrowed", "lean_array_set",
   "lean_array_push", "lean_array_pop", "lean_array_swap", "lean_array_uget",
-  "lean_array_uget_borrowed",
+  "lean_array_uget_borrowed", "lean_array_propagate_mark",
   "lean_array_uset", "lean_array_usize", "lean_array_to_list", "lean_mk_array", "lean_array_mk",
   -- FloatArray (packed doubles -> Float64Array)
   "lean_float_array_mk", "lean_float_array_data", "lean_copy_float_array",
@@ -266,13 +266,13 @@ def preludeSymbols : Std.HashSet String := Std.HashSet.ofList [
   -- address-independent, so a constant address / non-exclusive answer is faithful.
   "lean_ptr_addr", "lean_is_exclusive_obj",
   -- platform / panic
-  "lean_system_platform_nbits", "lean_panic_fn",
+  "lean_system_platform_nbits", "lean_panic_fn", "lean_panic_fn_borrowed",
   -- IO / ST / FS
   "lean_get_stdout", "lean_get_stderr", "lean_get_stdin",
   "lean_get_set_stdout", "lean_get_set_stderr", "lean_get_set_stdin",
   "lean_io_eprint", "lean_io_eprintln", "lean_io_getenv", "lean_io_exit",
   "lean_st_mk_ref", "lean_st_ref_get", "lean_st_ref_set", "lean_st_ref_swap",
-  "lean_st_ref_take", "lean_st_ref_ptr_eq",
+  "lean_st_ref_take", "lean_st_ref_put", "lean_st_ref_ptr_eq",
   "lean_io_prim_handle_mk", "lean_io_prim_handle_put_str", "lean_io_prim_handle_write",
   "lean_io_prim_handle_read", "lean_io_prim_handle_flush", "lean_io_prim_handle_is_tty",
   "lean_io_prim_handle_get_line"
@@ -368,7 +368,6 @@ def emitKnownFap (externMap : Std.HashMap Name String) (c : FunId) (ys : Array A
   | `String.next      => call "lean_string_utf8_next"
   | `String.prev      => call "lean_string_utf8_prev"
   | `String.atEnd     => call "lean_string_utf8_at_end"
-  | `String.extract   => call "lean_string_utf8_extract"
   | `String.Pos.Raw.extract => call "lean_string_utf8_extract"
   | `String.Pos.Raw.get => call "lean_string_utf8_get"
   | `String.Pos.Raw.next => call "lean_string_utf8_next"

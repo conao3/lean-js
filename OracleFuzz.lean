@@ -5,7 +5,7 @@ open LeanJs.Fuzz
 partial def loop (h : IO.FS.Stream) : IO Unit := do
   let line ← h.getLine
   if line.isEmpty then return
-  let line := line.dropRightWhile (· == '\n')
+  let line := (line.dropEndWhile (· == '\n')).toString
   let parts := line.splitOn "\t"
   let out ← match parts with
     | ["NAT", a] => pure s!"NAT\t{fNat a.toNat!}"

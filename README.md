@@ -103,11 +103,12 @@ below is enforced by `test.sh` diffing node output against that native binary.
   (`Uint8Array`), **`FloatArray`** (`Float64Array`: push/get!/set!/get/uget/fold/toList
   with native OOB conventions — `get!`→`0.0`, `set!`→unchanged), `Std.HashMap`/
   `HashSet` with native-matching bucket-order iteration.
-- **Owned/borrowed externs**: Lean 4.29.1 emits exactly three borrowed `@[extern]`
-  variants, all for array element access — `lean_array_get_borrowed`,
-  `lean_array_fget_borrowed`, `lean_array_uget_borrowed`. All three are mapped as
-  prelude aliases of their owned twins, because the only C-level difference is a
-  refcount `inc` on the result, which is a no-op under JS GC. So `a[i]!` and borrowed
+- **Owned/borrowed externs**: Lean 4.35.0 emits four borrowed `@[extern]`
+  variants — three for array element access (`lean_array_get_borrowed`,
+  `lean_array_fget_borrowed`, `lean_array_uget_borrowed`) and `lean_panic_fn_borrowed`
+  (`panicCore`, borrowed default). All four are mapped as prelude aliases of their
+  owned twins, because the only C-level difference is a refcount `inc`, which is a
+  no-op under JS GC. So `a[i]!` and borrowed
   indexing/projection work **uniformly** (verified by the matrix-multiply inner loop
   in the `verify` diff-test, which lowers to `lean_array_get_borrowed`).
 - **Control flow**: self- and mutual-recursion plus non-cyclic tail chains are loop-ified

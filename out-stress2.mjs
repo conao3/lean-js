@@ -141,6 +141,7 @@ const lean_panic_fn = (defaultVal, msg) => {
   if (_leanExitOnPanic) process.exit(1);
   return defaultVal;
 };
+const lean_panic_fn_borrowed = lean_panic_fn;
 // FnBody.unreachable -> lean_internal_panic_unreachable: FATAL. Dead match arms
 // are never meant to run; print and terminate (never fall through).
 const lean_internal_panic = (msg) => {
@@ -240,7 +241,7 @@ const _u64 = _mkUIntBig(64), _usz = _mkUIntBig(WORD_BITS);
 const lean_uint8_of_nat = _u8.ofNat, lean_uint8_add = _u8.add, lean_uint8_sub = _u8.sub, lean_uint8_mul = _u8.mul, lean_uint8_div = _u8.div, lean_uint8_mod = _u8.mod, lean_uint8_land = _u8.land, lean_uint8_lor = _u8.lor, lean_uint8_xor = _u8.xor, lean_uint8_complement = _u8.complement, lean_uint8_neg = _u8.neg, lean_uint8_shift_left = _u8.shiftLeft, lean_uint8_shift_right = _u8.shiftRight, lean_uint8_dec_eq = _u8.decEq, lean_uint8_dec_lt = _u8.decLt, lean_uint8_dec_le = _u8.decLe, lean_uint8_to_nat = _u8.toNat;
 const lean_uint16_of_nat = _u16.ofNat, lean_uint16_add = _u16.add, lean_uint16_sub = _u16.sub, lean_uint16_mul = _u16.mul, lean_uint16_div = _u16.div, lean_uint16_mod = _u16.mod, lean_uint16_land = _u16.land, lean_uint16_lor = _u16.lor, lean_uint16_xor = _u16.xor, lean_uint16_complement = _u16.complement, lean_uint16_neg = _u16.neg, lean_uint16_shift_left = _u16.shiftLeft, lean_uint16_shift_right = _u16.shiftRight, lean_uint16_dec_eq = _u16.decEq, lean_uint16_dec_lt = _u16.decLt, lean_uint16_dec_le = _u16.decLe, lean_uint16_to_nat = _u16.toNat;
 const lean_uint32_add = _u32.add, lean_uint32_sub = _u32.sub, lean_uint32_mul = _u32.mul, lean_uint32_div = _u32.div, lean_uint32_mod = _u32.mod, lean_uint32_land = _u32.land, lean_uint32_lor = _u32.lor, lean_uint32_xor = _u32.xor, lean_uint32_complement = _u32.complement, lean_uint32_neg = _u32.neg, lean_uint32_shift_left = _u32.shiftLeft, lean_uint32_shift_right = _u32.shiftRight, lean_uint32_dec_eq = _u32.decEq, lean_uint32_dec_lt = _u32.decLt, lean_uint32_dec_le = _u32.decLe, lean_uint32_to_nat = _u32.toNat;
-const lean_uint64_of_nat = _u64.ofNat, lean_uint64_add = _u64.add, lean_uint64_sub = _u64.sub, lean_uint64_mul = _u64.mul, lean_uint64_div = _u64.div, lean_uint64_mod = _u64.mod, lean_uint64_land = _u64.land, lean_uint64_lor = _u64.lor, lean_uint64_xor = _u64.xor, lean_uint64_complement = _u64.complement, lean_uint64_neg = _u64.neg, lean_uint64_shift_left = _u64.shiftLeft, lean_uint64_shift_right = _u64.shiftRight, lean_uint64_dec_eq = _u64.decEq, lean_uint64_dec_lt = _u64.decLt, lean_uint64_dec_le = _u64.decLe, lean_uint64_to_nat = _u64.toNat;
+const lean_uint64_of_nat = _u64.ofNat, lean_uint64_of_nat_mk = _u64.ofNat, lean_uint64_add = _u64.add, lean_uint64_sub = _u64.sub, lean_uint64_mul = _u64.mul, lean_uint64_div = _u64.div, lean_uint64_mod = _u64.mod, lean_uint64_land = _u64.land, lean_uint64_lor = _u64.lor, lean_uint64_xor = _u64.xor, lean_uint64_complement = _u64.complement, lean_uint64_neg = _u64.neg, lean_uint64_shift_left = _u64.shiftLeft, lean_uint64_shift_right = _u64.shiftRight, lean_uint64_dec_eq = _u64.decEq, lean_uint64_dec_lt = _u64.decLt, lean_uint64_dec_le = _u64.decLe, lean_uint64_to_nat = _u64.toNat;
 const lean_usize_of_nat = _usz.ofNat, lean_usize_add = _usz.add, lean_usize_sub = _usz.sub, lean_usize_mul = _usz.mul, lean_usize_div = _usz.div, lean_usize_mod = _usz.mod, lean_usize_land = _usz.land, lean_usize_lor = _usz.lor, lean_usize_xor = _usz.xor, lean_usize_complement = _usz.complement, lean_usize_neg = _usz.neg, lean_usize_shift_left = _usz.shiftLeft, lean_usize_shift_right = _usz.shiftRight, lean_usize_dec_eq = _usz.decEq, lean_usize_dec_lt = _usz.decLt, lean_usize_dec_le = _usz.decLe, lean_usize_to_nat = _usz.toNat;
 // UInt64 -> USize truncates to the platform word width; on the 64-bit profile
 // this is an identity re-mask, on a 32-bit profile it drops the high 32 bits.
@@ -259,7 +260,7 @@ const _mkSInt = (bits) => {
   return {
     // toInt reinterprets the raw stored bit pattern as a signed two's-complement
     // Int. A packed signed field is stored/read through the UNSIGNED DataView
-    // path (sproj/sset only know uintN at Lean 4.29.1 — no signed IRType), so a
+    // path (sproj/sset only know uintN at Lean 4.35.0 — no signed IRType), so a
     // negative Int8 like -5 arrives here as the unsigned byte 251 (a JS number);
     // BigInt.asIntN recovers -5. Already-signed bigint inputs are idempotent in
     // range, so the same boundary works for normal Int8 arithmetic values too.
@@ -555,6 +556,7 @@ const lean_string_utf8_extract = (s, lo, hi) => {
 };
 // String.set : replace the char starting at byte pos p with codepoint c. A pos
 // that is out of range or mid-char leaves the string unchanged (Lean returns s).
+const lean_string_utf8_extract_fast = lean_string_utf8_extract;
 const lean_string_utf8_set = (s, p, c) => {
   const b = _utf8enc.encode(s), i = Number(p);
   if (i < 0 || i >= b.length || !_u8isFirst(b[i])) return s;
@@ -722,6 +724,7 @@ const lean_array_uget = (a, i) => a[Number(i)];
 // prelude is self-documenting rather than routing the Lean decls to lean_array_uget.
 const lean_array_fget_borrowed = lean_array_fget;
 const lean_array_uget_borrowed = lean_array_uget;
+const lean_array_propagate_mark = (src, dst) => dst;
 // Setters return a fresh array (functional), mirroring the ctor reuse/copy
 // model: JS arrays are reference-shared with no refcount, so in-place updates
 // from the compiler's unsafe (assumed-unique) map/foldl paths would corrupt the
@@ -749,6 +752,7 @@ const lean_nat_xor = (a, b) => a ^ b;
 
 // ---- Int / Nat conversions ----
 const lean_int_of_nat = (n) => n;
+const lean_int_neg_succ_of_nat = (n) => -(n + 1n);
 const lean_int_to_nat = (i) => (i < 0n ? 0n : i);
 const lean_nat_abs = (i) => (i < 0n ? -i : i);
 const lean_uint32_of_nat2 = (n) => Number(BigInt.asUintN(32, n));
@@ -918,6 +922,7 @@ const lean_st_ref_get = (r) => r.value;
 const lean_st_ref_set = (r, a) => { r.value = a; return 0; };
 const lean_st_ref_swap = (r, a) => { const o = r.value; r.value = a; return o; };
 const lean_st_ref_take = (r) => { const o = r.value; r.value = undefined; return o; };
+const lean_st_ref_put = lean_st_ref_set;
 const lean_st_ref_ptr_eq = (r1, r2) => (r1 === r2 ? 1 : 0);
 
 // IO.getEnv : BaseIO (Option String). BaseIO -> bare Option (no io_result wrap).
@@ -1443,7 +1448,7 @@ function panic__at__System_Uri_UriEscape_decodeUri_spec_1__closed_0() {
 
 function panic__at__System_Uri_UriEscape_decodeUri_spec_1(x_1) {
   const x_2 = panic__at__System_Uri_UriEscape_decodeUri_spec_1__closed_0();
-  const x_3 = lean_panic_fn(x_2, x_1);
+  const x_3 = lean_panic_fn_borrowed(x_2, x_1);
   return x_3;
 }
 
@@ -1470,16 +1475,16 @@ function LeanJs_DemoStress2_baProg__closed_48() {
 
 function LeanJs_DemoStress2_baProg__tc() {
   while (true) {
-    const x_8 = LeanJs_DemoStress2_baProg__closed_5();
-    const x_9 = IO_println__at__LeanJs_DemoStress2_baProg_spec_0(x_8, undefined);
-    switch (lean_tag(x_9)) {
+    const x_7 = LeanJs_DemoStress2_baProg__closed_5();
+    const x_8 = IO_println__at__LeanJs_DemoStress2_baProg_spec_0(x_7, undefined);
+    switch (lean_tag(x_8)) {
       case 0: {
-        const x_24 = LeanJs_DemoStress2_baProg__closed_47();
-        switch (x_24) {
+        const x_23 = LeanJs_DemoStress2_baProg__closed_47();
+        switch (x_23) {
           case 0: {
-            const x_25 = LeanJs_DemoStress2_baProg__closed_45();
-            const x_26 = panic__at__System_Uri_UriEscape_decodeUri_spec_1(x_25);
-            const x_10 = x_26;
+            const x_24 = LeanJs_DemoStress2_baProg__closed_45();
+            const x_25 = panic__at__System_Uri_UriEscape_decodeUri_spec_1(x_24);
+            const x_10 = x_25;
             const x_11 = LeanJs_DemoStress2_baProg__closed_6();
             const x_12 = lean_string_append(x_11, x_10);
             const x_13 = IO_println__at__LeanJs_DemoStress2_baProg_spec_0(x_12, undefined);
@@ -1499,7 +1504,6 @@ function LeanJs_DemoStress2_baProg__tc() {
                           case 0: {
                             const x_20 = LeanJs_DemoStress2_baProg__closed_45();
                             const x_21 = panic__at__System_Uri_UriEscape_decodeUri_spec_1(x_20);
-                            const x_2 = undefined;
                             const x_3 = x_18;
                             const x_4 = x_21;
                             const x_5 = lean_string_append(x_3, x_4);
@@ -1507,7 +1511,6 @@ function LeanJs_DemoStress2_baProg__tc() {
                           }
                           case 1: {
                             const x_22 = LeanJs_DemoStress2_baProg__closed_46();
-                            const x_2 = undefined;
                             const x_3 = x_18;
                             const x_4 = x_22;
                             const x_5 = lean_string_append(x_3, x_4);
@@ -1535,8 +1538,8 @@ function LeanJs_DemoStress2_baProg__tc() {
             }
           }
           case 1: {
-            const x_27 = LeanJs_DemoStress2_baProg__closed_48();
-            const x_10 = x_27;
+            const x_26 = LeanJs_DemoStress2_baProg__closed_48();
+            const x_10 = x_26;
             const x_11 = LeanJs_DemoStress2_baProg__closed_6();
             const x_12 = lean_string_append(x_11, x_10);
             const x_13 = IO_println__at__LeanJs_DemoStress2_baProg_spec_0(x_12, undefined);
@@ -1556,7 +1559,6 @@ function LeanJs_DemoStress2_baProg__tc() {
                           case 0: {
                             const x_20 = LeanJs_DemoStress2_baProg__closed_45();
                             const x_21 = panic__at__System_Uri_UriEscape_decodeUri_spec_1(x_20);
-                            const x_2 = undefined;
                             const x_3 = x_18;
                             const x_4 = x_21;
                             const x_5 = lean_string_append(x_3, x_4);
@@ -1564,7 +1566,6 @@ function LeanJs_DemoStress2_baProg__tc() {
                           }
                           case 1: {
                             const x_22 = LeanJs_DemoStress2_baProg__closed_46();
-                            const x_2 = undefined;
                             const x_3 = x_18;
                             const x_4 = x_22;
                             const x_5 = lean_string_append(x_3, x_4);
@@ -1595,7 +1596,7 @@ function LeanJs_DemoStress2_baProg__tc() {
         }
       }
       case 1: {
-        return x_9;
+        return x_8;
       }
       default: { throw new Error("no matching case"); }
     }
@@ -1605,14 +1606,9 @@ function LeanJs_DemoStress2_baProg() {
   return lean_trampoline(LeanJs_DemoStress2_baProg__tc());
 }
 
-function LeanJs_DemoStress2_gtsProg__closed_1__tc() {
-  while (true) {
-    const x_1 = 42n;
-    return { __tc: 1, f: Nat_reprFast__tc, a: [x_1] };
-  }
-}
 function LeanJs_DemoStress2_gtsProg__closed_1() {
-  return lean_trampoline(LeanJs_DemoStress2_gtsProg__closed_1__tc());
+  const x_1 = "42";
+  return x_1;
 }
 
 function LeanJs_DemoStress2_gtsProg__closed_2__tc() {
@@ -1687,14 +1683,9 @@ function LeanJs_DemoStress2_gtsProg__closed_6() {
   return x_1;
 }
 
-function LeanJs_DemoStress2_gtsProg__closed_12__tc() {
-  while (true) {
-    const x_1 = 7n;
-    return { __tc: 1, f: Nat_reprFast__tc, a: [x_1] };
-  }
-}
 function LeanJs_DemoStress2_gtsProg__closed_12() {
-  return lean_trampoline(LeanJs_DemoStress2_gtsProg__closed_12__tc());
+  const x_1 = "7";
+  return x_1;
 }
 
 function LeanJs_DemoStress2_gtsProg__closed_11() {
@@ -1740,14 +1731,9 @@ function LeanJs_DemoStress2_gtsProg__closed_19() {
   return x_1;
 }
 
-function LeanJs_DemoStress2_gtsProg__closed_22__tc() {
-  while (true) {
-    const x_1 = 3n;
-    return { __tc: 1, f: Nat_reprFast__tc, a: [x_1] };
-  }
-}
 function LeanJs_DemoStress2_gtsProg__closed_22() {
-  return lean_trampoline(LeanJs_DemoStress2_gtsProg__closed_22__tc());
+  const x_1 = "3";
+  return x_1;
 }
 
 function LeanJs_DemoStress2_gtsProg__closed_21() {
@@ -1913,39 +1899,36 @@ function List_foldl__at__List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0_sp
 // extern UInt32_decEq -> runtime prelude
 
 function addParenHeuristic__lam_0(x_1) {
-  const block_7 = (x_2) => {
-    switch (x_2) {
-      case 0: {
-        const x_3 = 13;
-        const x_4 = lean_uint32_dec_eq(x_1, x_3);
-        switch (x_4) {
-          case 0: {
-            const x_5 = 10;
-            const x_6 = lean_uint32_dec_eq(x_1, x_5);
-            return x_6;
-          }
-          case 1: {
-            return x_4;
-          }
-          default: { throw new Error("no matching case"); }
-        }
-      }
-      case 1: {
-        return x_2;
-      }
-      default: { throw new Error("no matching case"); }
-    }
-  };
-  const x_8 = 32;
-  const x_9 = lean_uint32_dec_eq(x_1, x_8);
-  switch (x_9) {
+  const x_2 = 32;
+  const x_3 = lean_uint32_dec_eq(x_1, x_2);
+  switch (x_3) {
     case 0: {
-      const x_10 = 9;
-      const x_11 = lean_uint32_dec_eq(x_1, x_10);
-      return block_7(x_11);
+      const x_4 = 9;
+      const x_5 = lean_uint32_dec_eq(x_1, x_4);
+      switch (x_5) {
+        case 0: {
+          const x_6 = 13;
+          const x_7 = lean_uint32_dec_eq(x_1, x_6);
+          switch (x_7) {
+            case 0: {
+              const x_8 = 10;
+              const x_9 = lean_uint32_dec_eq(x_1, x_8);
+              return x_9;
+            }
+            case 1: {
+              return x_7;
+            }
+            default: { throw new Error("no matching case"); }
+          }
+        }
+        case 1: {
+          return x_5;
+        }
+        default: { throw new Error("no matching case"); }
+      }
     }
     case 1: {
-      return block_7(x_9);
+      return x_3;
     }
     default: { throw new Error("no matching case"); }
   }
@@ -1985,7 +1968,7 @@ function addParenHeuristic__closed_4() {
   return x_1;
 }
 
-function List_toString__redArg__closed_1() {
+function addParenHeuristic__closed_5() {
   const x_1 = "[";
   return x_1;
 }
@@ -1999,29 +1982,29 @@ function addParenHeuristic__tc(x_1) {
     const x_14 = lean_string_isprefixof(x_3, x_1);
     switch (x_14) {
       case 0: {
-        const x_15 = List_toString__redArg__closed_1();
+        const x_15 = addParenHeuristic__closed_5();
         const x_16 = lean_string_isprefixof(x_15, x_1);
-        const x_4 = x_16;
-        switch (x_4) {
+        const x_5 = x_16;
+        switch (x_5) {
           case 0: {
-            const x_5 = addParenHeuristic__closed_2();
-            const x_6 = lean_string_isprefixof(x_5, x_1);
-            switch (x_6) {
+            const x_6 = addParenHeuristic__closed_2();
+            const x_7 = lean_string_isprefixof(x_6, x_1);
+            switch (x_7) {
               case 0: {
-                const x_7 = addParenHeuristic__closed_3();
-                const x_8 = lean_string_isprefixof(x_7, x_1);
-                switch (x_8) {
+                const x_8 = addParenHeuristic__closed_3();
+                const x_9 = lean_string_isprefixof(x_8, x_1);
+                switch (x_9) {
                   case 0: {
-                    const x_9 = lean_string_any(x_1, x_2);
-                    switch (x_9) {
+                    const x_10 = lean_string_any(x_1, x_2);
+                    switch (x_10) {
                       case 0: {
                         return x_1;
                       }
                       case 1: {
-                        const x_10 = lean_string_append(x_3, x_1);
-                        const x_11 = addParenHeuristic__closed_4();
-                        const x_12 = lean_string_append(x_10, x_11);
-                        return x_12;
+                        const x_11 = lean_string_append(x_3, x_1);
+                        const x_12 = addParenHeuristic__closed_4();
+                        const x_13 = lean_string_append(x_11, x_12);
+                        return x_13;
                       }
                       default: { throw new Error("no matching case"); }
                     }
@@ -2045,27 +2028,27 @@ function addParenHeuristic__tc(x_1) {
         }
       }
       case 1: {
-        const x_4 = x_14;
-        switch (x_4) {
+        const x_5 = x_14;
+        switch (x_5) {
           case 0: {
-            const x_5 = addParenHeuristic__closed_2();
-            const x_6 = lean_string_isprefixof(x_5, x_1);
-            switch (x_6) {
+            const x_6 = addParenHeuristic__closed_2();
+            const x_7 = lean_string_isprefixof(x_6, x_1);
+            switch (x_7) {
               case 0: {
-                const x_7 = addParenHeuristic__closed_3();
-                const x_8 = lean_string_isprefixof(x_7, x_1);
-                switch (x_8) {
+                const x_8 = addParenHeuristic__closed_3();
+                const x_9 = lean_string_isprefixof(x_8, x_1);
+                switch (x_9) {
                   case 0: {
-                    const x_9 = lean_string_any(x_1, x_2);
-                    switch (x_9) {
+                    const x_10 = lean_string_any(x_1, x_2);
+                    switch (x_10) {
                       case 0: {
                         return x_1;
                       }
                       case 1: {
-                        const x_10 = lean_string_append(x_3, x_1);
-                        const x_11 = addParenHeuristic__closed_4();
-                        const x_12 = lean_string_append(x_10, x_11);
-                        return x_12;
+                        const x_11 = lean_string_append(x_3, x_1);
+                        const x_12 = addParenHeuristic__closed_4();
+                        const x_13 = lean_string_append(x_11, x_12);
+                        return x_13;
                       }
                       default: { throw new Error("no matching case"); }
                     }
@@ -2118,11 +2101,11 @@ function List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0__tc(x_1) {
             switch (lean_tag(x_4)) {
               case 0: {
                 const x_11 = List_foldl__at__List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0_spec_0__closed_1();
-                const x_6 = x_11;
-                const x_7 = lean_string_append(x_5, x_6);
-                const x_8 = List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0__closed_2();
-                const x_9 = lean_string_append(x_7, x_8);
-                return x_9;
+                const x_7 = x_11;
+                const x_8 = lean_string_append(x_5, x_7);
+                const x_9 = List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0__closed_2();
+                const x_10 = lean_string_append(x_8, x_9);
+                return x_10;
               }
               case 1: {
                 const x_12 = x_4.fields[0];
@@ -2132,11 +2115,11 @@ function List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0__tc(x_1) {
                 const x_16 = lean_string_append(x_13, x_15);
                 const x_17 = List_foldl__at__List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0_spec_0__closed_3();
                 const x_18 = lean_string_append(x_16, x_17);
-                const x_6 = x_18;
-                const x_7 = lean_string_append(x_5, x_6);
-                const x_8 = List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0__closed_2();
-                const x_9 = lean_string_append(x_7, x_8);
-                return x_9;
+                const x_7 = x_18;
+                const x_8 = lean_string_append(x_5, x_7);
+                const x_9 = List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0__closed_2();
+                const x_10 = lean_string_append(x_8, x_9);
+                return x_10;
               }
               default: { throw new Error("no matching case"); }
             }
@@ -2147,12 +2130,12 @@ function List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0__tc(x_1) {
             switch (lean_tag(x_19)) {
               case 0: {
                 const x_27 = List_foldl__at__List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0_spec_0__closed_1();
-                const x_21 = x_27;
-                const x_22 = lean_string_append(x_20, x_21);
-                const x_23 = List_foldl__at__List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0_spec_0(x_22, x_3);
-                const x_24 = 93;
-                const x_25 = lean_string_push(x_23, x_24);
-                return x_25;
+                const x_22 = x_27;
+                const x_23 = lean_string_append(x_20, x_22);
+                const x_24 = List_foldl__at__List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0_spec_0(x_23, x_3);
+                const x_25 = 93;
+                const x_26 = lean_string_push(x_24, x_25);
+                return x_26;
               }
               case 1: {
                 const x_28 = x_19.fields[0];
@@ -2162,12 +2145,12 @@ function List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0__tc(x_1) {
                 const x_32 = lean_string_append(x_29, x_31);
                 const x_33 = List_foldl__at__List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0_spec_0__closed_3();
                 const x_34 = lean_string_append(x_32, x_33);
-                const x_21 = x_34;
-                const x_22 = lean_string_append(x_20, x_21);
-                const x_23 = List_foldl__at__List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0_spec_0(x_22, x_3);
-                const x_24 = 93;
-                const x_25 = lean_string_push(x_23, x_24);
-                return x_25;
+                const x_22 = x_34;
+                const x_23 = lean_string_append(x_20, x_22);
+                const x_24 = List_foldl__at__List_toString__at__LeanJs_DemoStress2_gtsProg_spec_0_spec_0(x_23, x_3);
+                const x_25 = 93;
+                const x_26 = lean_string_push(x_24, x_25);
+                return x_26;
               }
               default: { throw new Error("no matching case"); }
             }
@@ -2244,18 +2227,47 @@ function LeanJs_DemoStress2_gtsProg() {
   return lean_trampoline(LeanJs_DemoStress2_gtsProg__tc());
 }
 
-function LeanJs_DemoStress2_aidxProg__closed_0() {
-  const x_1 = _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_4();
+function LeanJs_DemoStress2_aidxProg__closed_1() {
+  const x_1 = LeanJs_DemoStress2_aidxProg__closed_0();
   const x_2 = lean_array_get_size(x_1);
   return x_2;
 }
 
-function LeanJs_DemoStress2_aidxProg__closed_1() {
+function LeanJs_DemoStress2_aidxProg__closed_2() {
   const x_1 = 1n;
-  const x_2 = LeanJs_DemoStress2_aidxProg__closed_0();
+  const x_2 = LeanJs_DemoStress2_aidxProg__closed_1();
   const x_3 = 0n;
   const x_4 = lean_ctor(0, 3, 0, 0, x_3, x_2, x_1);
   return x_4;
+}
+
+function _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_0() {
+  const x_1 = 10n;
+  const x_2 = 4n;
+  const x_3 = [];
+  const x_4 = lean_array_push(x_3, x_1);
+  return x_4;
+}
+
+function _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_1() {
+  const x_1 = 20n;
+  const x_2 = _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_0();
+  const x_3 = lean_array_push(x_2, x_1);
+  return x_3;
+}
+
+function _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_2() {
+  const x_1 = 30n;
+  const x_2 = _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_1();
+  const x_3 = lean_array_push(x_2, x_1);
+  return x_3;
+}
+
+function _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_3() {
+  const x_1 = 40n;
+  const x_2 = _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_2();
+  const x_3 = lean_array_push(x_2, x_1);
+  return x_3;
 }
 
 function _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__tc(x_1, x_2, x_3) {
@@ -2270,8 +2282,8 @@ function _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__
       }
       case 1: {
         const x_9 = 0n;
-        const x_10 = _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_4();
-        const x_11 = lean_array_get(x_9, x_10, x_3);
+        const x_10 = _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_3();
+        const x_11 = lean_array_get_borrowed(x_9, x_10, x_3);
         const x_12 = (x_2 + x_11);
         const x_13 = (x_3 + x_6);
         const __t_1 = x_1;
@@ -2290,56 +2302,36 @@ function _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__
   return lean_trampoline(_private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__tc(x_1, x_2, x_3));
 }
 
-function LeanJs_DemoStress2_aidxProg__closed_2() {
+function LeanJs_DemoStress2_aidxProg__closed_3() {
   const x_1 = "sum = ";
   return x_1;
 }
 
 // extern Array_mkEmpty -> runtime prelude
 
-function _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_0() {
-  const x_1 = 4n;
-  const x_2 = [];
-  return x_2;
-}
-
-function _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_1() {
-  const x_1 = 10n;
-  const x_2 = _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_0();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
-}
-
-function _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_2() {
-  const x_1 = 20n;
-  const x_2 = _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_1();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
-}
-
-function _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_3() {
-  const x_1 = 30n;
-  const x_2 = _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_2();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
-}
-
 // extern Array_push -> runtime prelude
 
-function _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_4() {
+function LeanJs_DemoStress2_aidxProg__closed_0() {
   const x_1 = 40n;
-  const x_2 = _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_3();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
+  const x_2 = 30n;
+  const x_3 = 20n;
+  const x_4 = 10n;
+  const x_5 = 4n;
+  const x_6 = [];
+  const x_7 = lean_array_push(x_6, x_4);
+  const x_8 = lean_array_push(x_7, x_3);
+  const x_9 = lean_array_push(x_8, x_2);
+  const x_10 = lean_array_push(x_9, x_1);
+  return x_10;
 }
 
-// extern Array_get_x33_Internal -> runtime prelude
+// extern Array_get_x33_InternalBorrowed -> runtime prelude
 
-function LeanJs_DemoStress2_aidxProg__closed_4() {
+function LeanJs_DemoStress2_aidxProg__closed_5() {
   const x_1 = 2n;
-  const x_2 = _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg__closed_4();
+  const x_2 = LeanJs_DemoStress2_aidxProg__closed_0();
   const x_3 = 0n;
-  const x_4 = lean_array_get(x_3, x_2, x_1);
+  const x_4 = lean_array_get_borrowed(x_3, x_2, x_1);
   return x_4;
 }
 
@@ -2396,26 +2388,59 @@ function List_reverseAux__redArg__tc(x_1, x_2) {
         return x_2;
       }
       case 1: {
-        const x_3 = 1;
-        switch (x_3) {
+        const x_3 = x_1.fields[0];
+        const x_4 = x_1.fields[1];
+        const x_12 = 1;
+        switch (x_12) {
           case 0: {
-            const x_4 = x_1.fields[1];
-            x_1.fields[1] = x_2;
-            const __t_1 = x_4;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_6 = x_1;
+            const x_7 = x_12;
+            switch (x_7) {
+              case 0: {
+                x_6.fields[1] = x_2;
+                const x_9 = x_6;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_11 = lean_ctor(1, 2, 0, 0, x_3, x_2);
+                const x_9 = x_11;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_6 = x_1.fields[0];
-            const x_7 = x_1.fields[1];
-            const x_8 = lean_ctor(1, 2, 0, 0, x_6, x_2);
-            const __t_1 = x_7;
-            const __t_2 = x_8;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_6 = undefined;
+            const x_7 = x_12;
+            switch (x_7) {
+              case 0: {
+                x_6.fields[1] = x_2;
+                const x_9 = x_6;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_11 = lean_ctor(1, 2, 0, 0, x_3, x_2);
+                const x_9 = x_11;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -2447,32 +2472,65 @@ function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0__tc
         return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
-        const x_4 = 1;
-        switch (x_4) {
+        const x_4 = x_1.fields[0];
+        const x_5 = x_1.fields[1];
+        const x_15 = 1;
+        switch (x_15) {
           case 0: {
-            const x_5 = x_1.fields[0];
-            const x_6 = x_1.fields[1];
-            const x_7 = lean_usize_of_nat(x_5);
-            const x_8 = lean_string_of_usize(x_7);
-            x_1.fields[1] = x_2;
-            x_1.fields[0] = x_8;
-            const __t_1 = x_6;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = x_1;
+            const x_8 = x_15;
+            const x_9 = lean_usize_of_nat(x_4);
+            const x_10 = lean_string_of_usize(x_9);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_10;
+                const x_12 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                const x_12 = x_14;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_10 = x_1.fields[0];
-            const x_11 = x_1.fields[1];
-            const x_12 = lean_usize_of_nat(x_10);
-            const x_13 = lean_string_of_usize(x_12);
-            const x_14 = lean_ctor(1, 2, 0, 0, x_13, x_2);
-            const __t_1 = x_11;
-            const __t_2 = x_14;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = undefined;
+            const x_8 = x_15;
+            const x_9 = lean_usize_of_nat(x_4);
+            const x_10 = lean_string_of_usize(x_9);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_10;
+                const x_12 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                const x_12 = x_14;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -2813,7 +2871,7 @@ function Nat_toDigits(x_1, x_2) {
 
 // extern USize_repr -> runtime prelude
 
-// extern Array_getInternal -> runtime prelude
+// extern Array_getInternalBorrowed -> runtime prelude
 
 function Nat_reprFast__tc(x_1) {
   while (true) {
@@ -2840,7 +2898,7 @@ function Nat_reprFast__tc(x_1) {
         }
       }
       case 1: {
-        const x_12 = lean_array_uget(x_2, x_1);
+        const x_12 = lean_array_fget_borrowed(x_2, x_1);
         return x_12;
       }
       default: { throw new Error("no matching case"); }
@@ -2851,26 +2909,26 @@ function Nat_reprFast(x_1) {
   return lean_trampoline(Nat_reprFast__tc(x_1));
 }
 
-function LeanJs_DemoStress2_aidxProg__closed_5__tc() {
+function LeanJs_DemoStress2_aidxProg__closed_6__tc() {
   while (true) {
-    const x_1 = LeanJs_DemoStress2_aidxProg__closed_4();
+    const x_1 = LeanJs_DemoStress2_aidxProg__closed_5();
     return { __tc: 1, f: Nat_reprFast__tc, a: [x_1] };
   }
 }
-function LeanJs_DemoStress2_aidxProg__closed_5() {
-  return lean_trampoline(LeanJs_DemoStress2_aidxProg__closed_5__tc());
+function LeanJs_DemoStress2_aidxProg__closed_6() {
+  return lean_trampoline(LeanJs_DemoStress2_aidxProg__closed_6__tc());
 }
 
-function LeanJs_DemoStress2_aidxProg__closed_3() {
+function LeanJs_DemoStress2_aidxProg__closed_4() {
   const x_1 = "a[2]! = ";
   return x_1;
 }
 
 // extern String_append -> runtime prelude
 
-function LeanJs_DemoStress2_aidxProg__closed_6() {
-  const x_1 = LeanJs_DemoStress2_aidxProg__closed_5();
-  const x_2 = LeanJs_DemoStress2_aidxProg__closed_3();
+function LeanJs_DemoStress2_aidxProg__closed_7() {
+  const x_1 = LeanJs_DemoStress2_aidxProg__closed_6();
+  const x_2 = LeanJs_DemoStress2_aidxProg__closed_4();
   const x_3 = lean_string_append(x_2, x_1);
   return x_3;
 }
@@ -2904,16 +2962,16 @@ function IO_println__at__LeanJs_DemoStress2_baProg_spec_0(x_1) {
 function LeanJs_DemoStress2_aidxProg__tc() {
   while (true) {
     const x_2 = 0n;
-    const x_3 = LeanJs_DemoStress2_aidxProg__closed_1();
+    const x_3 = LeanJs_DemoStress2_aidxProg__closed_2();
     const x_4 = _private_Init_Data_Range_Basic_0_Std_Legacy_Range_forIn_x39__loop__at__LeanJs_DemoStress2_aidxProg_spec_0__redArg(x_3, x_2, x_2, undefined);
     const x_5 = x_4.fields[0];
-    const x_6 = LeanJs_DemoStress2_aidxProg__closed_2();
+    const x_6 = LeanJs_DemoStress2_aidxProg__closed_3();
     const x_7 = Nat_reprFast(x_5);
     const x_8 = lean_string_append(x_6, x_7);
     const x_9 = IO_println__at__LeanJs_DemoStress2_baProg_spec_0(x_8, undefined);
     switch (lean_tag(x_9)) {
       case 0: {
-        const x_10 = LeanJs_DemoStress2_aidxProg__closed_6();
+        const x_10 = LeanJs_DemoStress2_aidxProg__closed_7();
         return { __tc: 1, f: IO_println__at__LeanJs_DemoStress2_baProg_spec_0__tc, a: [x_10, undefined] };
       }
       case 1: {

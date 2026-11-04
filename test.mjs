@@ -266,7 +266,7 @@ console.log(`f32str = ${float32Str(16777217.0)}`);
 console.log(`f32strPi = ${float32Str(3.14)}`);
 
 // ---- Packed signed-scalar fields (Int8/16/32/64) + Float/Float32 in region S ----
-// Stored via the unsigned/float DataView setters (no signed IRType at 4.29.1);
+// Stored via the unsigned/float DataView setters (no signed IRType at 4.35.0);
 // the signed value is recovered at the toInt boundary (lean_int*_to_int), which
 // is exactly how Lean's compiled code reinterprets the raw uintN bytes. Floats
 // are exact. spackSum returns Int, so it reinterprets all four signed fields.

@@ -141,6 +141,7 @@ const lean_panic_fn = (defaultVal, msg) => {
   if (_leanExitOnPanic) process.exit(1);
   return defaultVal;
 };
+const lean_panic_fn_borrowed = lean_panic_fn;
 // FnBody.unreachable -> lean_internal_panic_unreachable: FATAL. Dead match arms
 // are never meant to run; print and terminate (never fall through).
 const lean_internal_panic = (msg) => {
@@ -240,7 +241,7 @@ const _u64 = _mkUIntBig(64), _usz = _mkUIntBig(WORD_BITS);
 const lean_uint8_of_nat = _u8.ofNat, lean_uint8_add = _u8.add, lean_uint8_sub = _u8.sub, lean_uint8_mul = _u8.mul, lean_uint8_div = _u8.div, lean_uint8_mod = _u8.mod, lean_uint8_land = _u8.land, lean_uint8_lor = _u8.lor, lean_uint8_xor = _u8.xor, lean_uint8_complement = _u8.complement, lean_uint8_neg = _u8.neg, lean_uint8_shift_left = _u8.shiftLeft, lean_uint8_shift_right = _u8.shiftRight, lean_uint8_dec_eq = _u8.decEq, lean_uint8_dec_lt = _u8.decLt, lean_uint8_dec_le = _u8.decLe, lean_uint8_to_nat = _u8.toNat;
 const lean_uint16_of_nat = _u16.ofNat, lean_uint16_add = _u16.add, lean_uint16_sub = _u16.sub, lean_uint16_mul = _u16.mul, lean_uint16_div = _u16.div, lean_uint16_mod = _u16.mod, lean_uint16_land = _u16.land, lean_uint16_lor = _u16.lor, lean_uint16_xor = _u16.xor, lean_uint16_complement = _u16.complement, lean_uint16_neg = _u16.neg, lean_uint16_shift_left = _u16.shiftLeft, lean_uint16_shift_right = _u16.shiftRight, lean_uint16_dec_eq = _u16.decEq, lean_uint16_dec_lt = _u16.decLt, lean_uint16_dec_le = _u16.decLe, lean_uint16_to_nat = _u16.toNat;
 const lean_uint32_add = _u32.add, lean_uint32_sub = _u32.sub, lean_uint32_mul = _u32.mul, lean_uint32_div = _u32.div, lean_uint32_mod = _u32.mod, lean_uint32_land = _u32.land, lean_uint32_lor = _u32.lor, lean_uint32_xor = _u32.xor, lean_uint32_complement = _u32.complement, lean_uint32_neg = _u32.neg, lean_uint32_shift_left = _u32.shiftLeft, lean_uint32_shift_right = _u32.shiftRight, lean_uint32_dec_eq = _u32.decEq, lean_uint32_dec_lt = _u32.decLt, lean_uint32_dec_le = _u32.decLe, lean_uint32_to_nat = _u32.toNat;
-const lean_uint64_of_nat = _u64.ofNat, lean_uint64_add = _u64.add, lean_uint64_sub = _u64.sub, lean_uint64_mul = _u64.mul, lean_uint64_div = _u64.div, lean_uint64_mod = _u64.mod, lean_uint64_land = _u64.land, lean_uint64_lor = _u64.lor, lean_uint64_xor = _u64.xor, lean_uint64_complement = _u64.complement, lean_uint64_neg = _u64.neg, lean_uint64_shift_left = _u64.shiftLeft, lean_uint64_shift_right = _u64.shiftRight, lean_uint64_dec_eq = _u64.decEq, lean_uint64_dec_lt = _u64.decLt, lean_uint64_dec_le = _u64.decLe, lean_uint64_to_nat = _u64.toNat;
+const lean_uint64_of_nat = _u64.ofNat, lean_uint64_of_nat_mk = _u64.ofNat, lean_uint64_add = _u64.add, lean_uint64_sub = _u64.sub, lean_uint64_mul = _u64.mul, lean_uint64_div = _u64.div, lean_uint64_mod = _u64.mod, lean_uint64_land = _u64.land, lean_uint64_lor = _u64.lor, lean_uint64_xor = _u64.xor, lean_uint64_complement = _u64.complement, lean_uint64_neg = _u64.neg, lean_uint64_shift_left = _u64.shiftLeft, lean_uint64_shift_right = _u64.shiftRight, lean_uint64_dec_eq = _u64.decEq, lean_uint64_dec_lt = _u64.decLt, lean_uint64_dec_le = _u64.decLe, lean_uint64_to_nat = _u64.toNat;
 const lean_usize_of_nat = _usz.ofNat, lean_usize_add = _usz.add, lean_usize_sub = _usz.sub, lean_usize_mul = _usz.mul, lean_usize_div = _usz.div, lean_usize_mod = _usz.mod, lean_usize_land = _usz.land, lean_usize_lor = _usz.lor, lean_usize_xor = _usz.xor, lean_usize_complement = _usz.complement, lean_usize_neg = _usz.neg, lean_usize_shift_left = _usz.shiftLeft, lean_usize_shift_right = _usz.shiftRight, lean_usize_dec_eq = _usz.decEq, lean_usize_dec_lt = _usz.decLt, lean_usize_dec_le = _usz.decLe, lean_usize_to_nat = _usz.toNat;
 // UInt64 -> USize truncates to the platform word width; on the 64-bit profile
 // this is an identity re-mask, on a 32-bit profile it drops the high 32 bits.
@@ -259,7 +260,7 @@ const _mkSInt = (bits) => {
   return {
     // toInt reinterprets the raw stored bit pattern as a signed two's-complement
     // Int. A packed signed field is stored/read through the UNSIGNED DataView
-    // path (sproj/sset only know uintN at Lean 4.29.1 — no signed IRType), so a
+    // path (sproj/sset only know uintN at Lean 4.35.0 — no signed IRType), so a
     // negative Int8 like -5 arrives here as the unsigned byte 251 (a JS number);
     // BigInt.asIntN recovers -5. Already-signed bigint inputs are idempotent in
     // range, so the same boundary works for normal Int8 arithmetic values too.
@@ -555,6 +556,7 @@ const lean_string_utf8_extract = (s, lo, hi) => {
 };
 // String.set : replace the char starting at byte pos p with codepoint c. A pos
 // that is out of range or mid-char leaves the string unchanged (Lean returns s).
+const lean_string_utf8_extract_fast = lean_string_utf8_extract;
 const lean_string_utf8_set = (s, p, c) => {
   const b = _utf8enc.encode(s), i = Number(p);
   if (i < 0 || i >= b.length || !_u8isFirst(b[i])) return s;
@@ -722,6 +724,7 @@ const lean_array_uget = (a, i) => a[Number(i)];
 // prelude is self-documenting rather than routing the Lean decls to lean_array_uget.
 const lean_array_fget_borrowed = lean_array_fget;
 const lean_array_uget_borrowed = lean_array_uget;
+const lean_array_propagate_mark = (src, dst) => dst;
 // Setters return a fresh array (functional), mirroring the ctor reuse/copy
 // model: JS arrays are reference-shared with no refcount, so in-place updates
 // from the compiler's unsafe (assumed-unique) map/foldl paths would corrupt the
@@ -749,6 +752,7 @@ const lean_nat_xor = (a, b) => a ^ b;
 
 // ---- Int / Nat conversions ----
 const lean_int_of_nat = (n) => n;
+const lean_int_neg_succ_of_nat = (n) => -(n + 1n);
 const lean_int_to_nat = (i) => (i < 0n ? 0n : i);
 const lean_nat_abs = (i) => (i < 0n ? -i : i);
 const lean_uint32_of_nat2 = (n) => Number(BigInt.asUintN(32, n));
@@ -918,6 +922,7 @@ const lean_st_ref_get = (r) => r.value;
 const lean_st_ref_set = (r, a) => { r.value = a; return 0; };
 const lean_st_ref_swap = (r, a) => { const o = r.value; r.value = a; return o; };
 const lean_st_ref_take = (r) => { const o = r.value; r.value = undefined; return o; };
+const lean_st_ref_put = lean_st_ref_set;
 const lean_st_ref_ptr_eq = (r1, r2) => (r1 === r2 ? 1 : 0);
 
 // IO.getEnv : BaseIO (Option String). BaseIO -> bare Option (no io_result wrap).
@@ -1240,25 +1245,51 @@ function LeanJs_DemoStress_tokenize__tc(x_1) {
                                   case 1: {
                                     const x_26 = 0n;
                                     const x_27 = LeanJs_DemoStress_lexNum(x_1, x_26);
-                                    const x_28 = 1;
-                                    switch (x_28) {
+                                    const x_28 = x_27.fields[0];
+                                    const x_29 = x_27.fields[1];
+                                    const x_38 = 1;
+                                    switch (x_38) {
                                       case 0: {
-                                        const x_29 = x_27.fields[0];
-                                        const x_30 = x_27.fields[1];
-                                        const x_31 = lean_ctor(0, 1, 0, 0, x_29);
-                                        const x_32 = LeanJs_DemoStress_tokenize(x_30);
-                                        x_27.tag = 1;
-                                        x_27.fields[1] = x_32;
-                                        x_27.fields[0] = x_31;
-                                        return x_27;
+                                        const x_31 = x_27;
+                                        const x_32 = x_38;
+                                        const x_33 = lean_ctor(0, 1, 0, 0, x_28);
+                                        const x_34 = LeanJs_DemoStress_tokenize(x_29);
+                                        switch (x_32) {
+                                          case 0: {
+                                            x_31.tag = 1;
+                                            x_31.fields[1] = x_34;
+                                            x_31.fields[0] = x_33;
+                                            const x_36 = x_31;
+                                            return x_36;
+                                          }
+                                          case 1: {
+                                            const x_37 = lean_ctor(1, 2, 0, 0, x_33, x_34);
+                                            const x_36 = x_37;
+                                            return x_36;
+                                          }
+                                          default: { throw new Error("no matching case"); }
+                                        }
                                       }
                                       case 1: {
-                                        const x_33 = x_27.fields[0];
-                                        const x_34 = x_27.fields[1];
-                                        const x_35 = lean_ctor(0, 1, 0, 0, x_33);
-                                        const x_36 = LeanJs_DemoStress_tokenize(x_34);
-                                        const x_37 = lean_ctor(1, 2, 0, 0, x_35, x_36);
-                                        return x_37;
+                                        const x_31 = undefined;
+                                        const x_32 = x_38;
+                                        const x_33 = lean_ctor(0, 1, 0, 0, x_28);
+                                        const x_34 = LeanJs_DemoStress_tokenize(x_29);
+                                        switch (x_32) {
+                                          case 0: {
+                                            x_31.tag = 1;
+                                            x_31.fields[1] = x_34;
+                                            x_31.fields[0] = x_33;
+                                            const x_36 = x_31;
+                                            return x_36;
+                                          }
+                                          case 1: {
+                                            const x_37 = lean_ctor(1, 2, 0, 0, x_33, x_34);
+                                            const x_36 = x_37;
+                                            return x_36;
+                                          }
+                                          default: { throw new Error("no matching case"); }
+                                        }
                                       }
                                       default: { throw new Error("no matching case"); }
                                     }
@@ -1267,22 +1298,49 @@ function LeanJs_DemoStress_tokenize__tc(x_1) {
                                 }
                               }
                               case 1: {
-                                const x_38 = 1;
-                                switch (x_38) {
+                                const x_47 = 1;
+                                switch (x_47) {
                                   case 0: {
-                                    const x_39 = x_1.fields[1];
-                                    const x_40 = x_1.fields[0];
-                                    const x_41 = 5;
-                                    const x_42 = LeanJs_DemoStress_tokenize(x_4);
-                                    x_1.fields[1] = x_42;
-                                    x_1.fields[0] = x_41;
-                                    return x_1;
+                                    const x_48 = x_1.fields[1];
+                                    const x_49 = x_1.fields[0];
+                                    const x_40 = x_1;
+                                    const x_41 = x_47;
+                                    const x_42 = 5;
+                                    const x_43 = LeanJs_DemoStress_tokenize(x_4);
+                                    switch (x_41) {
+                                      case 0: {
+                                        x_40.fields[1] = x_43;
+                                        x_40.fields[0] = x_42;
+                                        const x_45 = x_40;
+                                        return x_45;
+                                      }
+                                      case 1: {
+                                        const x_46 = lean_ctor(1, 2, 0, 0, x_42, x_43);
+                                        const x_45 = x_46;
+                                        return x_45;
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
                                   }
                                   case 1: {
-                                    const x_43 = 5;
-                                    const x_44 = LeanJs_DemoStress_tokenize(x_4);
-                                    const x_45 = lean_ctor(1, 2, 0, 0, x_43, x_44);
-                                    return x_45;
+                                    const x_40 = undefined;
+                                    const x_41 = x_47;
+                                    const x_42 = 5;
+                                    const x_43 = LeanJs_DemoStress_tokenize(x_4);
+                                    switch (x_41) {
+                                      case 0: {
+                                        x_40.fields[1] = x_43;
+                                        x_40.fields[0] = x_42;
+                                        const x_45 = x_40;
+                                        return x_45;
+                                      }
+                                      case 1: {
+                                        const x_46 = lean_ctor(1, 2, 0, 0, x_42, x_43);
+                                        const x_45 = x_46;
+                                        return x_45;
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
                                   }
                                   default: { throw new Error("no matching case"); }
                                 }
@@ -1291,22 +1349,49 @@ function LeanJs_DemoStress_tokenize__tc(x_1) {
                             }
                           }
                           case 1: {
-                            const x_46 = 1;
-                            switch (x_46) {
+                            const x_58 = 1;
+                            switch (x_58) {
                               case 0: {
-                                const x_47 = x_1.fields[1];
-                                const x_48 = x_1.fields[0];
-                                const x_49 = 4;
-                                const x_50 = LeanJs_DemoStress_tokenize(x_4);
-                                x_1.fields[1] = x_50;
-                                x_1.fields[0] = x_49;
-                                return x_1;
+                                const x_59 = x_1.fields[1];
+                                const x_60 = x_1.fields[0];
+                                const x_51 = x_1;
+                                const x_52 = x_58;
+                                const x_53 = 4;
+                                const x_54 = LeanJs_DemoStress_tokenize(x_4);
+                                switch (x_52) {
+                                  case 0: {
+                                    x_51.fields[1] = x_54;
+                                    x_51.fields[0] = x_53;
+                                    const x_56 = x_51;
+                                    return x_56;
+                                  }
+                                  case 1: {
+                                    const x_57 = lean_ctor(1, 2, 0, 0, x_53, x_54);
+                                    const x_56 = x_57;
+                                    return x_56;
+                                  }
+                                  default: { throw new Error("no matching case"); }
+                                }
                               }
                               case 1: {
-                                const x_51 = 4;
-                                const x_52 = LeanJs_DemoStress_tokenize(x_4);
-                                const x_53 = lean_ctor(1, 2, 0, 0, x_51, x_52);
-                                return x_53;
+                                const x_51 = undefined;
+                                const x_52 = x_58;
+                                const x_53 = 4;
+                                const x_54 = LeanJs_DemoStress_tokenize(x_4);
+                                switch (x_52) {
+                                  case 0: {
+                                    x_51.fields[1] = x_54;
+                                    x_51.fields[0] = x_53;
+                                    const x_56 = x_51;
+                                    return x_56;
+                                  }
+                                  case 1: {
+                                    const x_57 = lean_ctor(1, 2, 0, 0, x_53, x_54);
+                                    const x_56 = x_57;
+                                    return x_56;
+                                  }
+                                  default: { throw new Error("no matching case"); }
+                                }
                               }
                               default: { throw new Error("no matching case"); }
                             }
@@ -1315,22 +1400,49 @@ function LeanJs_DemoStress_tokenize__tc(x_1) {
                         }
                       }
                       case 1: {
-                        const x_54 = 1;
-                        switch (x_54) {
+                        const x_69 = 1;
+                        switch (x_69) {
                           case 0: {
-                            const x_55 = x_1.fields[1];
-                            const x_56 = x_1.fields[0];
-                            const x_57 = 3;
-                            const x_58 = LeanJs_DemoStress_tokenize(x_4);
-                            x_1.fields[1] = x_58;
-                            x_1.fields[0] = x_57;
-                            return x_1;
+                            const x_70 = x_1.fields[1];
+                            const x_71 = x_1.fields[0];
+                            const x_62 = x_1;
+                            const x_63 = x_69;
+                            const x_64 = 3;
+                            const x_65 = LeanJs_DemoStress_tokenize(x_4);
+                            switch (x_63) {
+                              case 0: {
+                                x_62.fields[1] = x_65;
+                                x_62.fields[0] = x_64;
+                                const x_67 = x_62;
+                                return x_67;
+                              }
+                              case 1: {
+                                const x_68 = lean_ctor(1, 2, 0, 0, x_64, x_65);
+                                const x_67 = x_68;
+                                return x_67;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
                           }
                           case 1: {
-                            const x_59 = 3;
-                            const x_60 = LeanJs_DemoStress_tokenize(x_4);
-                            const x_61 = lean_ctor(1, 2, 0, 0, x_59, x_60);
-                            return x_61;
+                            const x_62 = undefined;
+                            const x_63 = x_69;
+                            const x_64 = 3;
+                            const x_65 = LeanJs_DemoStress_tokenize(x_4);
+                            switch (x_63) {
+                              case 0: {
+                                x_62.fields[1] = x_65;
+                                x_62.fields[0] = x_64;
+                                const x_67 = x_62;
+                                return x_67;
+                              }
+                              case 1: {
+                                const x_68 = lean_ctor(1, 2, 0, 0, x_64, x_65);
+                                const x_67 = x_68;
+                                return x_67;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
                           }
                           default: { throw new Error("no matching case"); }
                         }
@@ -1339,22 +1451,49 @@ function LeanJs_DemoStress_tokenize__tc(x_1) {
                     }
                   }
                   case 1: {
-                    const x_62 = 1;
-                    switch (x_62) {
+                    const x_80 = 1;
+                    switch (x_80) {
                       case 0: {
-                        const x_63 = x_1.fields[1];
-                        const x_64 = x_1.fields[0];
-                        const x_65 = 2;
-                        const x_66 = LeanJs_DemoStress_tokenize(x_4);
-                        x_1.fields[1] = x_66;
-                        x_1.fields[0] = x_65;
-                        return x_1;
+                        const x_81 = x_1.fields[1];
+                        const x_82 = x_1.fields[0];
+                        const x_73 = x_1;
+                        const x_74 = x_80;
+                        const x_75 = 2;
+                        const x_76 = LeanJs_DemoStress_tokenize(x_4);
+                        switch (x_74) {
+                          case 0: {
+                            x_73.fields[1] = x_76;
+                            x_73.fields[0] = x_75;
+                            const x_78 = x_73;
+                            return x_78;
+                          }
+                          case 1: {
+                            const x_79 = lean_ctor(1, 2, 0, 0, x_75, x_76);
+                            const x_78 = x_79;
+                            return x_78;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
                       }
                       case 1: {
-                        const x_67 = 2;
-                        const x_68 = LeanJs_DemoStress_tokenize(x_4);
-                        const x_69 = lean_ctor(1, 2, 0, 0, x_67, x_68);
-                        return x_69;
+                        const x_73 = undefined;
+                        const x_74 = x_80;
+                        const x_75 = 2;
+                        const x_76 = LeanJs_DemoStress_tokenize(x_4);
+                        switch (x_74) {
+                          case 0: {
+                            x_73.fields[1] = x_76;
+                            x_73.fields[0] = x_75;
+                            const x_78 = x_73;
+                            return x_78;
+                          }
+                          case 1: {
+                            const x_79 = lean_ctor(1, 2, 0, 0, x_75, x_76);
+                            const x_78 = x_79;
+                            return x_78;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
                       }
                       default: { throw new Error("no matching case"); }
                     }
@@ -1363,22 +1502,49 @@ function LeanJs_DemoStress_tokenize__tc(x_1) {
                 }
               }
               case 1: {
-                const x_70 = 1;
-                switch (x_70) {
+                const x_91 = 1;
+                switch (x_91) {
                   case 0: {
-                    const x_71 = x_1.fields[1];
-                    const x_72 = x_1.fields[0];
-                    const x_73 = 1;
-                    const x_74 = LeanJs_DemoStress_tokenize(x_4);
-                    x_1.fields[1] = x_74;
-                    x_1.fields[0] = x_73;
-                    return x_1;
+                    const x_92 = x_1.fields[1];
+                    const x_93 = x_1.fields[0];
+                    const x_84 = x_1;
+                    const x_85 = x_91;
+                    const x_86 = 1;
+                    const x_87 = LeanJs_DemoStress_tokenize(x_4);
+                    switch (x_85) {
+                      case 0: {
+                        x_84.fields[1] = x_87;
+                        x_84.fields[0] = x_86;
+                        const x_89 = x_84;
+                        return x_89;
+                      }
+                      case 1: {
+                        const x_90 = lean_ctor(1, 2, 0, 0, x_86, x_87);
+                        const x_89 = x_90;
+                        return x_89;
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
                   }
                   case 1: {
-                    const x_75 = 1;
-                    const x_76 = LeanJs_DemoStress_tokenize(x_4);
-                    const x_77 = lean_ctor(1, 2, 0, 0, x_75, x_76);
-                    return x_77;
+                    const x_84 = undefined;
+                    const x_85 = x_91;
+                    const x_86 = 1;
+                    const x_87 = LeanJs_DemoStress_tokenize(x_4);
+                    switch (x_85) {
+                      case 0: {
+                        x_84.fields[1] = x_87;
+                        x_84.fields[0] = x_86;
+                        const x_89 = x_84;
+                        return x_89;
+                      }
+                      case 1: {
+                        const x_90 = lean_ctor(1, 2, 0, 0, x_86, x_87);
+                        const x_89 = x_90;
+                        return x_89;
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
                   }
                   default: { throw new Error("no matching case"); }
                 }
@@ -1443,76 +1609,318 @@ function LeanJs_DemoStress_parseFactor__tc(x_1) {
         const x_6 = x_1.fields[0];
         switch (lean_tag(x_6)) {
           case 0: {
-            const x_7 = 1;
-            switch (x_7) {
+            const x_7 = x_1.fields[1];
+            const x_23 = 1;
+            switch (x_23) {
               case 0: {
-                const x_8 = x_1.fields[0];
-                const x_9 = 1;
-                switch (x_9) {
+                const x_24 = x_1.fields[0];
+                const x_9 = x_1;
+                const x_10 = x_23;
+                const x_11 = x_6.fields[0];
+                const x_22 = 1;
+                switch (x_22) {
                   case 0: {
-                    const x_10 = x_6.fields[0];
-                    const x_11 = lean_int_of_nat(x_10);
-                    x_1.tag = 0;
-                    x_1.fields[0] = x_11;
-                    x_6.tag = 1;
-                    x_6.fields[0] = x_1;
-                    return x_6;
+                    const x_13 = x_6;
+                    const x_14 = x_22;
+                    const x_15 = lean_int_of_nat(x_11);
+                    switch (x_10) {
+                      case 0: {
+                        x_9.tag = 0;
+                        x_9.fields[0] = x_15;
+                        const x_17 = x_9;
+                        switch (x_14) {
+                          case 0: {
+                            x_13.tag = 1;
+                            x_13.fields[0] = x_17;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 1, 0, 0, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      case 1: {
+                        const x_21 = lean_ctor(0, 2, 0, 0, x_15, x_7);
+                        const x_17 = x_21;
+                        switch (x_14) {
+                          case 0: {
+                            x_13.tag = 1;
+                            x_13.fields[0] = x_17;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 1, 0, 0, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
                   }
                   case 1: {
-                    const x_12 = x_6.fields[0];
-                    const x_13 = lean_int_of_nat(x_12);
-                    x_1.tag = 0;
-                    x_1.fields[0] = x_13;
-                    const x_14 = lean_ctor(1, 1, 0, 0, x_1);
-                    return x_14;
+                    const x_13 = undefined;
+                    const x_14 = x_22;
+                    const x_15 = lean_int_of_nat(x_11);
+                    switch (x_10) {
+                      case 0: {
+                        x_9.tag = 0;
+                        x_9.fields[0] = x_15;
+                        const x_17 = x_9;
+                        switch (x_14) {
+                          case 0: {
+                            x_13.tag = 1;
+                            x_13.fields[0] = x_17;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 1, 0, 0, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      case 1: {
+                        const x_21 = lean_ctor(0, 2, 0, 0, x_15, x_7);
+                        const x_17 = x_21;
+                        switch (x_14) {
+                          case 0: {
+                            x_13.tag = 1;
+                            x_13.fields[0] = x_17;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 1, 0, 0, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
                   }
                   default: { throw new Error("no matching case"); }
                 }
               }
               case 1: {
-                const x_15 = x_1.fields[1];
-                const x_16 = x_6.fields[0];
-                const x_17 = null;
-                const x_18 = lean_int_of_nat(x_16);
-                const x_19 = lean_ctor(0, 2, 0, 0, x_18, x_15);
-                const x_20 = lean_ctor(1, 1, 0, 0, x_19);
-                return x_20;
+                const x_9 = undefined;
+                const x_10 = x_23;
+                const x_11 = x_6.fields[0];
+                const x_22 = 1;
+                switch (x_22) {
+                  case 0: {
+                    const x_13 = x_6;
+                    const x_14 = x_22;
+                    const x_15 = lean_int_of_nat(x_11);
+                    switch (x_10) {
+                      case 0: {
+                        x_9.tag = 0;
+                        x_9.fields[0] = x_15;
+                        const x_17 = x_9;
+                        switch (x_14) {
+                          case 0: {
+                            x_13.tag = 1;
+                            x_13.fields[0] = x_17;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 1, 0, 0, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      case 1: {
+                        const x_21 = lean_ctor(0, 2, 0, 0, x_15, x_7);
+                        const x_17 = x_21;
+                        switch (x_14) {
+                          case 0: {
+                            x_13.tag = 1;
+                            x_13.fields[0] = x_17;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 1, 0, 0, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
+                  }
+                  case 1: {
+                    const x_13 = undefined;
+                    const x_14 = x_22;
+                    const x_15 = lean_int_of_nat(x_11);
+                    switch (x_10) {
+                      case 0: {
+                        x_9.tag = 0;
+                        x_9.fields[0] = x_15;
+                        const x_17 = x_9;
+                        switch (x_14) {
+                          case 0: {
+                            x_13.tag = 1;
+                            x_13.fields[0] = x_17;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 1, 0, 0, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      case 1: {
+                        const x_21 = lean_ctor(0, 2, 0, 0, x_15, x_7);
+                        const x_17 = x_21;
+                        switch (x_14) {
+                          case 0: {
+                            x_13.tag = 1;
+                            x_13.fields[0] = x_17;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 1, 0, 0, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               default: { throw new Error("no matching case"); }
             }
           }
           case 4: {
-            const x_21 = x_1.fields[1];
-            const x_22 = LeanJs_DemoStress_parseExpr(x_21);
-            switch (lean_tag(x_22)) {
+            const x_25 = x_1.fields[1];
+            const x_26 = LeanJs_DemoStress_parseExpr(x_25);
+            switch (lean_tag(x_26)) {
               case 0: {
-                return x_22;
+                return x_26;
               }
               case 1: {
-                const x_23 = 1;
-                switch (x_23) {
+                const x_27 = x_26.fields[0];
+                const x_46 = 1;
+                switch (x_46) {
                   case 0: {
-                    const x_24 = x_22.fields[0];
-                    const x_25 = x_24.fields[1];
-                    switch (lean_tag(x_25)) {
+                    const x_29 = x_26;
+                    const x_30 = x_46;
+                    const x_31 = x_27.fields[1];
+                    switch (lean_tag(x_31)) {
                       case 1: {
-                        const x_26 = x_25.fields[0];
-                        switch (lean_tag(x_26)) {
+                        const x_32 = x_31.fields[0];
+                        switch (lean_tag(x_32)) {
                           case 5: {
-                            const x_27 = 1;
-                            switch (x_27) {
+                            const x_33 = x_27.fields[0];
+                            const x_44 = 1;
+                            switch (x_44) {
                               case 0: {
-                                const x_28 = x_24.fields[1];
-                                const x_29 = x_25.fields[1];
-                                x_24.fields[1] = x_29;
-                                return x_22;
+                                const x_45 = x_27.fields[1];
+                                const x_35 = x_27;
+                                const x_36 = x_44;
+                                const x_37 = x_31.fields[1];
+                                switch (x_36) {
+                                  case 0: {
+                                    x_35.fields[1] = x_37;
+                                    const x_39 = x_35;
+                                    switch (x_30) {
+                                      case 0: {
+                                        x_29.fields[0] = x_39;
+                                        const x_41 = x_29;
+                                        return x_41;
+                                      }
+                                      case 1: {
+                                        const x_42 = lean_ctor(1, 1, 0, 0, x_39);
+                                        const x_41 = x_42;
+                                        return x_41;
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
+                                  }
+                                  case 1: {
+                                    const x_43 = lean_ctor(0, 2, 0, 0, x_33, x_37);
+                                    const x_39 = x_43;
+                                    switch (x_30) {
+                                      case 0: {
+                                        x_29.fields[0] = x_39;
+                                        const x_41 = x_29;
+                                        return x_41;
+                                      }
+                                      case 1: {
+                                        const x_42 = lean_ctor(1, 1, 0, 0, x_39);
+                                        const x_41 = x_42;
+                                        return x_41;
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
+                                  }
+                                  default: { throw new Error("no matching case"); }
+                                }
                               }
                               case 1: {
-                                const x_30 = x_24.fields[0];
-                                const x_31 = x_25.fields[1];
-                                const x_32 = lean_ctor(0, 2, 0, 0, x_30, x_31);
-                                x_22.fields[0] = x_32;
-                                return x_22;
+                                const x_35 = undefined;
+                                const x_36 = x_44;
+                                const x_37 = x_31.fields[1];
+                                switch (x_36) {
+                                  case 0: {
+                                    x_35.fields[1] = x_37;
+                                    const x_39 = x_35;
+                                    switch (x_30) {
+                                      case 0: {
+                                        x_29.fields[0] = x_39;
+                                        const x_41 = x_29;
+                                        return x_41;
+                                      }
+                                      case 1: {
+                                        const x_42 = lean_ctor(1, 1, 0, 0, x_39);
+                                        const x_41 = x_42;
+                                        return x_41;
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
+                                  }
+                                  case 1: {
+                                    const x_43 = lean_ctor(0, 2, 0, 0, x_33, x_37);
+                                    const x_39 = x_43;
+                                    switch (x_30) {
+                                      case 0: {
+                                        x_29.fields[0] = x_39;
+                                        const x_41 = x_29;
+                                        return x_41;
+                                      }
+                                      case 1: {
+                                        const x_42 = lean_ctor(1, 1, 0, 0, x_39);
+                                        const x_41 = x_42;
+                                        return x_41;
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
+                                  }
+                                  default: { throw new Error("no matching case"); }
+                                }
                               }
                               default: { throw new Error("no matching case"); }
                             }
@@ -1528,19 +1936,104 @@ function LeanJs_DemoStress_parseFactor__tc(x_1) {
                     }
                   }
                   case 1: {
-                    const x_33 = x_22.fields[0];
-                    const x_34 = x_33.fields[1];
-                    switch (lean_tag(x_34)) {
+                    const x_29 = undefined;
+                    const x_30 = x_46;
+                    const x_31 = x_27.fields[1];
+                    switch (lean_tag(x_31)) {
                       case 1: {
-                        const x_35 = x_34.fields[0];
-                        switch (lean_tag(x_35)) {
+                        const x_32 = x_31.fields[0];
+                        switch (lean_tag(x_32)) {
                           case 5: {
-                            const x_36 = x_33.fields[0];
-                            const x_37 = null;
-                            const x_38 = x_34.fields[1];
-                            const x_39 = lean_ctor(0, 2, 0, 0, x_36, x_38);
-                            const x_40 = lean_ctor(1, 1, 0, 0, x_39);
-                            return x_40;
+                            const x_33 = x_27.fields[0];
+                            const x_44 = 1;
+                            switch (x_44) {
+                              case 0: {
+                                const x_45 = x_27.fields[1];
+                                const x_35 = x_27;
+                                const x_36 = x_44;
+                                const x_37 = x_31.fields[1];
+                                switch (x_36) {
+                                  case 0: {
+                                    x_35.fields[1] = x_37;
+                                    const x_39 = x_35;
+                                    switch (x_30) {
+                                      case 0: {
+                                        x_29.fields[0] = x_39;
+                                        const x_41 = x_29;
+                                        return x_41;
+                                      }
+                                      case 1: {
+                                        const x_42 = lean_ctor(1, 1, 0, 0, x_39);
+                                        const x_41 = x_42;
+                                        return x_41;
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
+                                  }
+                                  case 1: {
+                                    const x_43 = lean_ctor(0, 2, 0, 0, x_33, x_37);
+                                    const x_39 = x_43;
+                                    switch (x_30) {
+                                      case 0: {
+                                        x_29.fields[0] = x_39;
+                                        const x_41 = x_29;
+                                        return x_41;
+                                      }
+                                      case 1: {
+                                        const x_42 = lean_ctor(1, 1, 0, 0, x_39);
+                                        const x_41 = x_42;
+                                        return x_41;
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
+                                  }
+                                  default: { throw new Error("no matching case"); }
+                                }
+                              }
+                              case 1: {
+                                const x_35 = undefined;
+                                const x_36 = x_44;
+                                const x_37 = x_31.fields[1];
+                                switch (x_36) {
+                                  case 0: {
+                                    x_35.fields[1] = x_37;
+                                    const x_39 = x_35;
+                                    switch (x_30) {
+                                      case 0: {
+                                        x_29.fields[0] = x_39;
+                                        const x_41 = x_29;
+                                        return x_41;
+                                      }
+                                      case 1: {
+                                        const x_42 = lean_ctor(1, 1, 0, 0, x_39);
+                                        const x_41 = x_42;
+                                        return x_41;
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
+                                  }
+                                  case 1: {
+                                    const x_43 = lean_ctor(0, 2, 0, 0, x_33, x_37);
+                                    const x_39 = x_43;
+                                    switch (x_30) {
+                                      case 0: {
+                                        x_29.fields[0] = x_39;
+                                        const x_41 = x_29;
+                                        return x_41;
+                                      }
+                                      case 1: {
+                                        const x_42 = lean_ctor(1, 1, 0, 0, x_39);
+                                        const x_41 = x_42;
+                                        return x_41;
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
+                                  }
+                                  default: { throw new Error("no matching case"); }
+                                }
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
                           }
                           default: {
                             return { __tc: 1, f: LeanJs_DemoStress_parseFactor__closed_3__tc, a: [] };
@@ -1603,18 +2096,18 @@ function LeanJs_DemoStress_parseTermRest__tc(x_1, x_2) {
             }
           }
           default: {
-            const x_3 = x_2;
-            const x_4 = lean_ctor(0, 2, 0, 0, x_1, x_3);
-            const x_5 = lean_ctor(1, 1, 0, 0, x_4);
-            return x_5;
+            const x_4 = x_2;
+            const x_5 = lean_ctor(0, 2, 0, 0, x_1, x_4);
+            const x_6 = lean_ctor(1, 1, 0, 0, x_5);
+            return x_6;
           }
         }
       }
       default: {
-        const x_3 = x_2;
-        const x_4 = lean_ctor(0, 2, 0, 0, x_1, x_3);
-        const x_5 = lean_ctor(1, 1, 0, 0, x_4);
-        return x_5;
+        const x_4 = x_2;
+        const x_5 = lean_ctor(0, 2, 0, 0, x_1, x_4);
+        const x_6 = lean_ctor(1, 1, 0, 0, x_5);
+        return x_6;
       }
     }
   }
@@ -1695,18 +2188,18 @@ function LeanJs_DemoStress_parseExprRest__tc(x_1, x_2) {
             }
           }
           default: {
-            const x_3 = x_2;
-            const x_4 = lean_ctor(0, 2, 0, 0, x_1, x_3);
-            const x_5 = lean_ctor(1, 1, 0, 0, x_4);
-            return x_5;
+            const x_4 = x_2;
+            const x_5 = lean_ctor(0, 2, 0, 0, x_1, x_4);
+            const x_6 = lean_ctor(1, 1, 0, 0, x_5);
+            return x_6;
           }
         }
       }
       default: {
-        const x_3 = x_2;
-        const x_4 = lean_ctor(0, 2, 0, 0, x_1, x_3);
-        const x_5 = lean_ctor(1, 1, 0, 0, x_4);
-        return x_5;
+        const x_4 = x_2;
+        const x_5 = lean_ctor(0, 2, 0, 0, x_1, x_4);
+        const x_6 = lean_ctor(1, 1, 0, 0, x_5);
+        return x_6;
       }
     }
   }
@@ -1773,50 +2266,100 @@ function LeanJs_DemoStress_eval__tc(x_1) {
     const x_4 = LeanJs_DemoStress_parseExpr(x_3);
     switch (lean_tag(x_4)) {
       case 0: {
-        const x_5 = 1;
-        switch (x_5) {
+        const x_5 = x_4.fields[0];
+        const x_12 = 1;
+        switch (x_12) {
           case 0: {
-            return x_4;
-          }
-          case 1: {
-            const x_6 = x_4.fields[0];
-            const x_7 = lean_ctor(0, 1, 0, 0, x_6);
-            return x_7;
-          }
-          default: { throw new Error("no matching case"); }
-        }
-      }
-      case 1: {
-        const x_8 = 1;
-        switch (x_8) {
-          case 0: {
-            const x_9 = x_4.fields[0];
-            const x_10 = x_9.fields[0];
-            const x_11 = x_9.fields[1];
-            const x_12 = List_isEmpty__redArg(x_11);
-            switch (x_12) {
+            const x_7 = x_4;
+            const x_8 = x_12;
+            switch (x_8) {
               case 0: {
-                return { __tc: 1, f: LeanJs_DemoStress_eval__closed_1__tc, a: [] };
+                const x_10 = x_7;
+                return x_10;
               }
               case 1: {
-                x_4.fields[0] = x_10;
-                return x_4;
+                const x_11 = lean_ctor(0, 1, 0, 0, x_5);
+                const x_10 = x_11;
+                return x_10;
               }
               default: { throw new Error("no matching case"); }
             }
           }
           case 1: {
-            const x_14 = x_4.fields[0];
-            const x_15 = x_14.fields[0];
-            const x_16 = x_14.fields[1];
-            const x_17 = List_isEmpty__redArg(x_16);
-            switch (x_17) {
+            const x_7 = undefined;
+            const x_8 = x_12;
+            switch (x_8) {
+              case 0: {
+                const x_10 = x_7;
+                return x_10;
+              }
+              case 1: {
+                const x_11 = lean_ctor(0, 1, 0, 0, x_5);
+                const x_10 = x_11;
+                return x_10;
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      case 1: {
+        const x_13 = x_4.fields[0];
+        const x_24 = 1;
+        switch (x_24) {
+          case 0: {
+            const x_15 = x_4;
+            const x_16 = x_24;
+            const x_17 = x_13.fields[0];
+            const x_18 = x_13.fields[1];
+            const x_19 = List_isEmpty__redArg(x_18);
+            switch (x_19) {
               case 0: {
                 return { __tc: 1, f: LeanJs_DemoStress_eval__closed_1__tc, a: [] };
               }
               case 1: {
-                const x_19 = lean_ctor(1, 1, 0, 0, x_15);
-                return x_19;
+                switch (x_16) {
+                  case 0: {
+                    x_15.fields[0] = x_17;
+                    const x_22 = x_15;
+                    return x_22;
+                  }
+                  case 1: {
+                    const x_23 = lean_ctor(1, 1, 0, 0, x_17);
+                    const x_22 = x_23;
+                    return x_22;
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          }
+          case 1: {
+            const x_15 = undefined;
+            const x_16 = x_24;
+            const x_17 = x_13.fields[0];
+            const x_18 = x_13.fields[1];
+            const x_19 = List_isEmpty__redArg(x_18);
+            switch (x_19) {
+              case 0: {
+                return { __tc: 1, f: LeanJs_DemoStress_eval__closed_1__tc, a: [] };
+              }
+              case 1: {
+                switch (x_16) {
+                  case 0: {
+                    x_15.fields[0] = x_17;
+                    const x_22 = x_15;
+                    return x_22;
+                  }
+                  case 1: {
+                    const x_23 = lean_ctor(1, 1, 0, 0, x_17);
+                    const x_22 = x_23;
+                    return x_22;
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               default: { throw new Error("no matching case"); }
             }
@@ -1842,23 +2385,23 @@ function List_forIn_x39__loop__at__LeanJs_DemoStress_parserProg_spec_1__redArg__
       case 1: {
         const x_5 = x_1.fields[0];
         const x_6 = x_1.fields[1];
-        const x_7 = List_forIn_x39__loop__at__LeanJs_DemoStress_parserProg_spec_1__redArg__closed_0();
-        const x_8 = lean_string_append(x_5, x_7);
-        const x_9 = LeanJs_DemoStress_eval(x_5);
-        const x_10 = LeanJs_DemoStress_showRes(x_9);
-        const x_11 = lean_string_append(x_8, x_10);
-        const x_12 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_11, undefined);
-        switch (lean_tag(x_12)) {
+        const x_7 = 0;
+        const x_8 = List_forIn_x39__loop__at__LeanJs_DemoStress_parserProg_spec_1__redArg__closed_0();
+        const x_9 = lean_string_append(x_5, x_8);
+        const x_10 = LeanJs_DemoStress_eval(x_5);
+        const x_11 = LeanJs_DemoStress_showRes(x_10);
+        const x_12 = lean_string_append(x_9, x_11);
+        const x_13 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_12, undefined);
+        switch (lean_tag(x_13)) {
           case 0: {
-            const x_13 = 0;
             const __t_1 = x_6;
-            const __t_2 = x_13;
+            const __t_2 = x_7;
             x_1 = __t_1;
             x_2 = __t_2;
             continue;
           }
           case 1: {
-            return x_12;
+            return x_13;
           }
           default: { throw new Error("no matching case"); }
         }
@@ -1877,16 +2420,30 @@ function LeanJs_DemoStress_parserProg() {
   const x_4 = List_forIn_x39__loop__at__LeanJs_DemoStress_parserProg_spec_1__redArg(x_2, x_3, undefined);
   switch (lean_tag(x_4)) {
     case 0: {
-      const x_5 = 1;
-      switch (x_5) {
+      const block_5 = (x_6, x_7) => {
+        const block_8 = (x_9) => {
+          return x_9;
+        };
+        switch (x_7) {
+          case 0: {
+            x_6.fields[0] = x_3;
+            return block_8(x_6);
+          }
+          case 1: {
+            const x_10 = lean_ctor(0, 1, 0, 0, x_3);
+            return block_8(x_10);
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      };
+      const x_11 = 1;
+      switch (x_11) {
         case 0: {
-          const x_6 = x_4.fields[0];
-          x_4.fields[0] = x_3;
-          return x_4;
+          const x_12 = x_4.fields[0];
+          return block_5(x_4, x_11);
         }
         case 1: {
-          const x_7 = lean_ctor(0, 1, 0, 0, x_3);
-          return x_7;
+          return block_5(undefined, x_11);
         }
         default: { throw new Error("no matching case"); }
       }
@@ -1911,26 +2468,52 @@ function LeanJs_DemoStress_insert__tc(x_1, x_2) {
         const x_6 = lean_nat_dec_le(x_1, x_4);
         switch (x_6) {
           case 0: {
-            const x_7 = 1;
-            switch (x_7) {
+            const x_14 = 1;
+            switch (x_14) {
               case 0: {
-                const x_8 = x_2.fields[1];
-                const x_9 = x_2.fields[0];
+                const x_15 = x_2.fields[1];
+                const x_16 = x_2.fields[0];
+                const x_8 = x_2;
+                const x_9 = x_14;
                 const x_10 = LeanJs_DemoStress_insert(x_1, x_5);
-                x_2.fields[1] = x_10;
-                return x_2;
+                switch (x_9) {
+                  case 0: {
+                    x_8.fields[1] = x_10;
+                    const x_12 = x_8;
+                    return x_12;
+                  }
+                  case 1: {
+                    const x_13 = lean_ctor(1, 2, 0, 0, x_4, x_10);
+                    const x_12 = x_13;
+                    return x_12;
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               case 1: {
-                const x_11 = LeanJs_DemoStress_insert(x_1, x_5);
-                const x_12 = lean_ctor(1, 2, 0, 0, x_4, x_11);
-                return x_12;
+                const x_8 = undefined;
+                const x_9 = x_14;
+                const x_10 = LeanJs_DemoStress_insert(x_1, x_5);
+                switch (x_9) {
+                  case 0: {
+                    x_8.fields[1] = x_10;
+                    const x_12 = x_8;
+                    return x_12;
+                  }
+                  case 1: {
+                    const x_13 = lean_ctor(1, 2, 0, 0, x_4, x_10);
+                    const x_12 = x_13;
+                    return x_12;
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               default: { throw new Error("no matching case"); }
             }
           }
           case 1: {
-            const x_13 = lean_ctor(1, 2, 0, 0, x_1, x_2);
-            return x_13;
+            const x_17 = lean_ctor(1, 2, 0, 0, x_1, x_2);
+            return x_17;
           }
           default: { throw new Error("no matching case"); }
         }
@@ -2098,20 +2681,33 @@ function LeanJs_DemoStress_bstInsert(x_1, x_2) {
               return x_1;
             }
             case 1: {
-              const x_9 = 1;
-              switch (x_9) {
+              const block_9 = (x_10, x_11) => {
+                const x_12 = LeanJs_DemoStress_bstInsert(x_6, x_2);
+                const block_13 = (x_14) => {
+                  return x_14;
+                };
+                switch (x_11) {
+                  case 0: {
+                    x_10.fields[2] = x_12;
+                    return block_13(x_10);
+                  }
+                  case 1: {
+                    const x_15 = lean_ctor(1, 3, 0, 0, x_4, x_5, x_12);
+                    return block_13(x_15);
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
+              };
+              const x_16 = 1;
+              switch (x_16) {
                 case 0: {
-                  const x_10 = x_1.fields[2];
-                  const x_11 = x_1.fields[1];
-                  const x_12 = x_1.fields[0];
-                  const x_13 = LeanJs_DemoStress_bstInsert(x_6, x_2);
-                  x_1.fields[2] = x_13;
-                  return x_1;
+                  const x_17 = x_1.fields[2];
+                  const x_18 = x_1.fields[1];
+                  const x_19 = x_1.fields[0];
+                  return block_9(x_1, x_16);
                 }
                 case 1: {
-                  const x_14 = LeanJs_DemoStress_bstInsert(x_6, x_2);
-                  const x_15 = lean_ctor(1, 3, 0, 0, x_4, x_5, x_14);
-                  return x_15;
+                  return block_9(undefined, x_16);
                 }
                 default: { throw new Error("no matching case"); }
               }
@@ -2120,20 +2716,33 @@ function LeanJs_DemoStress_bstInsert(x_1, x_2) {
           }
         }
         case 1: {
-          const x_16 = 1;
-          switch (x_16) {
+          const block_20 = (x_21, x_22) => {
+            const x_23 = LeanJs_DemoStress_bstInsert(x_4, x_2);
+            const block_24 = (x_25) => {
+              return x_25;
+            };
+            switch (x_22) {
+              case 0: {
+                x_21.fields[0] = x_23;
+                return block_24(x_21);
+              }
+              case 1: {
+                const x_26 = lean_ctor(1, 3, 0, 0, x_23, x_5, x_6);
+                return block_24(x_26);
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          };
+          const x_27 = 1;
+          switch (x_27) {
             case 0: {
-              const x_17 = x_1.fields[2];
-              const x_18 = x_1.fields[1];
-              const x_19 = x_1.fields[0];
-              const x_20 = LeanJs_DemoStress_bstInsert(x_4, x_2);
-              x_1.fields[0] = x_20;
-              return x_1;
+              const x_28 = x_1.fields[2];
+              const x_29 = x_1.fields[1];
+              const x_30 = x_1.fields[0];
+              return block_20(x_1, x_27);
             }
             case 1: {
-              const x_21 = LeanJs_DemoStress_bstInsert(x_4, x_2);
-              const x_22 = lean_ctor(1, 3, 0, 0, x_21, x_5, x_6);
-              return x_22;
+              return block_20(undefined, x_27);
             }
             default: { throw new Error("no matching case"); }
           }
@@ -2422,6 +3031,10 @@ function Std_DHashMap_Internal_AssocList_contains__at__Std_DHashMap_Internal_Raw
 
 // extern Array_replicate -> runtime prelude
 
+// extern Array_propagateMark -> runtime prelude
+
+// extern Array_getInternal -> runtime prelude
+
 // extern Array_set -> runtime prelude
 
 function Std_DHashMap_Internal_AssocList_foldlM__at___private_Std_Data_DHashMap_Internal_Defs_0_Std_DHashMap_Internal_Raw_x8320__expand_go__at__Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_3_spec_4_spec_6__redArg__tc(x_1, x_2) {
@@ -2431,58 +3044,92 @@ function Std_DHashMap_Internal_AssocList_foldlM__at___private_Std_Data_DHashMap_
         return x_1;
       }
       case 1: {
-        const x_3 = 1;
-        switch (x_3) {
+        const x_3 = x_2.fields[0];
+        const x_4 = x_2.fields[1];
+        const x_5 = x_2.fields[2];
+        const x_28 = 1;
+        switch (x_28) {
           case 0: {
-            const x_4 = x_2.fields[0];
-            const x_5 = x_2.fields[2];
-            const x_6 = lean_array_get_size(x_1);
-            const x_7 = lean_string_hash(x_4);
-            const x_8 = 32n;
-            const x_9 = lean_uint64_shift_right(x_7, x_8);
-            const x_10 = lean_uint64_xor(x_7, x_9);
-            const x_11 = 16n;
+            const x_7 = x_2;
+            const x_8 = x_28;
+            const x_9 = lean_array_get_size(x_1);
+            const x_10 = lean_string_hash(x_3);
+            const x_11 = 32n;
             const x_12 = lean_uint64_shift_right(x_10, x_11);
             const x_13 = lean_uint64_xor(x_10, x_12);
-            const x_14 = lean_uint64_to_usize(x_13);
-            const x_15 = lean_usize_of_nat(x_6);
-            const x_16 = 1n;
-            const x_17 = lean_usize_sub(x_15, x_16);
-            const x_18 = lean_usize_land(x_14, x_17);
-            const x_19 = lean_array_uget_borrowed(x_1, x_18);
-            x_2.fields[2] = x_19;
-            const x_20 = lean_array_uset(x_1, x_18, x_2);
-            const __t_1 = x_20;
-            const __t_2 = x_5;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_14 = 16n;
+            const x_15 = lean_uint64_shift_right(x_13, x_14);
+            const x_16 = lean_uint64_xor(x_13, x_15);
+            const x_17 = lean_uint64_to_usize(x_16);
+            const x_18 = lean_usize_of_nat(x_9);
+            const x_19 = 1n;
+            const x_20 = lean_usize_sub(x_18, x_19);
+            const x_21 = lean_usize_land(x_17, x_20);
+            const x_22 = lean_array_uget_borrowed(x_1, x_21);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[2] = x_22;
+                const x_24 = x_7;
+                const x_25 = lean_array_uset(x_1, x_21, x_24);
+                const __t_1 = x_25;
+                const __t_2 = x_5;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_27 = lean_ctor(1, 3, 0, 0, x_3, x_4, x_22);
+                const x_24 = x_27;
+                const x_25 = lean_array_uset(x_1, x_21, x_24);
+                const __t_1 = x_25;
+                const __t_2 = x_5;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_22 = x_2.fields[0];
-            const x_23 = x_2.fields[1];
-            const x_24 = x_2.fields[2];
-            const x_25 = lean_array_get_size(x_1);
-            const x_26 = lean_string_hash(x_22);
-            const x_27 = 32n;
-            const x_28 = lean_uint64_shift_right(x_26, x_27);
-            const x_29 = lean_uint64_xor(x_26, x_28);
-            const x_30 = 16n;
-            const x_31 = lean_uint64_shift_right(x_29, x_30);
-            const x_32 = lean_uint64_xor(x_29, x_31);
-            const x_33 = lean_uint64_to_usize(x_32);
-            const x_34 = lean_usize_of_nat(x_25);
-            const x_35 = 1n;
-            const x_36 = lean_usize_sub(x_34, x_35);
-            const x_37 = lean_usize_land(x_33, x_36);
-            const x_38 = lean_array_uget_borrowed(x_1, x_37);
-            const x_39 = lean_ctor(1, 3, 0, 0, x_22, x_23, x_38);
-            const x_40 = lean_array_uset(x_1, x_37, x_39);
-            const __t_1 = x_40;
-            const __t_2 = x_24;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = undefined;
+            const x_8 = x_28;
+            const x_9 = lean_array_get_size(x_1);
+            const x_10 = lean_string_hash(x_3);
+            const x_11 = 32n;
+            const x_12 = lean_uint64_shift_right(x_10, x_11);
+            const x_13 = lean_uint64_xor(x_10, x_12);
+            const x_14 = 16n;
+            const x_15 = lean_uint64_shift_right(x_13, x_14);
+            const x_16 = lean_uint64_xor(x_13, x_15);
+            const x_17 = lean_uint64_to_usize(x_16);
+            const x_18 = lean_usize_of_nat(x_9);
+            const x_19 = 1n;
+            const x_20 = lean_usize_sub(x_18, x_19);
+            const x_21 = lean_usize_land(x_17, x_20);
+            const x_22 = lean_array_uget_borrowed(x_1, x_21);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[2] = x_22;
+                const x_24 = x_7;
+                const x_25 = lean_array_uset(x_1, x_21, x_24);
+                const __t_1 = x_25;
+                const __t_2 = x_5;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_27 = lean_ctor(1, 3, 0, 0, x_3, x_4, x_22);
+                const x_24 = x_27;
+                const x_25 = lean_array_uset(x_1, x_21, x_24);
+                const __t_1 = x_25;
+                const __t_2 = x_5;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -2534,7 +3181,8 @@ function Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_
     const x_5 = 0n;
     const x_6 = 0;
     const x_7 = lean_mk_array(x_4, x_6);
-    return { __tc: 1, f: _private_Std_Data_DHashMap_Internal_Defs_0_Std_DHashMap_Internal_Raw_x8320__expand_go__at__Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_3_spec_4__redArg__tc, a: [x_5, x_1, x_7] };
+    const x_8 = lean_array_propagate_mark(x_1, x_7);
+    return { __tc: 1, f: _private_Std_Data_DHashMap_Internal_Defs_0_Std_DHashMap_Internal_Raw_x8320__expand_go__at__Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_3_spec_4__redArg__tc, a: [x_5, x_1, x_8] };
   }
 }
 function Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_3__redArg(x_1) {
@@ -2547,44 +3195,56 @@ function Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_
       return x_3;
     }
     case 1: {
-      const x_4 = 1;
-      switch (x_4) {
-        case 0: {
-          const x_5 = x_3.fields[0];
-          const x_6 = x_3.fields[1];
-          const x_7 = x_3.fields[2];
-          const x_8 = lean_string_dec_eq(x_5, x_1);
-          switch (x_8) {
-            case 0: {
-              const x_9 = Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_4__redArg(x_1, x_2, x_7);
-              x_3.fields[2] = x_9;
-              return x_3;
+      const x_4 = x_3.fields[0];
+      const x_5 = x_3.fields[1];
+      const x_6 = x_3.fields[2];
+      const block_7 = (x_8, x_9) => {
+        const x_10 = lean_string_dec_eq(x_4, x_1);
+        switch (x_10) {
+          case 0: {
+            const x_11 = Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_4__redArg(x_1, x_2, x_6);
+            const block_12 = (x_13) => {
+              return x_13;
+            };
+            switch (x_9) {
+              case 0: {
+                x_8.fields[2] = x_11;
+                return block_12(x_8);
+              }
+              case 1: {
+                const x_14 = lean_ctor(1, 3, 0, 0, x_4, x_5, x_11);
+                return block_12(x_14);
+              }
+              default: { throw new Error("no matching case"); }
             }
-            case 1: {
-              x_3.fields[1] = x_2;
-              x_3.fields[0] = x_1;
-              return x_3;
-            }
-            default: { throw new Error("no matching case"); }
           }
+          case 1: {
+            const block_15 = (x_16) => {
+              return x_16;
+            };
+            switch (x_9) {
+              case 0: {
+                x_8.fields[1] = x_2;
+                x_8.fields[0] = x_1;
+                return block_15(x_8);
+              }
+              case 1: {
+                const x_17 = lean_ctor(1, 3, 0, 0, x_1, x_2, x_6);
+                return block_15(x_17);
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      };
+      const x_18 = 1;
+      switch (x_18) {
+        case 0: {
+          return block_7(x_3, x_18);
         }
         case 1: {
-          const x_10 = x_3.fields[0];
-          const x_11 = x_3.fields[1];
-          const x_12 = x_3.fields[2];
-          const x_13 = lean_string_dec_eq(x_10, x_1);
-          switch (x_13) {
-            case 0: {
-              const x_14 = Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_4__redArg(x_1, x_2, x_12);
-              const x_15 = lean_ctor(1, 3, 0, 0, x_10, x_11, x_14);
-              return x_15;
-            }
-            case 1: {
-              const x_16 = lean_ctor(1, 3, 0, 0, x_1, x_2, x_12);
-              return x_16;
-            }
-            default: { throw new Error("no matching case"); }
-          }
+          return block_7(undefined, x_18);
         }
         default: { throw new Error("no matching case"); }
       }
@@ -2594,117 +3254,105 @@ function Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_
 }
 
 function Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1__redArg(x_1, x_2, x_3) {
-  const x_4 = 1;
-  switch (x_4) {
-    case 0: {
-      const x_5 = x_1.fields[0];
-      const x_6 = x_1.fields[1];
-      const x_7 = lean_array_get_size(x_6);
-      const x_8 = lean_string_hash(x_2);
-      const x_9 = 32n;
-      const x_10 = lean_uint64_shift_right(x_8, x_9);
-      const x_11 = lean_uint64_xor(x_8, x_10);
-      const x_12 = 16n;
-      const x_13 = lean_uint64_shift_right(x_11, x_12);
-      const x_14 = lean_uint64_xor(x_11, x_13);
-      const x_15 = lean_uint64_to_usize(x_14);
-      const x_16 = lean_usize_of_nat(x_7);
-      const x_17 = 1n;
-      const x_18 = lean_usize_sub(x_16, x_17);
-      const x_19 = lean_usize_land(x_15, x_18);
-      const x_20 = lean_array_uget_borrowed(x_6, x_19);
-      const x_21 = Std_DHashMap_Internal_AssocList_contains__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_2__redArg(x_2, x_20);
-      switch (x_21) {
-        case 0: {
-          const x_22 = 1n;
-          const x_23 = (x_5 + x_22);
-          const x_24 = lean_ctor(1, 3, 0, 0, x_2, x_3, x_20);
-          const x_25 = lean_array_uset(x_6, x_19, x_24);
-          const x_26 = 4n;
-          const x_27 = (x_23 * x_26);
-          const x_28 = 3n;
-          const x_29 = (x_28 === 0n ? 0n : x_27 / x_28);
-          const x_30 = lean_array_get_size(x_25);
-          const x_31 = lean_nat_dec_le(x_29, x_30);
-          switch (x_31) {
-            case 0: {
-              const x_32 = Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_3__redArg(x_25);
-              x_1.fields[1] = x_32;
-              x_1.fields[0] = x_23;
-              return x_1;
+  const x_4 = x_1.fields[0];
+  const x_5 = x_1.fields[1];
+  const block_6 = (x_7, x_8) => {
+    const x_9 = lean_array_get_size(x_5);
+    const x_10 = lean_string_hash(x_2);
+    const x_11 = 32n;
+    const x_12 = lean_uint64_shift_right(x_10, x_11);
+    const x_13 = lean_uint64_xor(x_10, x_12);
+    const x_14 = 16n;
+    const x_15 = lean_uint64_shift_right(x_13, x_14);
+    const x_16 = lean_uint64_xor(x_13, x_15);
+    const x_17 = lean_uint64_to_usize(x_16);
+    const x_18 = lean_usize_of_nat(x_9);
+    const x_19 = 1n;
+    const x_20 = lean_usize_sub(x_18, x_19);
+    const x_21 = lean_usize_land(x_17, x_20);
+    const x_22 = lean_array_uget_borrowed(x_5, x_21);
+    const x_23 = Std_DHashMap_Internal_AssocList_contains__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_2__redArg(x_2, x_22);
+    switch (x_23) {
+      case 0: {
+        const x_24 = 1n;
+        const x_25 = (x_4 + x_24);
+        const x_26 = lean_ctor(1, 3, 0, 0, x_2, x_3, x_22);
+        const x_27 = lean_array_uset(x_5, x_21, x_26);
+        const x_28 = 4n;
+        const x_29 = (x_25 * x_28);
+        const x_30 = 3n;
+        const x_31 = (x_30 === 0n ? 0n : x_29 / x_30);
+        const x_32 = lean_array_get_size(x_27);
+        const x_33 = lean_nat_dec_le(x_31, x_32);
+        switch (x_33) {
+          case 0: {
+            const x_34 = Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_3__redArg(x_27);
+            const block_35 = (x_36) => {
+              return x_36;
+            };
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_34;
+                x_7.fields[0] = x_25;
+                return block_35(x_7);
+              }
+              case 1: {
+                const x_37 = lean_ctor(0, 2, 0, 0, x_25, x_34);
+                return block_35(x_37);
+              }
+              default: { throw new Error("no matching case"); }
             }
-            case 1: {
-              x_1.fields[1] = x_25;
-              x_1.fields[0] = x_23;
-              return x_1;
-            }
-            default: { throw new Error("no matching case"); }
           }
+          case 1: {
+            const block_38 = (x_39) => {
+              return x_39;
+            };
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_27;
+                x_7.fields[0] = x_25;
+                return block_38(x_7);
+              }
+              case 1: {
+                const x_40 = lean_ctor(0, 2, 0, 0, x_25, x_27);
+                return block_38(x_40);
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          }
+          default: { throw new Error("no matching case"); }
         }
-        case 1: {
-          const x_33 = 0;
-          const x_34 = lean_array_uset(x_6, x_19, x_33);
-          const x_35 = Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_4__redArg(x_2, x_3, x_20);
-          const x_36 = lean_array_uset(x_34, x_19, x_35);
-          x_1.fields[1] = x_36;
-          return x_1;
-        }
-        default: { throw new Error("no matching case"); }
       }
+      case 1: {
+        const x_41 = 0;
+        const x_42 = lean_array_uset(x_5, x_21, x_41);
+        const x_43 = Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_4__redArg(x_2, x_3, x_22);
+        const x_44 = lean_array_uset(x_42, x_21, x_43);
+        const block_45 = (x_46) => {
+          return x_46;
+        };
+        switch (x_8) {
+          case 0: {
+            x_7.fields[1] = x_44;
+            return block_45(x_7);
+          }
+          case 1: {
+            const x_47 = lean_ctor(0, 2, 0, 0, x_4, x_44);
+            return block_45(x_47);
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  };
+  const x_48 = 1;
+  switch (x_48) {
+    case 0: {
+      return block_6(x_1, x_48);
     }
     case 1: {
-      const x_37 = x_1.fields[0];
-      const x_38 = x_1.fields[1];
-      const x_39 = lean_array_get_size(x_38);
-      const x_40 = lean_string_hash(x_2);
-      const x_41 = 32n;
-      const x_42 = lean_uint64_shift_right(x_40, x_41);
-      const x_43 = lean_uint64_xor(x_40, x_42);
-      const x_44 = 16n;
-      const x_45 = lean_uint64_shift_right(x_43, x_44);
-      const x_46 = lean_uint64_xor(x_43, x_45);
-      const x_47 = lean_uint64_to_usize(x_46);
-      const x_48 = lean_usize_of_nat(x_39);
-      const x_49 = 1n;
-      const x_50 = lean_usize_sub(x_48, x_49);
-      const x_51 = lean_usize_land(x_47, x_50);
-      const x_52 = lean_array_uget_borrowed(x_38, x_51);
-      const x_53 = Std_DHashMap_Internal_AssocList_contains__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_2__redArg(x_2, x_52);
-      switch (x_53) {
-        case 0: {
-          const x_54 = 1n;
-          const x_55 = (x_37 + x_54);
-          const x_56 = lean_ctor(1, 3, 0, 0, x_2, x_3, x_52);
-          const x_57 = lean_array_uset(x_38, x_51, x_56);
-          const x_58 = 4n;
-          const x_59 = (x_55 * x_58);
-          const x_60 = 3n;
-          const x_61 = (x_60 === 0n ? 0n : x_59 / x_60);
-          const x_62 = lean_array_get_size(x_57);
-          const x_63 = lean_nat_dec_le(x_61, x_62);
-          switch (x_63) {
-            case 0: {
-              const x_64 = Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_3__redArg(x_57);
-              const x_65 = lean_ctor(0, 2, 0, 0, x_55, x_64);
-              return x_65;
-            }
-            case 1: {
-              const x_66 = lean_ctor(0, 2, 0, 0, x_55, x_57);
-              return x_66;
-            }
-            default: { throw new Error("no matching case"); }
-          }
-        }
-        case 1: {
-          const x_67 = 0;
-          const x_68 = lean_array_uset(x_38, x_51, x_67);
-          const x_69 = Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoStress_wordCount_spec_1_spec_4__redArg(x_2, x_3, x_52);
-          const x_70 = lean_array_uset(x_68, x_51, x_69);
-          const x_71 = lean_ctor(0, 2, 0, 0, x_37, x_70);
-          return x_71;
-        }
-        default: { throw new Error("no matching case"); }
-      }
+      return block_6(undefined, x_48);
     }
     default: { throw new Error("no matching case"); }
   }
@@ -2941,448 +3589,853 @@ function Std_DTreeMap_Internal_Impl_insert__at__LeanJs_DemoStress_treeSum_spec_0
       const x_6 = x_3.fields[2];
       const x_7 = x_3.fields[3];
       const x_8 = x_3.fields[4];
-      const x_9 = null;
-      const x_10 = lean_nat_dec_lt(x_1, x_5);
-      switch (x_10) {
-        case 0: {
-          const x_11 = lean_nat_dec_eq(x_1, x_5);
-          switch (x_11) {
-            case 0: {
-              const x_12 = Std_DTreeMap_Internal_Impl_insert__at__LeanJs_DemoStress_treeSum_spec_0__redArg(x_1, x_2, x_8);
-              const x_13 = 1n;
-              switch (lean_tag(x_7)) {
-                case 0: {
-                  const x_14 = x_7.fields[0];
-                  const x_15 = x_12.fields[0];
-                  const x_16 = x_12.fields[1];
-                  const x_17 = x_12.fields[2];
-                  const x_18 = x_12.fields[3];
-                  const x_19 = x_12.fields[4];
-                  const x_20 = 3n;
-                  const x_21 = (x_20 * x_14);
-                  const x_22 = lean_nat_dec_lt(x_21, x_15);
-                  switch (x_22) {
-                    case 0: {
-                      const x_23 = (x_13 + x_14);
-                      const x_24 = (x_23 + x_15);
-                      const x_25 = lean_ctor(0, 5, 0, 0, x_24, x_5, x_6, x_7, x_12);
-                      return x_25;
+      const block_9 = (x_10, x_11) => {
+        const x_12 = lean_nat_dec_lt(x_1, x_5);
+        switch (x_12) {
+          case 0: {
+            const x_13 = lean_nat_dec_eq(x_1, x_5);
+            switch (x_13) {
+              case 0: {
+                const x_14 = Std_DTreeMap_Internal_Impl_insert__at__LeanJs_DemoStress_treeSum_spec_0__redArg(x_1, x_2, x_8);
+                const x_15 = 1n;
+                switch (lean_tag(x_7)) {
+                  case 0: {
+                    const x_16 = x_7.fields[0];
+                    const x_17 = x_14.fields[0];
+                    const x_18 = x_14.fields[1];
+                    const x_19 = x_14.fields[2];
+                    const x_20 = x_14.fields[3];
+                    const x_21 = x_14.fields[4];
+                    const x_22 = 3n;
+                    const x_23 = (x_22 * x_16);
+                    const x_24 = lean_nat_dec_lt(x_23, x_17);
+                    switch (x_24) {
+                      case 0: {
+                        const x_25 = (x_15 + x_16);
+                        const x_26 = (x_25 + x_17);
+                        const block_27 = (x_28) => {
+                          return x_28;
+                        };
+                        switch (x_11) {
+                          case 0: {
+                            x_10.fields[4] = x_14;
+                            x_10.fields[0] = x_26;
+                            return block_27(x_10);
+                          }
+                          case 1: {
+                            const x_29 = lean_ctor(0, 5, 0, 0, x_26, x_5, x_6, x_7, x_14);
+                            return block_27(x_29);
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      case 1: {
+                        const block_30 = (x_31, x_32) => {
+                          const x_33 = x_20.fields[0];
+                          const x_34 = x_20.fields[1];
+                          const x_35 = x_20.fields[2];
+                          const x_36 = x_20.fields[3];
+                          const x_37 = x_20.fields[4];
+                          const x_38 = x_21.fields[0];
+                          const x_39 = 2n;
+                          const x_40 = (x_39 * x_38);
+                          const x_41 = lean_nat_dec_lt(x_33, x_40);
+                          switch (x_41) {
+                            case 0: {
+                              const block_42 = (x_43, x_44) => {
+                                const x_45 = (x_15 + x_16);
+                                const x_46 = (x_45 + x_17);
+                                const block_47 = (x_48, x_49, x_50) => {
+                                  const x_51 = (x_48 + x_50);
+                                  const block_52 = (x_53) => {
+                                    const block_54 = (x_55) => {
+                                      return x_55;
+                                    };
+                                    switch (x_32) {
+                                      case 0: {
+                                        x_31.fields[4] = x_53;
+                                        x_31.fields[3] = x_49;
+                                        x_31.fields[2] = x_35;
+                                        x_31.fields[1] = x_34;
+                                        x_31.fields[0] = x_46;
+                                        return block_54(x_31);
+                                      }
+                                      case 1: {
+                                        const x_56 = lean_ctor(0, 5, 0, 0, x_46, x_34, x_35, x_49, x_53);
+                                        return block_54(x_56);
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
+                                  };
+                                  switch (x_44) {
+                                    case 0: {
+                                      x_43.fields[4] = x_21;
+                                      x_43.fields[3] = x_37;
+                                      x_43.fields[2] = x_19;
+                                      x_43.fields[1] = x_18;
+                                      x_43.fields[0] = x_51;
+                                      return block_52(x_43);
+                                    }
+                                    case 1: {
+                                      const x_57 = lean_ctor(0, 5, 0, 0, x_51, x_18, x_19, x_37, x_21);
+                                      return block_52(x_57);
+                                    }
+                                    default: { throw new Error("no matching case"); }
+                                  }
+                                };
+                                const block_58 = (x_59) => {
+                                  const x_60 = (x_45 + x_59);
+                                  const block_61 = (x_62) => {
+                                    const x_63 = (x_15 + x_38);
+                                    switch (lean_tag(x_37)) {
+                                      case 0: {
+                                        const x_64 = x_37.fields[0];
+                                        return block_47(x_63, x_62, x_64);
+                                      }
+                                      case 1: {
+                                        const x_65 = 0n;
+                                        return block_47(x_63, x_62, x_65);
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
+                                  };
+                                  switch (x_11) {
+                                    case 0: {
+                                      x_10.fields[4] = x_36;
+                                      x_10.fields[0] = x_60;
+                                      return block_61(x_10);
+                                    }
+                                    case 1: {
+                                      const x_66 = lean_ctor(0, 5, 0, 0, x_60, x_5, x_6, x_7, x_36);
+                                      return block_61(x_66);
+                                    }
+                                    default: { throw new Error("no matching case"); }
+                                  }
+                                };
+                                switch (lean_tag(x_36)) {
+                                  case 0: {
+                                    const x_67 = x_36.fields[0];
+                                    return block_58(x_67);
+                                  }
+                                  case 1: {
+                                    const x_68 = 0n;
+                                    return block_58(x_68);
+                                  }
+                                  default: { throw new Error("no matching case"); }
+                                }
+                              };
+                              const x_69 = 1;
+                              switch (x_69) {
+                                case 0: {
+                                  const x_70 = x_20.fields[4];
+                                  const x_71 = x_20.fields[3];
+                                  const x_72 = x_20.fields[2];
+                                  const x_73 = x_20.fields[1];
+                                  const x_74 = x_20.fields[0];
+                                  return block_42(x_20, x_69);
+                                }
+                                case 1: {
+                                  return block_42(undefined, x_69);
+                                }
+                                default: { throw new Error("no matching case"); }
+                              }
+                            }
+                            case 1: {
+                              const x_75 = (x_15 + x_16);
+                              const x_76 = (x_75 + x_17);
+                              const x_77 = (x_75 + x_33);
+                              const block_78 = (x_79) => {
+                                const block_80 = (x_81, x_82) => {
+                                  const block_83 = (x_84) => {
+                                    return x_84;
+                                  };
+                                  switch (x_82) {
+                                    case 0: {
+                                      x_81.fields[4] = x_21;
+                                      x_81.fields[3] = x_79;
+                                      x_81.fields[2] = x_19;
+                                      x_81.fields[1] = x_18;
+                                      x_81.fields[0] = x_76;
+                                      return block_83(x_81);
+                                    }
+                                    case 1: {
+                                      const x_85 = lean_ctor(0, 5, 0, 0, x_76, x_18, x_19, x_79, x_21);
+                                      return block_83(x_85);
+                                    }
+                                    default: { throw new Error("no matching case"); }
+                                  }
+                                };
+                                const x_86 = 1;
+                                switch (x_86) {
+                                  case 0: {
+                                    const x_87 = x_7.fields[4];
+                                    const x_88 = x_7.fields[3];
+                                    const x_89 = x_7.fields[2];
+                                    const x_90 = x_7.fields[1];
+                                    const x_91 = x_7.fields[0];
+                                    return block_80(x_7, x_86);
+                                  }
+                                  case 1: {
+                                    return block_80(undefined, x_86);
+                                  }
+                                  default: { throw new Error("no matching case"); }
+                                }
+                              };
+                              switch (x_32) {
+                                case 0: {
+                                  x_31.fields[4] = x_20;
+                                  x_31.fields[3] = x_7;
+                                  x_31.fields[2] = x_6;
+                                  x_31.fields[1] = x_5;
+                                  x_31.fields[0] = x_77;
+                                  return block_78(x_31);
+                                }
+                                case 1: {
+                                  const x_92 = lean_ctor(0, 5, 0, 0, x_77, x_5, x_6, x_7, x_20);
+                                  return block_78(x_92);
+                                }
+                                default: { throw new Error("no matching case"); }
+                              }
+                            }
+                            default: { throw new Error("no matching case"); }
+                          }
+                        };
+                        const x_93 = 1;
+                        switch (x_93) {
+                          case 0: {
+                            const x_94 = x_14.fields[4];
+                            const x_95 = x_14.fields[3];
+                            const x_96 = x_14.fields[2];
+                            const x_97 = x_14.fields[1];
+                            const x_98 = x_14.fields[0];
+                            return block_30(x_14, x_93);
+                          }
+                          case 1: {
+                            return block_30(undefined, x_93);
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      default: { throw new Error("no matching case"); }
                     }
-                    case 1: {
-                      const x_26 = null;
-                      const x_27 = x_18.fields[0];
-                      const x_28 = x_18.fields[1];
-                      const x_29 = x_18.fields[2];
-                      const x_30 = x_18.fields[3];
-                      const x_31 = x_18.fields[4];
-                      const x_32 = x_19.fields[0];
-                      const x_33 = 2n;
-                      const x_34 = (x_33 * x_32);
-                      const x_35 = lean_nat_dec_lt(x_27, x_34);
-                      switch (x_35) {
-                        case 0: {
-                          const x_36 = null;
-                          const x_37 = (x_13 + x_14);
-                          const x_38 = (x_37 + x_15);
-                          const block_45 = (x_39, x_40, x_41) => {
-                            const x_42 = (x_40 + x_41);
-                            const x_43 = lean_ctor(0, 5, 0, 0, x_42, x_16, x_17, x_31, x_19);
-                            const x_44 = lean_ctor(0, 5, 0, 0, x_38, x_28, x_29, x_39, x_43);
-                            return x_44;
-                          };
-                          const block_52 = (x_46) => {
-                            const x_47 = (x_37 + x_46);
-                            const x_48 = lean_ctor(0, 5, 0, 0, x_47, x_5, x_6, x_7, x_30);
-                            const x_49 = (x_13 + x_32);
-                            switch (lean_tag(x_31)) {
+                  }
+                  case 1: {
+                    const x_99 = x_14.fields[3];
+                    switch (lean_tag(x_99)) {
+                      case 0: {
+                        const x_100 = x_14.fields[4];
+                        const x_101 = x_14.fields[1];
+                        const x_102 = x_14.fields[2];
+                        const block_103 = (x_104, x_105) => {
+                          const x_106 = x_99.fields[1];
+                          const x_107 = x_99.fields[2];
+                          const block_108 = (x_109, x_110) => {
+                            const x_111 = 3n;
+                            const block_112 = (x_113) => {
+                              const block_114 = (x_115) => {
+                                const block_116 = (x_117) => {
+                                  return x_117;
+                                };
+                                switch (x_11) {
+                                  case 0: {
+                                    x_10.fields[4] = x_115;
+                                    x_10.fields[3] = x_113;
+                                    x_10.fields[2] = x_107;
+                                    x_10.fields[1] = x_106;
+                                    x_10.fields[0] = x_111;
+                                    return block_116(x_10);
+                                  }
+                                  case 1: {
+                                    const x_118 = lean_ctor(0, 5, 0, 0, x_111, x_106, x_107, x_113, x_115);
+                                    return block_116(x_118);
+                                  }
+                                  default: { throw new Error("no matching case"); }
+                                }
+                              };
+                              switch (x_105) {
+                                case 0: {
+                                  x_104.fields[3] = x_100;
+                                  x_104.fields[0] = x_15;
+                                  return block_114(x_104);
+                                }
+                                case 1: {
+                                  const x_119 = lean_ctor(0, 5, 0, 0, x_15, x_101, x_102, x_100, x_100);
+                                  return block_114(x_119);
+                                }
+                                default: { throw new Error("no matching case"); }
+                              }
+                            };
+                            switch (x_110) {
                               case 0: {
-                                const x_50 = x_31.fields[0];
-                                return block_45(x_48, x_49, x_50);
+                                x_109.fields[4] = x_100;
+                                x_109.fields[3] = x_100;
+                                x_109.fields[2] = x_6;
+                                x_109.fields[1] = x_5;
+                                x_109.fields[0] = x_15;
+                                return block_112(x_109);
                               }
                               case 1: {
-                                const x_51 = 0n;
-                                return block_45(x_48, x_49, x_51);
+                                const x_120 = lean_ctor(0, 5, 0, 0, x_15, x_5, x_6, x_100, x_100);
+                                return block_112(x_120);
                               }
                               default: { throw new Error("no matching case"); }
                             }
                           };
-                          switch (lean_tag(x_30)) {
+                          const x_121 = 1;
+                          switch (x_121) {
                             case 0: {
-                              const x_53 = x_30.fields[0];
-                              return block_52(x_53);
+                              const x_122 = x_99.fields[4];
+                              const x_123 = x_99.fields[3];
+                              const x_124 = x_99.fields[0];
+                              return block_108(x_99, x_121);
                             }
                             case 1: {
-                              const x_54 = 0n;
-                              return block_52(x_54);
+                              return block_108(undefined, x_121);
                             }
                             default: { throw new Error("no matching case"); }
                           }
-                        }
-                        case 1: {
-                          const x_55 = (x_13 + x_14);
-                          const x_56 = (x_55 + x_15);
-                          const x_57 = (x_55 + x_27);
-                          const x_58 = lean_ctor(0, 5, 0, 0, x_57, x_5, x_6, x_7, x_18);
-                          const x_59 = 1;
-                          switch (x_59) {
-                            case 0: {
-                              const x_60 = x_7.fields[4];
-                              const x_61 = x_7.fields[3];
-                              const x_62 = x_7.fields[2];
-                              const x_63 = x_7.fields[1];
-                              const x_64 = x_7.fields[0];
-                              x_7.fields[4] = x_19;
-                              x_7.fields[3] = x_58;
-                              x_7.fields[2] = x_17;
-                              x_7.fields[1] = x_16;
-                              x_7.fields[0] = x_56;
-                              return x_7;
-                            }
-                            case 1: {
-                              const x_65 = lean_ctor(0, 5, 0, 0, x_56, x_16, x_17, x_58, x_19);
-                              return x_65;
-                            }
-                            default: { throw new Error("no matching case"); }
-                          }
-                        }
-                        default: { throw new Error("no matching case"); }
-                      }
-                    }
-                    default: { throw new Error("no matching case"); }
-                  }
-                }
-                case 1: {
-                  const x_66 = x_12.fields[3];
-                  switch (lean_tag(x_66)) {
-                    case 0: {
-                      const x_67 = 1;
-                      switch (x_67) {
-                        case 0: {
-                          const x_68 = x_12.fields[4];
-                          const x_69 = x_12.fields[3];
-                          const x_70 = x_12.fields[0];
-                          const x_71 = 1;
-                          switch (x_71) {
-                            case 0: {
-                              const x_72 = x_66.fields[1];
-                              const x_73 = x_66.fields[2];
-                              const x_74 = x_66.fields[4];
-                              const x_75 = x_66.fields[3];
-                              const x_76 = x_66.fields[0];
-                              const x_77 = 3n;
-                              x_66.fields[4] = x_68;
-                              x_66.fields[3] = x_68;
-                              x_66.fields[2] = x_6;
-                              x_66.fields[1] = x_5;
-                              x_66.fields[0] = x_13;
-                              x_12.fields[3] = x_68;
-                              x_12.fields[0] = x_13;
-                              const x_78 = lean_ctor(0, 5, 0, 0, x_77, x_72, x_73, x_66, x_12);
-                              return x_78;
-                            }
-                            case 1: {
-                              const x_79 = x_66.fields[1];
-                              const x_80 = x_66.fields[2];
-                              const x_81 = 3n;
-                              const x_82 = lean_ctor(0, 5, 0, 0, x_13, x_5, x_6, x_68, x_68);
-                              x_12.fields[3] = x_68;
-                              x_12.fields[0] = x_13;
-                              const x_83 = lean_ctor(0, 5, 0, 0, x_81, x_79, x_80, x_82, x_12);
-                              return x_83;
-                            }
-                            default: { throw new Error("no matching case"); }
-                          }
-                        }
-                        case 1: {
-                          const x_84 = x_12.fields[4];
-                          const x_85 = x_12.fields[1];
-                          const x_86 = x_12.fields[2];
-                          const x_87 = x_66.fields[1];
-                          const x_88 = x_66.fields[2];
-                          const x_89 = null;
-                          const x_90 = 3n;
-                          const x_91 = lean_ctor(0, 5, 0, 0, x_13, x_5, x_6, x_84, x_84);
-                          const x_92 = lean_ctor(0, 5, 0, 0, x_13, x_85, x_86, x_84, x_84);
-                          const x_93 = lean_ctor(0, 5, 0, 0, x_90, x_87, x_88, x_91, x_92);
-                          return x_93;
-                        }
-                        default: { throw new Error("no matching case"); }
-                      }
-                    }
-                    case 1: {
-                      const x_94 = x_12.fields[4];
-                      switch (lean_tag(x_94)) {
-                        case 0: {
-                          const x_95 = 1;
-                          switch (x_95) {
-                            case 0: {
-                              const x_96 = x_12.fields[1];
-                              const x_97 = x_12.fields[2];
-                              const x_98 = x_12.fields[4];
-                              const x_99 = x_12.fields[3];
-                              const x_100 = x_12.fields[0];
-                              const x_101 = 3n;
-                              x_12.fields[4] = x_66;
-                              x_12.fields[2] = x_6;
-                              x_12.fields[1] = x_5;
-                              x_12.fields[0] = x_13;
-                              const x_102 = lean_ctor(0, 5, 0, 0, x_101, x_96, x_97, x_12, x_94);
-                              return x_102;
-                            }
-                            case 1: {
-                              const x_103 = x_12.fields[1];
-                              const x_104 = x_12.fields[2];
-                              const x_105 = 3n;
-                              const x_106 = lean_ctor(0, 5, 0, 0, x_13, x_5, x_6, x_66, x_66);
-                              const x_107 = lean_ctor(0, 5, 0, 0, x_105, x_103, x_104, x_106, x_94);
-                              return x_107;
-                            }
-                            default: { throw new Error("no matching case"); }
-                          }
-                        }
-                        case 1: {
-                          const x_108 = 2n;
-                          const x_109 = lean_ctor(0, 5, 0, 0, x_108, x_5, x_6, x_94, x_12);
-                          return x_109;
-                        }
-                        default: { throw new Error("no matching case"); }
-                      }
-                    }
-                    default: { throw new Error("no matching case"); }
-                  }
-                }
-                default: { throw new Error("no matching case"); }
-              }
-            }
-            case 1: {
-              const x_110 = lean_ctor(0, 5, 0, 0, x_4, x_1, x_2, x_7, x_8);
-              return x_110;
-            }
-            default: { throw new Error("no matching case"); }
-          }
-        }
-        case 1: {
-          const x_111 = Std_DTreeMap_Internal_Impl_insert__at__LeanJs_DemoStress_treeSum_spec_0__redArg(x_1, x_2, x_7);
-          const x_112 = 1n;
-          switch (lean_tag(x_8)) {
-            case 0: {
-              const x_113 = x_8.fields[0];
-              const x_114 = x_111.fields[0];
-              const x_115 = x_111.fields[1];
-              const x_116 = x_111.fields[2];
-              const x_117 = x_111.fields[3];
-              const x_118 = x_111.fields[4];
-              const x_119 = 3n;
-              const x_120 = (x_119 * x_113);
-              const x_121 = lean_nat_dec_lt(x_120, x_114);
-              switch (x_121) {
-                case 0: {
-                  const x_122 = (x_112 + x_114);
-                  const x_123 = (x_122 + x_113);
-                  const x_124 = lean_ctor(0, 5, 0, 0, x_123, x_5, x_6, x_111, x_8);
-                  return x_124;
-                }
-                case 1: {
-                  const x_125 = null;
-                  const x_126 = x_117.fields[0];
-                  const x_127 = x_118.fields[0];
-                  const x_128 = x_118.fields[1];
-                  const x_129 = x_118.fields[2];
-                  const x_130 = x_118.fields[3];
-                  const x_131 = x_118.fields[4];
-                  const x_132 = 2n;
-                  const x_133 = (x_132 * x_126);
-                  const x_134 = lean_nat_dec_lt(x_127, x_133);
-                  switch (x_134) {
-                    case 0: {
-                      const x_135 = null;
-                      const x_136 = (x_112 + x_114);
-                      const x_137 = (x_136 + x_113);
-                      const block_144 = (x_138, x_139, x_140) => {
-                        const x_141 = (x_138 + x_140);
-                        const x_142 = lean_ctor(0, 5, 0, 0, x_141, x_5, x_6, x_131, x_8);
-                        const x_143 = lean_ctor(0, 5, 0, 0, x_137, x_128, x_129, x_139, x_142);
-                        return x_143;
-                      };
-                      const x_145 = (x_112 + x_126);
-                      const block_152 = (x_146) => {
-                        const x_147 = (x_145 + x_146);
-                        const x_148 = lean_ctor(0, 5, 0, 0, x_147, x_115, x_116, x_117, x_130);
-                        const x_149 = (x_112 + x_113);
-                        switch (lean_tag(x_131)) {
+                        };
+                        const x_125 = 1;
+                        switch (x_125) {
                           case 0: {
-                            const x_150 = x_131.fields[0];
-                            return block_144(x_149, x_148, x_150);
+                            const x_126 = x_14.fields[3];
+                            const x_127 = x_14.fields[0];
+                            return block_103(x_14, x_125);
                           }
                           case 1: {
-                            const x_151 = 0n;
-                            return block_144(x_149, x_148, x_151);
+                            return block_103(undefined, x_125);
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      case 1: {
+                        const x_128 = x_14.fields[4];
+                        switch (lean_tag(x_128)) {
+                          case 0: {
+                            const x_129 = x_14.fields[1];
+                            const x_130 = x_14.fields[2];
+                            const block_131 = (x_132, x_133) => {
+                              const x_134 = 3n;
+                              const block_135 = (x_136) => {
+                                const block_137 = (x_138) => {
+                                  return x_138;
+                                };
+                                switch (x_11) {
+                                  case 0: {
+                                    x_10.fields[4] = x_128;
+                                    x_10.fields[3] = x_136;
+                                    x_10.fields[2] = x_130;
+                                    x_10.fields[1] = x_129;
+                                    x_10.fields[0] = x_134;
+                                    return block_137(x_10);
+                                  }
+                                  case 1: {
+                                    const x_139 = lean_ctor(0, 5, 0, 0, x_134, x_129, x_130, x_136, x_128);
+                                    return block_137(x_139);
+                                  }
+                                  default: { throw new Error("no matching case"); }
+                                }
+                              };
+                              switch (x_133) {
+                                case 0: {
+                                  x_132.fields[4] = x_99;
+                                  x_132.fields[2] = x_6;
+                                  x_132.fields[1] = x_5;
+                                  x_132.fields[0] = x_15;
+                                  return block_135(x_132);
+                                }
+                                case 1: {
+                                  const x_140 = lean_ctor(0, 5, 0, 0, x_15, x_5, x_6, x_99, x_99);
+                                  return block_135(x_140);
+                                }
+                                default: { throw new Error("no matching case"); }
+                              }
+                            };
+                            const x_141 = 1;
+                            switch (x_141) {
+                              case 0: {
+                                const x_142 = x_14.fields[4];
+                                const x_143 = x_14.fields[3];
+                                const x_144 = x_14.fields[0];
+                                return block_131(x_14, x_141);
+                              }
+                              case 1: {
+                                return block_131(undefined, x_141);
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          case 1: {
+                            const x_145 = 2n;
+                            const block_146 = (x_147) => {
+                              return x_147;
+                            };
+                            switch (x_11) {
+                              case 0: {
+                                x_10.fields[4] = x_14;
+                                x_10.fields[3] = x_128;
+                                x_10.fields[0] = x_145;
+                                return block_146(x_10);
+                              }
+                              case 1: {
+                                const x_148 = lean_ctor(0, 5, 0, 0, x_145, x_5, x_6, x_128, x_14);
+                                return block_146(x_148);
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
+              }
+              case 1: {
+                const block_149 = (x_150) => {
+                  return x_150;
+                };
+                switch (x_11) {
+                  case 0: {
+                    x_10.fields[2] = x_2;
+                    x_10.fields[1] = x_1;
+                    return block_149(x_10);
+                  }
+                  case 1: {
+                    const x_151 = lean_ctor(0, 5, 0, 0, x_4, x_1, x_2, x_7, x_8);
+                    return block_149(x_151);
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          }
+          case 1: {
+            const x_152 = Std_DTreeMap_Internal_Impl_insert__at__LeanJs_DemoStress_treeSum_spec_0__redArg(x_1, x_2, x_7);
+            const x_153 = 1n;
+            switch (lean_tag(x_8)) {
+              case 0: {
+                const x_154 = x_8.fields[0];
+                const x_155 = x_152.fields[0];
+                const x_156 = x_152.fields[1];
+                const x_157 = x_152.fields[2];
+                const x_158 = x_152.fields[3];
+                const x_159 = x_152.fields[4];
+                const x_160 = 3n;
+                const x_161 = (x_160 * x_154);
+                const x_162 = lean_nat_dec_lt(x_161, x_155);
+                switch (x_162) {
+                  case 0: {
+                    const x_163 = (x_153 + x_155);
+                    const x_164 = (x_163 + x_154);
+                    const block_165 = (x_166) => {
+                      return x_166;
+                    };
+                    switch (x_11) {
+                      case 0: {
+                        x_10.fields[3] = x_152;
+                        x_10.fields[0] = x_164;
+                        return block_165(x_10);
+                      }
+                      case 1: {
+                        const x_167 = lean_ctor(0, 5, 0, 0, x_164, x_5, x_6, x_152, x_8);
+                        return block_165(x_167);
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
+                  }
+                  case 1: {
+                    const block_168 = (x_169, x_170) => {
+                      const x_171 = x_158.fields[0];
+                      const x_172 = x_159.fields[0];
+                      const x_173 = x_159.fields[1];
+                      const x_174 = x_159.fields[2];
+                      const x_175 = x_159.fields[3];
+                      const x_176 = x_159.fields[4];
+                      const x_177 = 2n;
+                      const x_178 = (x_177 * x_171);
+                      const x_179 = lean_nat_dec_lt(x_172, x_178);
+                      switch (x_179) {
+                        case 0: {
+                          const block_180 = (x_181, x_182) => {
+                            const x_183 = (x_153 + x_155);
+                            const x_184 = (x_183 + x_154);
+                            const block_185 = (x_186, x_187, x_188) => {
+                              const x_189 = (x_187 + x_188);
+                              const block_190 = (x_191) => {
+                                const block_192 = (x_193) => {
+                                  return x_193;
+                                };
+                                switch (x_170) {
+                                  case 0: {
+                                    x_169.fields[4] = x_191;
+                                    x_169.fields[3] = x_186;
+                                    x_169.fields[2] = x_174;
+                                    x_169.fields[1] = x_173;
+                                    x_169.fields[0] = x_184;
+                                    return block_192(x_169);
+                                  }
+                                  case 1: {
+                                    const x_194 = lean_ctor(0, 5, 0, 0, x_184, x_173, x_174, x_186, x_191);
+                                    return block_192(x_194);
+                                  }
+                                  default: { throw new Error("no matching case"); }
+                                }
+                              };
+                              switch (x_182) {
+                                case 0: {
+                                  x_181.fields[4] = x_8;
+                                  x_181.fields[3] = x_176;
+                                  x_181.fields[2] = x_6;
+                                  x_181.fields[1] = x_5;
+                                  x_181.fields[0] = x_189;
+                                  return block_190(x_181);
+                                }
+                                case 1: {
+                                  const x_195 = lean_ctor(0, 5, 0, 0, x_189, x_5, x_6, x_176, x_8);
+                                  return block_190(x_195);
+                                }
+                                default: { throw new Error("no matching case"); }
+                              }
+                            };
+                            const x_196 = (x_153 + x_171);
+                            const block_197 = (x_198) => {
+                              const x_199 = (x_196 + x_198);
+                              const block_200 = (x_201) => {
+                                const x_202 = (x_153 + x_154);
+                                switch (lean_tag(x_176)) {
+                                  case 0: {
+                                    const x_203 = x_176.fields[0];
+                                    return block_185(x_201, x_202, x_203);
+                                  }
+                                  case 1: {
+                                    const x_204 = 0n;
+                                    return block_185(x_201, x_202, x_204);
+                                  }
+                                  default: { throw new Error("no matching case"); }
+                                }
+                              };
+                              switch (x_11) {
+                                case 0: {
+                                  x_10.fields[4] = x_175;
+                                  x_10.fields[3] = x_158;
+                                  x_10.fields[2] = x_157;
+                                  x_10.fields[1] = x_156;
+                                  x_10.fields[0] = x_199;
+                                  return block_200(x_10);
+                                }
+                                case 1: {
+                                  const x_205 = lean_ctor(0, 5, 0, 0, x_199, x_156, x_157, x_158, x_175);
+                                  return block_200(x_205);
+                                }
+                                default: { throw new Error("no matching case"); }
+                              }
+                            };
+                            switch (lean_tag(x_175)) {
+                              case 0: {
+                                const x_206 = x_175.fields[0];
+                                return block_197(x_206);
+                              }
+                              case 1: {
+                                const x_207 = 0n;
+                                return block_197(x_207);
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          };
+                          const x_208 = 1;
+                          switch (x_208) {
+                            case 0: {
+                              const x_209 = x_159.fields[4];
+                              const x_210 = x_159.fields[3];
+                              const x_211 = x_159.fields[2];
+                              const x_212 = x_159.fields[1];
+                              const x_213 = x_159.fields[0];
+                              return block_180(x_159, x_208);
+                            }
+                            case 1: {
+                              return block_180(undefined, x_208);
+                            }
+                            default: { throw new Error("no matching case"); }
+                          }
+                        }
+                        case 1: {
+                          const x_214 = (x_153 + x_155);
+                          const x_215 = (x_214 + x_154);
+                          const x_216 = (x_153 + x_154);
+                          const x_217 = (x_216 + x_172);
+                          const block_218 = (x_219) => {
+                            const block_220 = (x_221, x_222) => {
+                              const block_223 = (x_224) => {
+                                return x_224;
+                              };
+                              switch (x_222) {
+                                case 0: {
+                                  x_221.fields[4] = x_219;
+                                  x_221.fields[3] = x_158;
+                                  x_221.fields[2] = x_157;
+                                  x_221.fields[1] = x_156;
+                                  x_221.fields[0] = x_215;
+                                  return block_223(x_221);
+                                }
+                                case 1: {
+                                  const x_225 = lean_ctor(0, 5, 0, 0, x_215, x_156, x_157, x_158, x_219);
+                                  return block_223(x_225);
+                                }
+                                default: { throw new Error("no matching case"); }
+                              }
+                            };
+                            const x_226 = 1;
+                            switch (x_226) {
+                              case 0: {
+                                const x_227 = x_8.fields[4];
+                                const x_228 = x_8.fields[3];
+                                const x_229 = x_8.fields[2];
+                                const x_230 = x_8.fields[1];
+                                const x_231 = x_8.fields[0];
+                                return block_220(x_8, x_226);
+                              }
+                              case 1: {
+                                return block_220(undefined, x_226);
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          };
+                          switch (x_170) {
+                            case 0: {
+                              x_169.fields[4] = x_8;
+                              x_169.fields[3] = x_159;
+                              x_169.fields[2] = x_6;
+                              x_169.fields[1] = x_5;
+                              x_169.fields[0] = x_217;
+                              return block_218(x_169);
+                            }
+                            case 1: {
+                              const x_232 = lean_ctor(0, 5, 0, 0, x_217, x_5, x_6, x_159, x_8);
+                              return block_218(x_232);
+                            }
+                            default: { throw new Error("no matching case"); }
+                          }
+                        }
+                        default: { throw new Error("no matching case"); }
+                      }
+                    };
+                    const x_233 = 1;
+                    switch (x_233) {
+                      case 0: {
+                        const x_234 = x_152.fields[4];
+                        const x_235 = x_152.fields[3];
+                        const x_236 = x_152.fields[2];
+                        const x_237 = x_152.fields[1];
+                        const x_238 = x_152.fields[0];
+                        return block_168(x_152, x_233);
+                      }
+                      case 1: {
+                        return block_168(undefined, x_233);
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
+              }
+              case 1: {
+                const x_239 = x_152.fields[3];
+                switch (lean_tag(x_239)) {
+                  case 0: {
+                    const x_240 = x_152.fields[4];
+                    const x_241 = x_152.fields[1];
+                    const x_242 = x_152.fields[2];
+                    const block_243 = (x_244, x_245) => {
+                      const x_246 = 3n;
+                      const block_247 = (x_248) => {
+                        const block_249 = (x_250) => {
+                          return x_250;
+                        };
+                        switch (x_11) {
+                          case 0: {
+                            x_10.fields[4] = x_248;
+                            x_10.fields[3] = x_239;
+                            x_10.fields[2] = x_242;
+                            x_10.fields[1] = x_241;
+                            x_10.fields[0] = x_246;
+                            return block_249(x_10);
+                          }
+                          case 1: {
+                            const x_251 = lean_ctor(0, 5, 0, 0, x_246, x_241, x_242, x_239, x_248);
+                            return block_249(x_251);
                           }
                           default: { throw new Error("no matching case"); }
                         }
                       };
-                      switch (lean_tag(x_130)) {
+                      switch (x_245) {
                         case 0: {
-                          const x_153 = x_130.fields[0];
-                          return block_152(x_153);
+                          x_244.fields[3] = x_240;
+                          x_244.fields[2] = x_6;
+                          x_244.fields[1] = x_5;
+                          x_244.fields[0] = x_153;
+                          return block_247(x_244);
                         }
                         case 1: {
-                          const x_154 = 0n;
-                          return block_152(x_154);
+                          const x_252 = lean_ctor(0, 5, 0, 0, x_153, x_5, x_6, x_240, x_240);
+                          return block_247(x_252);
                         }
                         default: { throw new Error("no matching case"); }
                       }
-                    }
-                    case 1: {
-                      const x_155 = (x_112 + x_114);
-                      const x_156 = (x_155 + x_113);
-                      const x_157 = (x_112 + x_113);
-                      const x_158 = (x_157 + x_127);
-                      const x_159 = lean_ctor(0, 5, 0, 0, x_158, x_5, x_6, x_118, x_8);
-                      const x_160 = 1;
-                      switch (x_160) {
-                        case 0: {
-                          const x_161 = x_8.fields[4];
-                          const x_162 = x_8.fields[3];
-                          const x_163 = x_8.fields[2];
-                          const x_164 = x_8.fields[1];
-                          const x_165 = x_8.fields[0];
-                          x_8.fields[4] = x_159;
-                          x_8.fields[3] = x_117;
-                          x_8.fields[2] = x_116;
-                          x_8.fields[1] = x_115;
-                          x_8.fields[0] = x_156;
-                          return x_8;
-                        }
-                        case 1: {
-                          const x_166 = lean_ctor(0, 5, 0, 0, x_156, x_115, x_116, x_117, x_159);
-                          return x_166;
-                        }
-                        default: { throw new Error("no matching case"); }
+                    };
+                    const x_253 = 1;
+                    switch (x_253) {
+                      case 0: {
+                        const x_254 = x_152.fields[3];
+                        const x_255 = x_152.fields[0];
+                        return block_243(x_152, x_253);
                       }
+                      case 1: {
+                        return block_243(undefined, x_253);
+                      }
+                      default: { throw new Error("no matching case"); }
                     }
-                    default: { throw new Error("no matching case"); }
                   }
-                }
-                default: { throw new Error("no matching case"); }
-              }
-            }
-            case 1: {
-              const x_167 = x_111.fields[3];
-              switch (lean_tag(x_167)) {
-                case 0: {
-                  const x_168 = 1;
-                  switch (x_168) {
-                    case 0: {
-                      const x_169 = x_111.fields[4];
-                      const x_170 = x_111.fields[1];
-                      const x_171 = x_111.fields[2];
-                      const x_172 = x_111.fields[3];
-                      const x_173 = x_111.fields[0];
-                      const x_174 = 3n;
-                      x_111.fields[3] = x_169;
-                      x_111.fields[2] = x_6;
-                      x_111.fields[1] = x_5;
-                      x_111.fields[0] = x_112;
-                      const x_175 = lean_ctor(0, 5, 0, 0, x_174, x_170, x_171, x_167, x_111);
-                      return x_175;
-                    }
-                    case 1: {
-                      const x_176 = x_111.fields[4];
-                      const x_177 = x_111.fields[1];
-                      const x_178 = x_111.fields[2];
-                      const x_179 = 3n;
-                      const x_180 = lean_ctor(0, 5, 0, 0, x_112, x_5, x_6, x_176, x_176);
-                      const x_181 = lean_ctor(0, 5, 0, 0, x_179, x_177, x_178, x_167, x_180);
-                      return x_181;
-                    }
-                    default: { throw new Error("no matching case"); }
-                  }
-                }
-                case 1: {
-                  const x_182 = x_111.fields[4];
-                  switch (lean_tag(x_182)) {
-                    case 0: {
-                      const x_183 = 1;
-                      switch (x_183) {
-                        case 0: {
-                          const x_184 = x_111.fields[1];
-                          const x_185 = x_111.fields[2];
-                          const x_186 = x_111.fields[4];
-                          const x_187 = x_111.fields[3];
-                          const x_188 = x_111.fields[0];
-                          const x_189 = 1;
-                          switch (x_189) {
+                  case 1: {
+                    const x_256 = x_152.fields[4];
+                    switch (lean_tag(x_256)) {
+                      case 0: {
+                        const x_257 = x_152.fields[1];
+                        const x_258 = x_152.fields[2];
+                        const block_259 = (x_260, x_261) => {
+                          const x_262 = x_256.fields[1];
+                          const x_263 = x_256.fields[2];
+                          const block_264 = (x_265, x_266) => {
+                            const x_267 = 3n;
+                            const block_268 = (x_269) => {
+                              const block_270 = (x_271) => {
+                                const block_272 = (x_273) => {
+                                  return x_273;
+                                };
+                                switch (x_11) {
+                                  case 0: {
+                                    x_10.fields[4] = x_271;
+                                    x_10.fields[3] = x_269;
+                                    x_10.fields[2] = x_263;
+                                    x_10.fields[1] = x_262;
+                                    x_10.fields[0] = x_267;
+                                    return block_272(x_10);
+                                  }
+                                  case 1: {
+                                    const x_274 = lean_ctor(0, 5, 0, 0, x_267, x_262, x_263, x_269, x_271);
+                                    return block_272(x_274);
+                                  }
+                                  default: { throw new Error("no matching case"); }
+                                }
+                              };
+                              switch (x_261) {
+                                case 0: {
+                                  x_260.fields[4] = x_239;
+                                  x_260.fields[2] = x_6;
+                                  x_260.fields[1] = x_5;
+                                  x_260.fields[0] = x_153;
+                                  return block_270(x_260);
+                                }
+                                case 1: {
+                                  const x_275 = lean_ctor(0, 5, 0, 0, x_153, x_5, x_6, x_239, x_239);
+                                  return block_270(x_275);
+                                }
+                                default: { throw new Error("no matching case"); }
+                              }
+                            };
+                            switch (x_266) {
+                              case 0: {
+                                x_265.fields[4] = x_239;
+                                x_265.fields[3] = x_239;
+                                x_265.fields[2] = x_258;
+                                x_265.fields[1] = x_257;
+                                x_265.fields[0] = x_153;
+                                return block_268(x_265);
+                              }
+                              case 1: {
+                                const x_276 = lean_ctor(0, 5, 0, 0, x_153, x_257, x_258, x_239, x_239);
+                                return block_268(x_276);
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          };
+                          const x_277 = 1;
+                          switch (x_277) {
                             case 0: {
-                              const x_190 = x_182.fields[1];
-                              const x_191 = x_182.fields[2];
-                              const x_192 = x_182.fields[4];
-                              const x_193 = x_182.fields[3];
-                              const x_194 = x_182.fields[0];
-                              const x_195 = 3n;
-                              x_182.fields[4] = x_167;
-                              x_182.fields[3] = x_167;
-                              x_182.fields[2] = x_185;
-                              x_182.fields[1] = x_184;
-                              x_182.fields[0] = x_112;
-                              x_111.fields[4] = x_167;
-                              x_111.fields[2] = x_6;
-                              x_111.fields[1] = x_5;
-                              x_111.fields[0] = x_112;
-                              const x_196 = lean_ctor(0, 5, 0, 0, x_195, x_190, x_191, x_182, x_111);
-                              return x_196;
+                              const x_278 = x_256.fields[4];
+                              const x_279 = x_256.fields[3];
+                              const x_280 = x_256.fields[0];
+                              return block_264(x_256, x_277);
                             }
                             case 1: {
-                              const x_197 = x_182.fields[1];
-                              const x_198 = x_182.fields[2];
-                              const x_199 = 3n;
-                              const x_200 = lean_ctor(0, 5, 0, 0, x_112, x_184, x_185, x_167, x_167);
-                              x_111.fields[4] = x_167;
-                              x_111.fields[2] = x_6;
-                              x_111.fields[1] = x_5;
-                              x_111.fields[0] = x_112;
-                              const x_201 = lean_ctor(0, 5, 0, 0, x_199, x_197, x_198, x_200, x_111);
-                              return x_201;
+                              return block_264(undefined, x_277);
                             }
                             default: { throw new Error("no matching case"); }
                           }
+                        };
+                        const x_281 = 1;
+                        switch (x_281) {
+                          case 0: {
+                            const x_282 = x_152.fields[4];
+                            const x_283 = x_152.fields[3];
+                            const x_284 = x_152.fields[0];
+                            return block_259(x_152, x_281);
+                          }
+                          case 1: {
+                            return block_259(undefined, x_281);
+                          }
+                          default: { throw new Error("no matching case"); }
                         }
-                        case 1: {
-                          const x_202 = x_111.fields[1];
-                          const x_203 = x_111.fields[2];
-                          const x_204 = x_182.fields[1];
-                          const x_205 = x_182.fields[2];
-                          const x_206 = null;
-                          const x_207 = 3n;
-                          const x_208 = lean_ctor(0, 5, 0, 0, x_112, x_202, x_203, x_167, x_167);
-                          const x_209 = lean_ctor(0, 5, 0, 0, x_112, x_5, x_6, x_167, x_167);
-                          const x_210 = lean_ctor(0, 5, 0, 0, x_207, x_204, x_205, x_208, x_209);
-                          return x_210;
-                        }
-                        default: { throw new Error("no matching case"); }
                       }
+                      case 1: {
+                        const x_285 = 2n;
+                        const block_286 = (x_287) => {
+                          return x_287;
+                        };
+                        switch (x_11) {
+                          case 0: {
+                            x_10.fields[4] = x_256;
+                            x_10.fields[3] = x_152;
+                            x_10.fields[0] = x_285;
+                            return block_286(x_10);
+                          }
+                          case 1: {
+                            const x_288 = lean_ctor(0, 5, 0, 0, x_285, x_5, x_6, x_152, x_256);
+                            return block_286(x_288);
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      default: { throw new Error("no matching case"); }
                     }
-                    case 1: {
-                      const x_211 = 2n;
-                      const x_212 = lean_ctor(0, 5, 0, 0, x_211, x_5, x_6, x_111, x_182);
-                      return x_212;
-                    }
-                    default: { throw new Error("no matching case"); }
                   }
+                  default: { throw new Error("no matching case"); }
                 }
-                default: { throw new Error("no matching case"); }
               }
+              default: { throw new Error("no matching case"); }
             }
-            default: { throw new Error("no matching case"); }
           }
+          default: { throw new Error("no matching case"); }
+        }
+      };
+      const x_289 = 1;
+      switch (x_289) {
+        case 0: {
+          return block_9(x_3, x_289);
+        }
+        case 1: {
+          return block_9(undefined, x_289);
         }
         default: { throw new Error("no matching case"); }
       }
     }
     case 1: {
-      const x_213 = 1n;
-      const x_214 = lean_ctor(0, 5, 0, 0, x_213, x_1, x_2, x_3, x_3);
-      return x_214;
+      const x_290 = 1n;
+      const x_291 = lean_ctor(0, 5, 0, 0, x_290, x_1, x_2, x_3, x_3);
+      return x_291;
     }
     default: { throw new Error("no matching case"); }
   }
@@ -3606,36 +4659,16 @@ function LeanJs_DemoStress_strProg__closed_6() {
 
 // extern String_Pos_set -> runtime prelude
 
-function Char_utf8Size__closed_0() {
-  const x_1 = 127n;
-  const x_2 = lean_uint32_of_nat(x_1);
-  return x_2;
-}
-
-function Char_utf8Size__closed_1() {
-  const x_1 = 2047n;
-  const x_2 = lean_uint32_of_nat(x_1);
-  return x_2;
-}
-
-// extern UInt32_ofNatLT -> runtime prelude
-
-function Char_utf8Size__closed_2() {
-  const x_1 = 65535n;
-  const x_2 = lean_uint32_of_nat(x_1);
-  return x_2;
-}
-
 function Char_utf8Size(x_1) {
-  const x_2 = Char_utf8Size__closed_0();
+  const x_2 = 127;
   const x_3 = lean_uint32_dec_le(x_1, x_2);
   switch (x_3) {
     case 0: {
-      const x_4 = Char_utf8Size__closed_1();
+      const x_4 = 2047;
       const x_5 = lean_uint32_dec_le(x_1, x_4);
       switch (x_5) {
         case 0: {
-          const x_6 = Char_utf8Size__closed_2();
+          const x_6 = 65535;
           const x_7 = lean_uint32_dec_le(x_1, x_6);
           switch (x_7) {
             case 0: {
@@ -3679,12 +4712,12 @@ function String_mapAux__at___private_Init_System_Uri_0_System_Uri_UriEscape_uriE
         const x_13 = lean_uint32_dec_le(x_12, x_11);
         switch (x_13) {
           case 0: {
-            const x_3 = x_11;
-            const x_4 = lean_string_utf8_set(x_1, x_2, x_3);
-            const x_5 = Char_utf8Size(x_3);
-            const x_6 = (x_2 + x_5);
-            const __t_1 = x_4;
-            const __t_2 = x_6;
+            const x_4 = x_11;
+            const x_5 = lean_string_utf8_set(x_1, x_2, x_4);
+            const x_6 = Char_utf8Size(x_4);
+            const x_7 = (x_2 + x_6);
+            const __t_1 = x_5;
+            const __t_2 = x_7;
             x_1 = __t_1;
             x_2 = __t_2;
             continue;
@@ -3694,12 +4727,12 @@ function String_mapAux__at___private_Init_System_Uri_0_System_Uri_UriEscape_uriE
             const x_15 = lean_uint32_dec_le(x_11, x_14);
             switch (x_15) {
               case 0: {
-                const x_3 = x_11;
-                const x_4 = lean_string_utf8_set(x_1, x_2, x_3);
-                const x_5 = Char_utf8Size(x_3);
-                const x_6 = (x_2 + x_5);
-                const __t_1 = x_4;
-                const __t_2 = x_6;
+                const x_4 = x_11;
+                const x_5 = lean_string_utf8_set(x_1, x_2, x_4);
+                const x_6 = Char_utf8Size(x_4);
+                const x_7 = (x_2 + x_6);
+                const __t_1 = x_5;
+                const __t_2 = x_7;
                 x_1 = __t_1;
                 x_2 = __t_2;
                 continue;
@@ -3707,12 +4740,12 @@ function String_mapAux__at___private_Init_System_Uri_0_System_Uri_UriEscape_uriE
               case 1: {
                 const x_16 = 4294967264;
                 const x_17 = lean_uint32_add(x_11, x_16);
-                const x_3 = x_17;
-                const x_4 = lean_string_utf8_set(x_1, x_2, x_3);
-                const x_5 = Char_utf8Size(x_3);
-                const x_6 = (x_2 + x_5);
-                const __t_1 = x_4;
-                const __t_2 = x_6;
+                const x_4 = x_17;
+                const x_5 = lean_string_utf8_set(x_1, x_2, x_4);
+                const x_6 = Char_utf8Size(x_4);
+                const x_7 = (x_2 + x_6);
+                const __t_1 = x_5;
+                const __t_2 = x_7;
                 x_1 = __t_1;
                 x_2 = __t_2;
                 continue;
@@ -3741,32 +4774,65 @@ function List_mapTR_loop__at__LeanJs_DemoStress_strProg_spec_0__tc(x_1, x_2) {
         return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
-        const x_4 = 1;
-        switch (x_4) {
+        const x_4 = x_1.fields[0];
+        const x_5 = x_1.fields[1];
+        const x_15 = 1;
+        switch (x_15) {
           case 0: {
-            const x_5 = x_1.fields[0];
-            const x_6 = x_1.fields[1];
-            const x_7 = 0n;
-            const x_8 = String_mapAux__at___private_Init_System_Uri_0_System_Uri_UriEscape_uriEscapeAsciiChar_uInt8ToHex_spec_0(x_5, x_7);
-            x_1.fields[1] = x_2;
-            x_1.fields[0] = x_8;
-            const __t_1 = x_6;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = x_1;
+            const x_8 = x_15;
+            const x_9 = 0n;
+            const x_10 = String_mapAux__at___private_Init_System_Uri_0_System_Uri_UriEscape_uriEscapeAsciiChar_uInt8ToHex_spec_0(x_4, x_9);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_10;
+                const x_12 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                const x_12 = x_14;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_10 = x_1.fields[0];
-            const x_11 = x_1.fields[1];
-            const x_12 = 0n;
-            const x_13 = String_mapAux__at___private_Init_System_Uri_0_System_Uri_UriEscape_uriEscapeAsciiChar_uInt8ToHex_spec_0(x_10, x_12);
-            const x_14 = lean_ctor(1, 2, 0, 0, x_13, x_2);
-            const __t_1 = x_11;
-            const __t_2 = x_14;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = undefined;
+            const x_8 = x_15;
+            const x_9 = 0n;
+            const x_10 = String_mapAux__at___private_Init_System_Uri_0_System_Uri_UriEscape_uriEscapeAsciiChar_uInt8ToHex_spec_0(x_4, x_9);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_10;
+                const x_12 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                const x_12 = x_14;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -3801,6 +4867,11 @@ function LeanJs_DemoStress_strProg__closed_8() {
 
 // extern Array_ugetBorrowed -> runtime prelude
 
+function _private_Init_Data_Array_Basic_0_Array_foldrMUnsafe_fold__at__List_foldrTR__at__LeanJs_DemoStress_strProg_spec_1_spec_1__closed_0() {
+  const x_1 = "-";
+  return x_1;
+}
+
 function _private_Init_Data_Array_Basic_0_Array_foldrMUnsafe_fold__at__List_foldrTR__at__LeanJs_DemoStress_strProg_spec_1_spec_1__tc(x_1, x_2, x_3, x_4) {
   while (true) {
     const x_5 = lean_usize_dec_eq(x_2, x_3);
@@ -3809,7 +4880,7 @@ function _private_Init_Data_Array_Basic_0_Array_foldrMUnsafe_fold__at__List_fold
         const x_6 = 1n;
         const x_7 = lean_usize_sub(x_2, x_6);
         const x_8 = lean_array_uget_borrowed(x_1, x_7);
-        const x_9 = LeanJs_DemoStress_showRes__closed_3();
+        const x_9 = _private_Init_Data_Array_Basic_0_Array_foldrMUnsafe_fold__at__List_foldrTR__at__LeanJs_DemoStress_strProg_spec_1_spec_1__closed_0();
         const x_10 = lean_string_append(x_8, x_9);
         const x_11 = lean_string_append(x_10, x_4);
         const __t_1 = x_1;
@@ -4021,30 +5092,63 @@ function List_mapTR_loop__at__LeanJs_DemoStress_strProg_spec_2__tc(x_1, x_2) {
         return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
-        const x_4 = 1;
-        switch (x_4) {
+        const x_4 = x_1.fields[0];
+        const x_5 = x_1.fields[1];
+        const x_14 = 1;
+        switch (x_14) {
           case 0: {
-            const x_5 = x_1.fields[0];
-            const x_6 = x_1.fields[1];
-            const x_7 = lean_string_length(x_5);
-            x_1.fields[1] = x_2;
-            x_1.fields[0] = x_7;
-            const __t_1 = x_6;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = x_1;
+            const x_8 = x_14;
+            const x_9 = lean_string_length(x_4);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_9;
+                const x_11 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_11;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_13 = lean_ctor(1, 2, 0, 0, x_9, x_2);
+                const x_11 = x_13;
+                const __t_1 = x_5;
+                const __t_2 = x_11;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_9 = x_1.fields[0];
-            const x_10 = x_1.fields[1];
-            const x_11 = lean_string_length(x_9);
-            const x_12 = lean_ctor(1, 2, 0, 0, x_11, x_2);
-            const __t_1 = x_10;
-            const __t_2 = x_12;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = undefined;
+            const x_8 = x_14;
+            const x_9 = lean_string_length(x_4);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_9;
+                const x_11 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_11;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_13 = lean_ctor(1, 2, 0, 0, x_9, x_2);
+                const x_11 = x_13;
+                const __t_1 = x_5;
+                const __t_2 = x_11;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -4215,54 +5319,86 @@ function List_filterTR_loop__at__LeanJs_DemoStress_strProg_spec_3__tc(x_1, x_2) 
         return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
-        const x_4 = 1;
-        switch (x_4) {
+        const x_4 = x_1.fields[0];
+        const x_5 = x_1.fields[1];
+        const x_17 = 1;
+        switch (x_17) {
           case 0: {
-            const x_5 = x_1.fields[0];
-            const x_6 = x_1.fields[1];
-            const x_7 = 4n;
-            const x_8 = lean_string_length(x_5);
-            const x_9 = lean_nat_dec_lt(x_7, x_8);
-            switch (x_9) {
+            const x_7 = x_1;
+            const x_8 = x_17;
+            const x_9 = 4n;
+            const x_10 = lean_string_length(x_4);
+            const x_11 = lean_nat_dec_lt(x_9, x_10);
+            switch (x_11) {
               case 0: {
-                const __t_1 = x_6;
+                const __t_1 = x_5;
                 const __t_2 = x_2;
                 x_1 = __t_1;
                 x_2 = __t_2;
                 continue;
               }
               case 1: {
-                x_1.fields[1] = x_2;
-                const __t_1 = x_6;
-                const __t_2 = x_1;
-                x_1 = __t_1;
-                x_2 = __t_2;
-                continue;
+                switch (x_8) {
+                  case 0: {
+                    x_7.fields[1] = x_2;
+                    const x_14 = x_7;
+                    const __t_1 = x_5;
+                    const __t_2 = x_14;
+                    x_1 = __t_1;
+                    x_2 = __t_2;
+                    continue;
+                  }
+                  case 1: {
+                    const x_16 = lean_ctor(1, 2, 0, 0, x_4, x_2);
+                    const x_14 = x_16;
+                    const __t_1 = x_5;
+                    const __t_2 = x_14;
+                    x_1 = __t_1;
+                    x_2 = __t_2;
+                    continue;
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               default: { throw new Error("no matching case"); }
             }
           }
           case 1: {
-            const x_12 = x_1.fields[0];
-            const x_13 = x_1.fields[1];
-            const x_14 = 4n;
-            const x_15 = lean_string_length(x_12);
-            const x_16 = lean_nat_dec_lt(x_14, x_15);
-            switch (x_16) {
+            const x_7 = undefined;
+            const x_8 = x_17;
+            const x_9 = 4n;
+            const x_10 = lean_string_length(x_4);
+            const x_11 = lean_nat_dec_lt(x_9, x_10);
+            switch (x_11) {
               case 0: {
-                const __t_1 = x_13;
+                const __t_1 = x_5;
                 const __t_2 = x_2;
                 x_1 = __t_1;
                 x_2 = __t_2;
                 continue;
               }
               case 1: {
-                const x_18 = lean_ctor(1, 2, 0, 0, x_12, x_2);
-                const __t_1 = x_13;
-                const __t_2 = x_18;
-                x_1 = __t_1;
-                x_2 = __t_2;
-                continue;
+                switch (x_8) {
+                  case 0: {
+                    x_7.fields[1] = x_2;
+                    const x_14 = x_7;
+                    const __t_1 = x_5;
+                    const __t_2 = x_14;
+                    x_1 = __t_1;
+                    x_2 = __t_2;
+                    continue;
+                  }
+                  case 1: {
+                    const x_16 = lean_ctor(1, 2, 0, 0, x_4, x_2);
+                    const x_14 = x_16;
+                    const __t_1 = x_5;
+                    const __t_2 = x_14;
+                    x_1 = __t_1;
+                    x_2 = __t_2;
+                    continue;
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               default: { throw new Error("no matching case"); }
             }
@@ -4306,47 +5442,200 @@ function List_mapTR_loop__at__LeanJs_DemoStress_strProg_spec_4__tc(x_1, x_2) {
       case 1: {
         const x_4 = x_1.fields[0];
         const x_5 = x_1.fields[1];
-        const x_6 = null;
-        const x_11 = 0n;
-        const x_12 = lean_string_utf8_get(x_4, x_11);
-        const x_13 = 97;
-        const x_14 = lean_uint32_dec_le(x_13, x_12);
-        switch (x_14) {
+        const x_26 = 1;
+        switch (x_26) {
           case 0: {
-            const x_15 = lean_string_utf8_set(x_4, x_11, x_12);
-            const x_7 = x_15;
-            const x_8 = lean_ctor(1, 2, 0, 0, x_7, x_2);
-            const __t_1 = x_5;
-            const __t_2 = x_8;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
-          }
-          case 1: {
-            const x_16 = 122;
-            const x_17 = lean_uint32_dec_le(x_12, x_16);
-            switch (x_17) {
+            const x_7 = x_1;
+            const x_8 = x_26;
+            const x_15 = 0n;
+            const x_16 = lean_string_utf8_get(x_4, x_15);
+            const x_17 = 97;
+            const x_18 = lean_uint32_dec_le(x_17, x_16);
+            switch (x_18) {
               case 0: {
-                const x_18 = lean_string_utf8_set(x_4, x_11, x_12);
-                const x_7 = x_18;
-                const x_8 = lean_ctor(1, 2, 0, 0, x_7, x_2);
-                const __t_1 = x_5;
-                const __t_2 = x_8;
-                x_1 = __t_1;
-                x_2 = __t_2;
-                continue;
+                const x_19 = lean_string_utf8_set(x_4, x_15, x_16);
+                const x_10 = x_19;
+                switch (x_8) {
+                  case 0: {
+                    x_7.fields[1] = x_2;
+                    x_7.fields[0] = x_10;
+                    const x_12 = x_7;
+                    const __t_1 = x_5;
+                    const __t_2 = x_12;
+                    x_1 = __t_1;
+                    x_2 = __t_2;
+                    continue;
+                  }
+                  case 1: {
+                    const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                    const x_12 = x_14;
+                    const __t_1 = x_5;
+                    const __t_2 = x_12;
+                    x_1 = __t_1;
+                    x_2 = __t_2;
+                    continue;
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               case 1: {
-                const x_19 = 4294967264;
-                const x_20 = lean_uint32_add(x_12, x_19);
-                const x_21 = lean_string_utf8_set(x_4, x_11, x_20);
-                const x_7 = x_21;
-                const x_8 = lean_ctor(1, 2, 0, 0, x_7, x_2);
-                const __t_1 = x_5;
-                const __t_2 = x_8;
-                x_1 = __t_1;
-                x_2 = __t_2;
-                continue;
+                const x_20 = 122;
+                const x_21 = lean_uint32_dec_le(x_16, x_20);
+                switch (x_21) {
+                  case 0: {
+                    const x_22 = lean_string_utf8_set(x_4, x_15, x_16);
+                    const x_10 = x_22;
+                    switch (x_8) {
+                      case 0: {
+                        x_7.fields[1] = x_2;
+                        x_7.fields[0] = x_10;
+                        const x_12 = x_7;
+                        const __t_1 = x_5;
+                        const __t_2 = x_12;
+                        x_1 = __t_1;
+                        x_2 = __t_2;
+                        continue;
+                      }
+                      case 1: {
+                        const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                        const x_12 = x_14;
+                        const __t_1 = x_5;
+                        const __t_2 = x_12;
+                        x_1 = __t_1;
+                        x_2 = __t_2;
+                        continue;
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
+                  }
+                  case 1: {
+                    const x_23 = 4294967264;
+                    const x_24 = lean_uint32_add(x_16, x_23);
+                    const x_25 = lean_string_utf8_set(x_4, x_15, x_24);
+                    const x_10 = x_25;
+                    switch (x_8) {
+                      case 0: {
+                        x_7.fields[1] = x_2;
+                        x_7.fields[0] = x_10;
+                        const x_12 = x_7;
+                        const __t_1 = x_5;
+                        const __t_2 = x_12;
+                        x_1 = __t_1;
+                        x_2 = __t_2;
+                        continue;
+                      }
+                      case 1: {
+                        const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                        const x_12 = x_14;
+                        const __t_1 = x_5;
+                        const __t_2 = x_12;
+                        x_1 = __t_1;
+                        x_2 = __t_2;
+                        continue;
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          }
+          case 1: {
+            const x_7 = undefined;
+            const x_8 = x_26;
+            const x_15 = 0n;
+            const x_16 = lean_string_utf8_get(x_4, x_15);
+            const x_17 = 97;
+            const x_18 = lean_uint32_dec_le(x_17, x_16);
+            switch (x_18) {
+              case 0: {
+                const x_19 = lean_string_utf8_set(x_4, x_15, x_16);
+                const x_10 = x_19;
+                switch (x_8) {
+                  case 0: {
+                    x_7.fields[1] = x_2;
+                    x_7.fields[0] = x_10;
+                    const x_12 = x_7;
+                    const __t_1 = x_5;
+                    const __t_2 = x_12;
+                    x_1 = __t_1;
+                    x_2 = __t_2;
+                    continue;
+                  }
+                  case 1: {
+                    const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                    const x_12 = x_14;
+                    const __t_1 = x_5;
+                    const __t_2 = x_12;
+                    x_1 = __t_1;
+                    x_2 = __t_2;
+                    continue;
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
+              }
+              case 1: {
+                const x_20 = 122;
+                const x_21 = lean_uint32_dec_le(x_16, x_20);
+                switch (x_21) {
+                  case 0: {
+                    const x_22 = lean_string_utf8_set(x_4, x_15, x_16);
+                    const x_10 = x_22;
+                    switch (x_8) {
+                      case 0: {
+                        x_7.fields[1] = x_2;
+                        x_7.fields[0] = x_10;
+                        const x_12 = x_7;
+                        const __t_1 = x_5;
+                        const __t_2 = x_12;
+                        x_1 = __t_1;
+                        x_2 = __t_2;
+                        continue;
+                      }
+                      case 1: {
+                        const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                        const x_12 = x_14;
+                        const __t_1 = x_5;
+                        const __t_2 = x_12;
+                        x_1 = __t_1;
+                        x_2 = __t_2;
+                        continue;
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
+                  }
+                  case 1: {
+                    const x_23 = 4294967264;
+                    const x_24 = lean_uint32_add(x_16, x_23);
+                    const x_25 = lean_string_utf8_set(x_4, x_15, x_24);
+                    const x_10 = x_25;
+                    switch (x_8) {
+                      case 0: {
+                        x_7.fields[1] = x_2;
+                        x_7.fields[0] = x_10;
+                        const x_12 = x_7;
+                        const __t_1 = x_5;
+                        const __t_2 = x_12;
+                        x_1 = __t_1;
+                        x_2 = __t_2;
+                        continue;
+                      }
+                      case 1: {
+                        const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                        const x_12 = x_14;
+                        const __t_1 = x_5;
+                        const __t_2 = x_12;
+                        x_1 = __t_1;
+                        x_2 = __t_2;
+                        continue;
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               default: { throw new Error("no matching case"); }
             }
@@ -4670,11 +5959,11 @@ function LeanJs_DemoStress_sieveLoop__tc(x_1, x_2) {
         const x_11 = lean_nat_dec_lt(x_2, x_9);
         switch (x_11) {
           case 0: {
-            const x_3 = x_1;
-            const x_4 = 1n;
-            const x_5 = (x_2 + x_4);
-            const __t_1 = x_3;
-            const __t_2 = x_5;
+            const x_4 = x_1;
+            const x_5 = 1n;
+            const x_6 = (x_2 + x_5);
+            const __t_1 = x_4;
+            const __t_2 = x_6;
             x_1 = __t_1;
             x_2 = __t_2;
             continue;
@@ -4684,22 +5973,22 @@ function LeanJs_DemoStress_sieveLoop__tc(x_1, x_2) {
             const x_13 = x_12;
             switch (x_13) {
               case 0: {
-                const x_3 = x_1;
-                const x_4 = 1n;
-                const x_5 = (x_2 + x_4);
-                const __t_1 = x_3;
-                const __t_2 = x_5;
+                const x_4 = x_1;
+                const x_5 = 1n;
+                const x_6 = (x_2 + x_5);
+                const __t_1 = x_4;
+                const __t_2 = x_6;
                 x_1 = __t_1;
                 x_2 = __t_2;
                 continue;
               }
               case 1: {
                 const x_14 = LeanJs_DemoStress_sieveMark(x_1, x_2, x_8);
-                const x_3 = x_14;
-                const x_4 = 1n;
-                const x_5 = (x_2 + x_4);
-                const __t_1 = x_3;
-                const __t_2 = x_5;
+                const x_4 = x_14;
+                const x_5 = 1n;
+                const x_6 = (x_2 + x_5);
+                const __t_1 = x_4;
+                const __t_2 = x_6;
                 x_1 = __t_1;
                 x_2 = __t_2;
                 continue;
@@ -4718,8 +6007,6 @@ function LeanJs_DemoStress_sieveLoop(x_1, x_2) {
   return lean_trampoline(LeanJs_DemoStress_sieveLoop__tc(x_1, x_2));
 }
 
-// extern Array_getInternalBorrowed -> runtime prelude
-
 function List_filterTR_loop__at__LeanJs_DemoStress_primesUpTo_spec_1__tc(x_1, x_2, x_3) {
   while (true) {
     switch (lean_tag(x_2)) {
@@ -4727,17 +6014,19 @@ function List_filterTR_loop__at__LeanJs_DemoStress_primesUpTo_spec_1__tc(x_1, x_
         return { __tc: 1, f: List_reverse__redArg__tc, a: [x_3] };
       }
       case 1: {
-        const x_5 = 1;
-        switch (x_5) {
+        const x_5 = x_2.fields[0];
+        const x_6 = x_2.fields[1];
+        const x_20 = 1;
+        switch (x_20) {
           case 0: {
-            const x_6 = x_2.fields[0];
-            const x_7 = x_2.fields[1];
-            const x_8 = lean_array_get_size(x_1);
-            const x_9 = lean_nat_dec_lt(x_6, x_8);
-            switch (x_9) {
+            const x_8 = x_2;
+            const x_9 = x_20;
+            const x_10 = lean_array_get_size(x_1);
+            const x_11 = lean_nat_dec_lt(x_5, x_10);
+            switch (x_11) {
               case 0: {
                 const __t_1 = x_1;
-                const __t_2 = x_7;
+                const __t_2 = x_6;
                 const __t_3 = x_3;
                 x_1 = __t_1;
                 x_2 = __t_2;
@@ -4745,12 +6034,12 @@ function List_filterTR_loop__at__LeanJs_DemoStress_primesUpTo_spec_1__tc(x_1, x_
                 continue;
               }
               case 1: {
-                const x_11 = lean_array_fget_borrowed(x_1, x_6);
-                const x_12 = x_11;
-                switch (x_12) {
+                const x_13 = lean_array_fget_borrowed(x_1, x_5);
+                const x_14 = x_13;
+                switch (x_14) {
                   case 0: {
                     const __t_1 = x_1;
-                    const __t_2 = x_7;
+                    const __t_2 = x_6;
                     const __t_3 = x_3;
                     x_1 = __t_1;
                     x_2 = __t_2;
@@ -4758,14 +6047,31 @@ function List_filterTR_loop__at__LeanJs_DemoStress_primesUpTo_spec_1__tc(x_1, x_
                     continue;
                   }
                   case 1: {
-                    x_2.fields[1] = x_3;
-                    const __t_1 = x_1;
-                    const __t_2 = x_7;
-                    const __t_3 = x_2;
-                    x_1 = __t_1;
-                    x_2 = __t_2;
-                    x_3 = __t_3;
-                    continue;
+                    switch (x_9) {
+                      case 0: {
+                        x_8.fields[1] = x_3;
+                        const x_17 = x_8;
+                        const __t_1 = x_1;
+                        const __t_2 = x_6;
+                        const __t_3 = x_17;
+                        x_1 = __t_1;
+                        x_2 = __t_2;
+                        x_3 = __t_3;
+                        continue;
+                      }
+                      case 1: {
+                        const x_19 = lean_ctor(1, 2, 0, 0, x_5, x_3);
+                        const x_17 = x_19;
+                        const __t_1 = x_1;
+                        const __t_2 = x_6;
+                        const __t_3 = x_17;
+                        x_1 = __t_1;
+                        x_2 = __t_2;
+                        x_3 = __t_3;
+                        continue;
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
                   }
                   default: { throw new Error("no matching case"); }
                 }
@@ -4774,14 +6080,14 @@ function List_filterTR_loop__at__LeanJs_DemoStress_primesUpTo_spec_1__tc(x_1, x_
             }
           }
           case 1: {
-            const x_15 = x_2.fields[0];
-            const x_16 = x_2.fields[1];
-            const x_17 = lean_array_get_size(x_1);
-            const x_18 = lean_nat_dec_lt(x_15, x_17);
-            switch (x_18) {
+            const x_8 = undefined;
+            const x_9 = x_20;
+            const x_10 = lean_array_get_size(x_1);
+            const x_11 = lean_nat_dec_lt(x_5, x_10);
+            switch (x_11) {
               case 0: {
                 const __t_1 = x_1;
-                const __t_2 = x_16;
+                const __t_2 = x_6;
                 const __t_3 = x_3;
                 x_1 = __t_1;
                 x_2 = __t_2;
@@ -4789,12 +6095,12 @@ function List_filterTR_loop__at__LeanJs_DemoStress_primesUpTo_spec_1__tc(x_1, x_
                 continue;
               }
               case 1: {
-                const x_20 = lean_array_fget_borrowed(x_1, x_15);
-                const x_21 = x_20;
-                switch (x_21) {
+                const x_13 = lean_array_fget_borrowed(x_1, x_5);
+                const x_14 = x_13;
+                switch (x_14) {
                   case 0: {
                     const __t_1 = x_1;
-                    const __t_2 = x_16;
+                    const __t_2 = x_6;
                     const __t_3 = x_3;
                     x_1 = __t_1;
                     x_2 = __t_2;
@@ -4802,14 +6108,31 @@ function List_filterTR_loop__at__LeanJs_DemoStress_primesUpTo_spec_1__tc(x_1, x_
                     continue;
                   }
                   case 1: {
-                    const x_23 = lean_ctor(1, 2, 0, 0, x_15, x_3);
-                    const __t_1 = x_1;
-                    const __t_2 = x_16;
-                    const __t_3 = x_23;
-                    x_1 = __t_1;
-                    x_2 = __t_2;
-                    x_3 = __t_3;
-                    continue;
+                    switch (x_9) {
+                      case 0: {
+                        x_8.fields[1] = x_3;
+                        const x_17 = x_8;
+                        const __t_1 = x_1;
+                        const __t_2 = x_6;
+                        const __t_3 = x_17;
+                        x_1 = __t_1;
+                        x_2 = __t_2;
+                        x_3 = __t_3;
+                        continue;
+                      }
+                      case 1: {
+                        const x_19 = lean_ctor(1, 2, 0, 0, x_5, x_3);
+                        const x_17 = x_19;
+                        const __t_1 = x_1;
+                        const __t_2 = x_6;
+                        const __t_3 = x_17;
+                        x_1 = __t_1;
+                        x_2 = __t_2;
+                        x_3 = __t_3;
+                        continue;
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
                   }
                   default: { throw new Error("no matching case"); }
                 }
@@ -5227,17 +6550,31 @@ function LeanJs_DemoStress_pop(x_1) {
       return x_3;
     }
     case 1: {
-      const x_4 = 1;
-      switch (x_4) {
+      const x_4 = x_1.fields[0];
+      const x_5 = x_1.fields[1];
+      const block_6 = (x_7, x_8) => {
+        const block_9 = (x_10) => {
+          return x_10;
+        };
+        switch (x_8) {
+          case 0: {
+            x_7.tag = 0;
+            return block_9(x_7);
+          }
+          case 1: {
+            const x_11 = lean_ctor(0, 2, 0, 0, x_4, x_5);
+            return block_9(x_11);
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      };
+      const x_12 = 1;
+      switch (x_12) {
         case 0: {
-          x_1.tag = 0;
-          return x_1;
+          return block_6(x_1, x_12);
         }
         case 1: {
-          const x_5 = x_1.fields[0];
-          const x_6 = x_1.fields[1];
-          const x_7 = lean_ctor(0, 2, 0, 0, x_5, x_6);
-          return x_7;
+          return block_6(undefined, x_12);
         }
         default: { throw new Error("no matching case"); }
       }
@@ -5271,22 +6608,33 @@ function LeanJs_DemoStress_runMachine(x_1) {
   const x_16 = x_14.fields[1];
   const x_17 = (x_12 + x_15);
   const x_18 = LeanJs_DemoStress_push(x_17, x_16);
-  const x_19 = 1;
-  switch (x_19) {
+  const x_19 = x_18.fields[1];
+  const block_20 = (x_21, x_22) => {
+    const x_23 = 0n;
+    const x_24 = List_foldl__at__LeanJs_DemoStress_runMachine_spec_0(x_23, x_19);
+    const block_25 = (x_26) => {
+      return x_26;
+    };
+    switch (x_22) {
+      case 0: {
+        x_21.fields[0] = x_24;
+        return block_25(x_21);
+      }
+      case 1: {
+        const x_27 = lean_ctor(0, 2, 0, 0, x_24, x_19);
+        return block_25(x_27);
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  };
+  const x_28 = 1;
+  switch (x_28) {
     case 0: {
-      const x_20 = x_18.fields[1];
-      const x_21 = x_18.fields[0];
-      const x_22 = 0n;
-      const x_23 = List_foldl__at__LeanJs_DemoStress_runMachine_spec_0(x_22, x_20);
-      x_18.fields[0] = x_23;
-      return x_18;
+      const x_29 = x_18.fields[0];
+      return block_20(x_18, x_28);
     }
     case 1: {
-      const x_24 = x_18.fields[1];
-      const x_25 = 0n;
-      const x_26 = List_foldl__at__LeanJs_DemoStress_runMachine_spec_0(x_25, x_24);
-      const x_27 = lean_ctor(0, 2, 0, 0, x_26, x_24);
-      return x_27;
+      return block_20(undefined, x_28);
     }
     default: { throw new Error("no matching case"); }
   }
@@ -5408,37 +6756,89 @@ function LeanJs_DemoStress_runSteps__tc(x_1, x_2) {
     const x_8 = x_7.fields[0];
     switch (lean_tag(x_8)) {
       case 0: {
-        const x_9 = 1;
-        switch (x_9) {
+        const x_9 = x_7.fields[1];
+        const x_17 = 1;
+        switch (x_17) {
           case 0: {
-            const x_10 = x_7.fields[0];
-            const x_11 = x_8.fields[0];
-            x_7.fields[0] = x_11;
-            return x_7;
+            const x_18 = x_7.fields[0];
+            const x_11 = x_7;
+            const x_12 = x_17;
+            const x_13 = x_8.fields[0];
+            switch (x_12) {
+              case 0: {
+                x_11.fields[0] = x_13;
+                const x_15 = x_11;
+                return x_15;
+              }
+              case 1: {
+                const x_16 = lean_ctor(0, 2, 0, 0, x_13, x_9);
+                const x_15 = x_16;
+                return x_15;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_12 = x_7.fields[1];
+            const x_11 = undefined;
+            const x_12 = x_17;
             const x_13 = x_8.fields[0];
-            const x_14 = lean_ctor(0, 2, 0, 0, x_13, x_12);
-            return x_14;
+            switch (x_12) {
+              case 0: {
+                x_11.fields[0] = x_13;
+                const x_15 = x_11;
+                return x_15;
+              }
+              case 1: {
+                const x_16 = lean_ctor(0, 2, 0, 0, x_13, x_9);
+                const x_15 = x_16;
+                return x_15;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
       }
       case 1: {
-        const x_15 = 1;
-        switch (x_15) {
+        const x_19 = x_7.fields[1];
+        const x_27 = 1;
+        switch (x_27) {
           case 0: {
-            const x_16 = x_7.fields[0];
-            const x_17 = LeanJs_DemoStress_runSteps__closed_0();
-            x_7.fields[0] = x_17;
-            return x_7;
+            const x_28 = x_7.fields[0];
+            const x_21 = x_7;
+            const x_22 = x_27;
+            const x_23 = LeanJs_DemoStress_runSteps__closed_0();
+            switch (x_22) {
+              case 0: {
+                x_21.fields[0] = x_23;
+                const x_25 = x_21;
+                return x_25;
+              }
+              case 1: {
+                const x_26 = lean_ctor(0, 2, 0, 0, x_23, x_19);
+                const x_25 = x_26;
+                return x_25;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_18 = x_7.fields[1];
-            const x_19 = LeanJs_DemoStress_runSteps__closed_0();
-            const x_20 = lean_ctor(0, 2, 0, 0, x_19, x_18);
-            return x_20;
+            const x_21 = undefined;
+            const x_22 = x_27;
+            const x_23 = LeanJs_DemoStress_runSteps__closed_0();
+            switch (x_22) {
+              case 0: {
+                x_21.fields[0] = x_23;
+                const x_25 = x_21;
+                return x_25;
+              }
+              case 1: {
+                const x_26 = lean_ctor(0, 2, 0, 0, x_23, x_19);
+                const x_25 = x_26;
+                return x_25;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -5533,21 +6933,46 @@ function LeanJs_DemoStress_optChain__tc(x_1, x_2, x_3) {
             return x_6;
           }
           case 1: {
-            const x_7 = 1;
-            switch (x_7) {
+            const x_7 = x_6.fields[0];
+            const x_16 = 1;
+            switch (x_16) {
               case 0: {
-                const x_8 = x_6.fields[0];
-                const x_9 = 1n;
-                const x_10 = (x_8 + x_9);
-                x_6.fields[0] = x_10;
-                return x_6;
+                const x_9 = x_6;
+                const x_10 = x_16;
+                const x_11 = 1n;
+                const x_12 = (x_7 + x_11);
+                switch (x_10) {
+                  case 0: {
+                    x_9.fields[0] = x_12;
+                    const x_14 = x_9;
+                    return x_14;
+                  }
+                  case 1: {
+                    const x_15 = lean_ctor(1, 1, 0, 0, x_12);
+                    const x_14 = x_15;
+                    return x_14;
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               case 1: {
-                const x_11 = x_6.fields[0];
-                const x_12 = 1n;
-                const x_13 = (x_11 + x_12);
-                const x_14 = lean_ctor(1, 1, 0, 0, x_13);
-                return x_14;
+                const x_9 = undefined;
+                const x_10 = x_16;
+                const x_11 = 1n;
+                const x_12 = (x_7 + x_11);
+                switch (x_10) {
+                  case 0: {
+                    x_9.fields[0] = x_12;
+                    const x_14 = x_9;
+                    return x_14;
+                  }
+                  case 1: {
+                    const x_15 = lean_ctor(1, 1, 0, 0, x_12);
+                    const x_14 = x_15;
+                    return x_14;
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               default: { throw new Error("no matching case"); }
             }
@@ -5645,7 +7070,7 @@ function LeanJs_DemoStress_monadProg__closed_15() {
 
 function LeanJs_DemoStress_monadProg__closed_16__tc() {
   while (true) {
-    const x_1 = LeanJs_DemoStress_showRes__closed_2();
+    const x_1 = LeanJs_DemoStress_parsePos__closed_0();
     const x_2 = LeanJs_DemoStress_monadProg__closed_14();
     return { __tc: 1, f: LeanJs_DemoStress_exChain__tc, a: [x_2, x_1] };
   }
@@ -5675,28 +7100,9 @@ function LeanJs_DemoStress_showRes(x_1) {
     case 1: {
       const x_5 = x_1.fields[0];
       const x_6 = LeanJs_DemoStress_showRes__closed_1();
-      const x_7 = LeanJs_DemoStress_showRes__closed_2();
-      const x_8 = lean_int_dec_lt(x_5, x_7);
-      switch (x_8) {
-        case 0: {
-          const x_9 = lean_nat_abs(x_5);
-          const x_10 = Nat_reprFast(x_9);
-          const x_11 = lean_string_append(x_6, x_10);
-          return x_11;
-        }
-        case 1: {
-          const x_12 = lean_nat_abs(x_5);
-          const x_13 = 1n;
-          const x_14 = (x_12 > x_13 ? x_12 - x_13 : 0n);
-          const x_15 = LeanJs_DemoStress_showRes__closed_3();
-          const x_16 = (x_14 + x_13);
-          const x_17 = Nat_reprFast(x_16);
-          const x_18 = lean_string_append(x_15, x_17);
-          const x_19 = lean_string_append(x_6, x_18);
-          return x_19;
-        }
-        default: { throw new Error("no matching case"); }
-      }
+      const x_7 = Int_repr(x_5);
+      const x_8 = lean_string_append(x_6, x_7);
+      return x_8;
     }
     default: { throw new Error("no matching case"); }
   }
@@ -5750,7 +7156,7 @@ function LeanJs_DemoStress_monadProg__closed_14() {
   return x_2;
 }
 
-function LeanJs_DemoStress_showRes__closed_2() {
+function LeanJs_DemoStress_parsePos__closed_0() {
   const x_1 = 0n;
   const x_2 = lean_int_of_nat(x_1);
   return x_2;
@@ -5761,8 +7167,6 @@ function Int_instInhabited__closed_0() {
   const x_2 = lean_int_of_nat(x_1);
   return x_2;
 }
-
-// extern Int_decLt -> runtime prelude
 
 function Int_toNat(x_1) {
   const x_2 = 0n;
@@ -5780,20 +7184,55 @@ function Int_toNat(x_1) {
   }
 }
 
-function LeanJs_DemoStress_parsePos__closed_0() {
+function LeanJs_DemoStress_parsePos__closed_1() {
   const x_1 = "neg ";
   return x_1;
 }
 
+function Int_repr__closed_0() {
+  const x_1 = 0n;
+  const x_2 = lean_int_of_nat(x_1);
+  return x_2;
+}
+
+// extern Int_decLt -> runtime prelude
+
 // extern Int_natAbs -> runtime prelude
 
-function LeanJs_DemoStress_showRes__closed_3() {
+function Int_repr__closed_1() {
   const x_1 = "-";
   return x_1;
 }
 
+function Int_repr__tc(x_1) {
+  while (true) {
+    const x_2 = Int_repr__closed_0();
+    const x_3 = lean_int_dec_lt(x_1, x_2);
+    switch (x_3) {
+      case 0: {
+        const x_4 = lean_nat_abs(x_1);
+        return { __tc: 1, f: Nat_reprFast__tc, a: [x_4] };
+      }
+      case 1: {
+        const x_6 = lean_nat_abs(x_1);
+        const x_7 = 1n;
+        const x_8 = (x_6 > x_7 ? x_6 - x_7 : 0n);
+        const x_9 = Int_repr__closed_1();
+        const x_10 = (x_8 + x_7);
+        const x_11 = Nat_reprFast(x_10);
+        const x_12 = lean_string_append(x_9, x_11);
+        return x_12;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function Int_repr(x_1) {
+  return lean_trampoline(Int_repr__tc(x_1));
+}
+
 function LeanJs_DemoStress_parsePos(x_1) {
-  const x_2 = LeanJs_DemoStress_showRes__closed_2();
+  const x_2 = LeanJs_DemoStress_parsePos__closed_0();
   const x_3 = lean_int_dec_lt(x_1, x_2);
   switch (x_3) {
     case 0: {
@@ -5802,30 +7241,11 @@ function LeanJs_DemoStress_parsePos(x_1) {
       return x_5;
     }
     case 1: {
-      const x_6 = LeanJs_DemoStress_parsePos__closed_0();
-      const block_10 = (x_7) => {
-        const x_8 = lean_string_append(x_6, x_7);
-        const x_9 = lean_ctor(0, 1, 0, 0, x_8);
-        return x_9;
-      };
-      switch (x_3) {
-        case 0: {
-          const x_11 = lean_nat_abs(x_1);
-          const x_12 = Nat_reprFast(x_11);
-          return block_10(x_12);
-        }
-        case 1: {
-          const x_13 = lean_nat_abs(x_1);
-          const x_14 = 1n;
-          const x_15 = (x_13 > x_14 ? x_13 - x_14 : 0n);
-          const x_16 = LeanJs_DemoStress_showRes__closed_3();
-          const x_17 = (x_15 + x_14);
-          const x_18 = Nat_reprFast(x_17);
-          const x_19 = lean_string_append(x_16, x_18);
-          return block_10(x_19);
-        }
-        default: { throw new Error("no matching case"); }
-      }
+      const x_6 = LeanJs_DemoStress_parsePos__closed_1();
+      const x_7 = Int_repr(x_1);
+      const x_8 = lean_string_append(x_6, x_7);
+      const x_9 = lean_ctor(0, 1, 0, 0, x_8);
+      return x_9;
     }
     default: { throw new Error("no matching case"); }
   }
@@ -5862,17 +7282,30 @@ function LeanJs_DemoStress_exChain__tc(x_1, x_2) {
             return x_5;
           }
           case 1: {
-            const x_6 = 1;
-            switch (x_6) {
+            const x_6 = x_5.fields[0];
+            const x_17 = 1;
+            switch (x_17) {
               case 0: {
-                const x_7 = x_5.fields[0];
-                const x_8 = 0n;
-                const x_9 = lean_nat_dec_eq(x_7, x_8);
-                switch (x_9) {
+                const x_8 = x_5;
+                const x_9 = x_17;
+                const x_10 = 0n;
+                const x_11 = lean_nat_dec_eq(x_6, x_10);
+                switch (x_11) {
                   case 0: {
-                    const x_10 = (x_7 === 0n ? 0n : x_4 / x_7);
-                    x_5.fields[0] = x_10;
-                    return x_5;
+                    const x_12 = (x_6 === 0n ? 0n : x_4 / x_6);
+                    switch (x_9) {
+                      case 0: {
+                        x_8.fields[0] = x_12;
+                        const x_14 = x_8;
+                        return x_14;
+                      }
+                      case 1: {
+                        const x_15 = lean_ctor(1, 1, 0, 0, x_12);
+                        const x_14 = x_15;
+                        return x_14;
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
                   }
                   case 1: {
                     return { __tc: 1, f: LeanJs_DemoStress_exChain__closed_1__tc, a: [] };
@@ -5881,14 +7314,26 @@ function LeanJs_DemoStress_exChain__tc(x_1, x_2) {
                 }
               }
               case 1: {
-                const x_12 = x_5.fields[0];
-                const x_13 = 0n;
-                const x_14 = lean_nat_dec_eq(x_12, x_13);
-                switch (x_14) {
+                const x_8 = undefined;
+                const x_9 = x_17;
+                const x_10 = 0n;
+                const x_11 = lean_nat_dec_eq(x_6, x_10);
+                switch (x_11) {
                   case 0: {
-                    const x_15 = (x_12 === 0n ? 0n : x_4 / x_12);
-                    const x_16 = lean_ctor(1, 1, 0, 0, x_15);
-                    return x_16;
+                    const x_12 = (x_6 === 0n ? 0n : x_4 / x_6);
+                    switch (x_9) {
+                      case 0: {
+                        x_8.fields[0] = x_12;
+                        const x_14 = x_8;
+                        return x_14;
+                      }
+                      case 1: {
+                        const x_15 = lean_ctor(1, 1, 0, 0, x_12);
+                        const x_14 = x_15;
+                        return x_14;
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
                   }
                   case 1: {
                     return { __tc: 1, f: LeanJs_DemoStress_exChain__closed_1__tc, a: [] };
@@ -5925,176 +7370,735 @@ function LeanJs_DemoStress_monadProg__closed_22() {
 
 function LeanJs_DemoStress_monadProg__tc() {
   while (true) {
-    const x_9 = 0;
-    const x_10 = LeanJs_DemoStress_runMachine(x_9);
-    const x_11 = x_10.fields[0];
-    const x_12 = LeanJs_DemoStress_monadProg__closed_0();
-    const x_13 = Nat_reprFast(x_11);
-    const x_14 = lean_string_append(x_12, x_13);
-    const x_15 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_14, undefined);
-    switch (lean_tag(x_15)) {
+    const x_8 = 0;
+    const x_9 = LeanJs_DemoStress_runMachine(x_8);
+    const x_10 = x_9.fields[0];
+    const x_11 = LeanJs_DemoStress_monadProg__closed_0();
+    const x_12 = Nat_reprFast(x_10);
+    const x_13 = lean_string_append(x_11, x_12);
+    const x_14 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_13, undefined);
+    switch (lean_tag(x_14)) {
       case 0: {
-        const x_16 = LeanJs_DemoStress_monadProg__closed_1();
-        const x_17 = x_16.fields[0];
-        const x_18 = x_16.fields[1];
-        const x_19 = LeanJs_DemoStress_monadProg__closed_2();
-        const x_20 = lean_string_append(x_19, x_17);
-        const x_21 = List_foldl__at__List_toString__at__LeanJs_DemoStress_dsProg_spec_0_spec_0__closed_0();
-        const x_22 = lean_string_append(x_20, x_21);
-        const x_23 = Nat_reprFast(x_18);
-        const x_24 = lean_string_append(x_22, x_23);
-        const x_25 = List_foldl__at__List_toString__at__LeanJs_DemoStress_dsProg_spec_2_spec_3__closed_1();
-        const x_26 = lean_string_append(x_24, x_25);
-        const x_27 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_26, undefined);
-        switch (lean_tag(x_27)) {
+        const x_15 = LeanJs_DemoStress_monadProg__closed_1();
+        const x_16 = x_15.fields[0];
+        const x_17 = x_15.fields[1];
+        const x_18 = LeanJs_DemoStress_monadProg__closed_2();
+        const x_19 = lean_string_append(x_18, x_16);
+        const x_20 = List_foldl__at__List_toString__at__LeanJs_DemoStress_dsProg_spec_0_spec_0__closed_0();
+        const x_21 = lean_string_append(x_19, x_20);
+        const x_22 = Nat_reprFast(x_17);
+        const x_23 = lean_string_append(x_21, x_22);
+        const x_24 = List_foldl__at__List_toString__at__LeanJs_DemoStress_dsProg_spec_2_spec_3__closed_1();
+        const x_25 = lean_string_append(x_23, x_24);
+        const x_26 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_25, undefined);
+        switch (lean_tag(x_26)) {
           case 0: {
-            const x_28 = LeanJs_DemoStress_monadProg__closed_3();
-            const x_29 = x_28.fields[0];
-            const x_30 = x_28.fields[1];
-            const x_31 = LeanJs_DemoStress_monadProg__closed_4();
-            const x_32 = lean_string_append(x_31, x_29);
-            const x_33 = lean_string_append(x_32, x_21);
-            const x_34 = Nat_reprFast(x_30);
-            const x_35 = lean_string_append(x_33, x_34);
-            const x_36 = lean_string_append(x_35, x_25);
-            const x_37 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_36, undefined);
-            switch (lean_tag(x_37)) {
+            const x_27 = LeanJs_DemoStress_monadProg__closed_3();
+            const x_28 = x_27.fields[0];
+            const x_29 = x_27.fields[1];
+            const x_30 = LeanJs_DemoStress_monadProg__closed_4();
+            const x_31 = lean_string_append(x_30, x_28);
+            const x_32 = lean_string_append(x_31, x_20);
+            const x_33 = Nat_reprFast(x_29);
+            const x_34 = lean_string_append(x_32, x_33);
+            const x_35 = lean_string_append(x_34, x_24);
+            const x_36 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_35, undefined);
+            switch (lean_tag(x_36)) {
               case 0: {
-                const x_38 = LeanJs_DemoStress_monadProg__closed_8();
-                const x_39 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_38, undefined);
-                switch (lean_tag(x_39)) {
+                const x_37 = LeanJs_DemoStress_monadProg__closed_8();
+                const x_38 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_37, undefined);
+                switch (lean_tag(x_38)) {
                   case 0: {
-                    const x_40 = LeanJs_DemoStress_monadProg__closed_12();
-                    const x_41 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_40, undefined);
-                    switch (lean_tag(x_41)) {
+                    const x_39 = LeanJs_DemoStress_monadProg__closed_12();
+                    const x_40 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_39, undefined);
+                    switch (lean_tag(x_40)) {
                       case 0: {
-                        const x_42 = LeanJs_DemoStress_monadProg__closed_13();
-                        const x_69 = LeanJs_DemoStress_monadProg__closed_22();
-                        switch (lean_tag(x_69)) {
+                        const x_92 = 1;
+                        switch (x_92) {
                           case 0: {
-                            const x_70 = 1;
-                            switch (x_70) {
+                            const x_93 = x_40.fields[0];
+                            const x_42 = x_40;
+                            const x_43 = x_92;
+                            const x_44 = LeanJs_DemoStress_monadProg__closed_13();
+                            const x_82 = LeanJs_DemoStress_monadProg__closed_22();
+                            switch (lean_tag(x_82)) {
                               case 0: {
-                                const x_57 = x_69;
-                                const x_58 = LeanJs_DemoStress_showRes(x_57);
-                                const x_59 = lean_string_append(x_42, x_58);
-                                const x_60 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_59, undefined);
-                                switch (lean_tag(x_60)) {
+                                const x_83 = x_82.fields[0];
+                                switch (x_43) {
                                   case 0: {
-                                    const x_61 = LeanJs_DemoStress_monadProg__closed_18();
-                                    const x_62 = LeanJs_DemoStress_monadProg__closed_21();
-                                    switch (lean_tag(x_62)) {
+                                    x_42.fields[0] = x_83;
+                                    const x_85 = x_42;
+                                    const x_65 = x_85;
+                                    const x_66 = LeanJs_DemoStress_showRes(x_65);
+                                    const x_67 = lean_string_append(x_44, x_66);
+                                    const x_68 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_67, undefined);
+                                    switch (lean_tag(x_68)) {
                                       case 0: {
-                                        const x_63 = 1;
-                                        switch (x_63) {
+                                        const x_80 = 1;
+                                        switch (x_80) {
                                           case 0: {
-                                            const x_43 = undefined;
-                                            const x_44 = x_61;
-                                            const x_45 = x_62;
-                                            const x_46 = LeanJs_DemoStress_showRes(x_45);
-                                            const x_47 = lean_string_append(x_44, x_46);
-                                            const x_48 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_47, undefined);
-                                            switch (lean_tag(x_48)) {
+                                            const x_81 = x_68.fields[0];
+                                            const x_70 = x_68;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
                                               case 0: {
-                                                const x_49 = LeanJs_DemoStress_monadProg__closed_15();
-                                                const x_50 = LeanJs_DemoStress_monadProg__closed_16();
-                                                switch (lean_tag(x_50)) {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
                                                   case 0: {
-                                                    const x_51 = 1;
-                                                    switch (x_51) {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
                                                       case 0: {
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_50;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
                                                       }
                                                       case 1: {
-                                                        const x_52 = x_50.fields[0];
-                                                        const x_53 = lean_ctor(0, 1, 0, 0, x_52);
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_53;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        return x_50;
                                                       }
                                                       default: { throw new Error("no matching case"); }
                                                     }
                                                   }
                                                   case 1: {
-                                                    const x_54 = x_50.fields[0];
-                                                    const x_55 = LeanJs_DemoStress_monadProg__lam_0(x_54);
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_55;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
                                                   }
                                                   default: { throw new Error("no matching case"); }
                                                 }
                                               }
                                               case 1: {
-                                                return x_48;
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
                                               }
                                               default: { throw new Error("no matching case"); }
                                             }
                                           }
                                           case 1: {
-                                            const x_64 = x_62.fields[0];
-                                            const x_65 = lean_ctor(0, 1, 0, 0, x_64);
-                                            const x_43 = undefined;
-                                            const x_44 = x_61;
-                                            const x_45 = x_65;
-                                            const x_46 = LeanJs_DemoStress_showRes(x_45);
-                                            const x_47 = lean_string_append(x_44, x_46);
-                                            const x_48 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_47, undefined);
-                                            switch (lean_tag(x_48)) {
+                                            const x_70 = undefined;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
                                               case 0: {
-                                                const x_49 = LeanJs_DemoStress_monadProg__closed_15();
-                                                const x_50 = LeanJs_DemoStress_monadProg__closed_16();
-                                                switch (lean_tag(x_50)) {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
                                                   case 0: {
-                                                    const x_51 = 1;
-                                                    switch (x_51) {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
                                                       case 0: {
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_50;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
                                                       }
                                                       case 1: {
-                                                        const x_52 = x_50.fields[0];
-                                                        const x_53 = lean_ctor(0, 1, 0, 0, x_52);
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_53;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        return x_50;
                                                       }
                                                       default: { throw new Error("no matching case"); }
                                                     }
                                                   }
                                                   case 1: {
-                                                    const x_54 = x_50.fields[0];
-                                                    const x_55 = LeanJs_DemoStress_monadProg__lam_0(x_54);
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_55;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
                                                   }
                                                   default: { throw new Error("no matching case"); }
                                                 }
                                               }
                                               case 1: {
-                                                return x_48;
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
                                               }
                                               default: { throw new Error("no matching case"); }
                                             }
@@ -6103,194 +8107,1380 @@ function LeanJs_DemoStress_monadProg__tc() {
                                         }
                                       }
                                       case 1: {
-                                        const x_66 = x_62.fields[0];
-                                        const x_67 = LeanJs_DemoStress_monadProg__lam_0(x_66);
-                                        const x_43 = undefined;
-                                        const x_44 = x_61;
-                                        const x_45 = x_67;
-                                        const x_46 = LeanJs_DemoStress_showRes(x_45);
-                                        const x_47 = lean_string_append(x_44, x_46);
-                                        const x_48 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_47, undefined);
-                                        switch (lean_tag(x_48)) {
-                                          case 0: {
-                                            const x_49 = LeanJs_DemoStress_monadProg__closed_15();
-                                            const x_50 = LeanJs_DemoStress_monadProg__closed_16();
-                                            switch (lean_tag(x_50)) {
-                                              case 0: {
-                                                const x_51 = 1;
-                                                switch (x_51) {
-                                                  case 0: {
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_50;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
-                                                  }
-                                                  case 1: {
-                                                    const x_52 = x_50.fields[0];
-                                                    const x_53 = lean_ctor(0, 1, 0, 0, x_52);
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_53;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
-                                                  }
-                                                  default: { throw new Error("no matching case"); }
-                                                }
-                                              }
-                                              case 1: {
-                                                const x_54 = x_50.fields[0];
-                                                const x_55 = LeanJs_DemoStress_monadProg__lam_0(x_54);
-                                                const x_2 = x_49;
-                                                const x_3 = undefined;
-                                                const x_4 = x_55;
-                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                const x_6 = lean_string_append(x_2, x_5);
-                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
-                                              }
-                                              default: { throw new Error("no matching case"); }
-                                            }
-                                          }
-                                          case 1: {
-                                            return x_48;
-                                          }
-                                          default: { throw new Error("no matching case"); }
-                                        }
+                                        return x_68;
                                       }
                                       default: { throw new Error("no matching case"); }
                                     }
                                   }
                                   case 1: {
-                                    return x_60;
+                                    const x_86 = lean_ctor(0, 1, 0, 0, x_83);
+                                    const x_85 = x_86;
+                                    const x_65 = x_85;
+                                    const x_66 = LeanJs_DemoStress_showRes(x_65);
+                                    const x_67 = lean_string_append(x_44, x_66);
+                                    const x_68 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_67, undefined);
+                                    switch (lean_tag(x_68)) {
+                                      case 0: {
+                                        const x_80 = 1;
+                                        switch (x_80) {
+                                          case 0: {
+                                            const x_81 = x_68.fields[0];
+                                            const x_70 = x_68;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
+                                              case 0: {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
+                                                  case 0: {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              case 1: {
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              default: { throw new Error("no matching case"); }
+                                            }
+                                          }
+                                          case 1: {
+                                            const x_70 = undefined;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
+                                              case 0: {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
+                                                  case 0: {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              case 1: {
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              default: { throw new Error("no matching case"); }
+                                            }
+                                          }
+                                          default: { throw new Error("no matching case"); }
+                                        }
+                                      }
+                                      case 1: {
+                                        return x_68;
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
                                   }
                                   default: { throw new Error("no matching case"); }
                                 }
                               }
                               case 1: {
-                                const x_71 = x_69.fields[0];
-                                const x_72 = lean_ctor(0, 1, 0, 0, x_71);
-                                const x_57 = x_72;
-                                const x_58 = LeanJs_DemoStress_showRes(x_57);
-                                const x_59 = lean_string_append(x_42, x_58);
-                                const x_60 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_59, undefined);
-                                switch (lean_tag(x_60)) {
+                                const x_87 = x_82.fields[0];
+                                const x_88 = lean_int_of_nat(x_87);
+                                switch (x_43) {
                                   case 0: {
-                                    const x_61 = LeanJs_DemoStress_monadProg__closed_18();
-                                    const x_62 = LeanJs_DemoStress_monadProg__closed_21();
-                                    switch (lean_tag(x_62)) {
+                                    x_42.tag = 1;
+                                    x_42.fields[0] = x_88;
+                                    const x_90 = x_42;
+                                    const x_65 = x_90;
+                                    const x_66 = LeanJs_DemoStress_showRes(x_65);
+                                    const x_67 = lean_string_append(x_44, x_66);
+                                    const x_68 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_67, undefined);
+                                    switch (lean_tag(x_68)) {
                                       case 0: {
-                                        const x_63 = 1;
-                                        switch (x_63) {
+                                        const x_80 = 1;
+                                        switch (x_80) {
                                           case 0: {
-                                            const x_43 = undefined;
-                                            const x_44 = x_61;
-                                            const x_45 = x_62;
-                                            const x_46 = LeanJs_DemoStress_showRes(x_45);
-                                            const x_47 = lean_string_append(x_44, x_46);
-                                            const x_48 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_47, undefined);
-                                            switch (lean_tag(x_48)) {
+                                            const x_81 = x_68.fields[0];
+                                            const x_70 = x_68;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
                                               case 0: {
-                                                const x_49 = LeanJs_DemoStress_monadProg__closed_15();
-                                                const x_50 = LeanJs_DemoStress_monadProg__closed_16();
-                                                switch (lean_tag(x_50)) {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
                                                   case 0: {
-                                                    const x_51 = 1;
-                                                    switch (x_51) {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
                                                       case 0: {
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_50;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
                                                       }
                                                       case 1: {
-                                                        const x_52 = x_50.fields[0];
-                                                        const x_53 = lean_ctor(0, 1, 0, 0, x_52);
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_53;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        return x_50;
                                                       }
                                                       default: { throw new Error("no matching case"); }
                                                     }
                                                   }
                                                   case 1: {
-                                                    const x_54 = x_50.fields[0];
-                                                    const x_55 = LeanJs_DemoStress_monadProg__lam_0(x_54);
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_55;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
                                                   }
                                                   default: { throw new Error("no matching case"); }
                                                 }
                                               }
                                               case 1: {
-                                                return x_48;
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
                                               }
                                               default: { throw new Error("no matching case"); }
                                             }
                                           }
                                           case 1: {
-                                            const x_64 = x_62.fields[0];
-                                            const x_65 = lean_ctor(0, 1, 0, 0, x_64);
-                                            const x_43 = undefined;
-                                            const x_44 = x_61;
-                                            const x_45 = x_65;
-                                            const x_46 = LeanJs_DemoStress_showRes(x_45);
-                                            const x_47 = lean_string_append(x_44, x_46);
-                                            const x_48 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_47, undefined);
-                                            switch (lean_tag(x_48)) {
+                                            const x_70 = undefined;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
                                               case 0: {
-                                                const x_49 = LeanJs_DemoStress_monadProg__closed_15();
-                                                const x_50 = LeanJs_DemoStress_monadProg__closed_16();
-                                                switch (lean_tag(x_50)) {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
                                                   case 0: {
-                                                    const x_51 = 1;
-                                                    switch (x_51) {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
                                                       case 0: {
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_50;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
                                                       }
                                                       case 1: {
-                                                        const x_52 = x_50.fields[0];
-                                                        const x_53 = lean_ctor(0, 1, 0, 0, x_52);
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_53;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        return x_50;
                                                       }
                                                       default: { throw new Error("no matching case"); }
                                                     }
                                                   }
                                                   case 1: {
-                                                    const x_54 = x_50.fields[0];
-                                                    const x_55 = LeanJs_DemoStress_monadProg__lam_0(x_54);
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_55;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
                                                   }
                                                   default: { throw new Error("no matching case"); }
                                                 }
                                               }
                                               case 1: {
-                                                return x_48;
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
                                               }
                                               default: { throw new Error("no matching case"); }
                                             }
@@ -6299,67 +9489,697 @@ function LeanJs_DemoStress_monadProg__tc() {
                                         }
                                       }
                                       case 1: {
-                                        const x_66 = x_62.fields[0];
-                                        const x_67 = LeanJs_DemoStress_monadProg__lam_0(x_66);
-                                        const x_43 = undefined;
-                                        const x_44 = x_61;
-                                        const x_45 = x_67;
-                                        const x_46 = LeanJs_DemoStress_showRes(x_45);
-                                        const x_47 = lean_string_append(x_44, x_46);
-                                        const x_48 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_47, undefined);
-                                        switch (lean_tag(x_48)) {
-                                          case 0: {
-                                            const x_49 = LeanJs_DemoStress_monadProg__closed_15();
-                                            const x_50 = LeanJs_DemoStress_monadProg__closed_16();
-                                            switch (lean_tag(x_50)) {
-                                              case 0: {
-                                                const x_51 = 1;
-                                                switch (x_51) {
-                                                  case 0: {
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_50;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
-                                                  }
-                                                  case 1: {
-                                                    const x_52 = x_50.fields[0];
-                                                    const x_53 = lean_ctor(0, 1, 0, 0, x_52);
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_53;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
-                                                  }
-                                                  default: { throw new Error("no matching case"); }
-                                                }
-                                              }
-                                              case 1: {
-                                                const x_54 = x_50.fields[0];
-                                                const x_55 = LeanJs_DemoStress_monadProg__lam_0(x_54);
-                                                const x_2 = x_49;
-                                                const x_3 = undefined;
-                                                const x_4 = x_55;
-                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                const x_6 = lean_string_append(x_2, x_5);
-                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
-                                              }
-                                              default: { throw new Error("no matching case"); }
-                                            }
-                                          }
-                                          case 1: {
-                                            return x_48;
-                                          }
-                                          default: { throw new Error("no matching case"); }
-                                        }
+                                        return x_68;
                                       }
                                       default: { throw new Error("no matching case"); }
                                     }
                                   }
                                   case 1: {
-                                    return x_60;
+                                    const x_91 = lean_ctor(1, 1, 0, 0, x_88);
+                                    const x_90 = x_91;
+                                    const x_65 = x_90;
+                                    const x_66 = LeanJs_DemoStress_showRes(x_65);
+                                    const x_67 = lean_string_append(x_44, x_66);
+                                    const x_68 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_67, undefined);
+                                    switch (lean_tag(x_68)) {
+                                      case 0: {
+                                        const x_80 = 1;
+                                        switch (x_80) {
+                                          case 0: {
+                                            const x_81 = x_68.fields[0];
+                                            const x_70 = x_68;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
+                                              case 0: {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
+                                                  case 0: {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              case 1: {
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              default: { throw new Error("no matching case"); }
+                                            }
+                                          }
+                                          case 1: {
+                                            const x_70 = undefined;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
+                                              case 0: {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
+                                                  case 0: {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              case 1: {
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              default: { throw new Error("no matching case"); }
+                                            }
+                                          }
+                                          default: { throw new Error("no matching case"); }
+                                        }
+                                      }
+                                      case 1: {
+                                        return x_68;
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
                                   }
                                   default: { throw new Error("no matching case"); }
                                 }
@@ -6368,132 +10188,688 @@ function LeanJs_DemoStress_monadProg__tc() {
                             }
                           }
                           case 1: {
-                            const x_73 = 1;
-                            switch (x_73) {
+                            const x_42 = undefined;
+                            const x_43 = x_92;
+                            const x_44 = LeanJs_DemoStress_monadProg__closed_13();
+                            const x_82 = LeanJs_DemoStress_monadProg__closed_22();
+                            switch (lean_tag(x_82)) {
                               case 0: {
-                                const x_74 = x_69.fields[0];
-                                const x_75 = lean_int_of_nat(x_74);
-                                x_69.fields[0] = x_75;
-                                const x_57 = x_69;
-                                const x_58 = LeanJs_DemoStress_showRes(x_57);
-                                const x_59 = lean_string_append(x_42, x_58);
-                                const x_60 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_59, undefined);
-                                switch (lean_tag(x_60)) {
+                                const x_83 = x_82.fields[0];
+                                switch (x_43) {
                                   case 0: {
-                                    const x_61 = LeanJs_DemoStress_monadProg__closed_18();
-                                    const x_62 = LeanJs_DemoStress_monadProg__closed_21();
-                                    switch (lean_tag(x_62)) {
+                                    x_42.fields[0] = x_83;
+                                    const x_85 = x_42;
+                                    const x_65 = x_85;
+                                    const x_66 = LeanJs_DemoStress_showRes(x_65);
+                                    const x_67 = lean_string_append(x_44, x_66);
+                                    const x_68 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_67, undefined);
+                                    switch (lean_tag(x_68)) {
                                       case 0: {
-                                        const x_63 = 1;
-                                        switch (x_63) {
+                                        const x_80 = 1;
+                                        switch (x_80) {
                                           case 0: {
-                                            const x_43 = undefined;
-                                            const x_44 = x_61;
-                                            const x_45 = x_62;
-                                            const x_46 = LeanJs_DemoStress_showRes(x_45);
-                                            const x_47 = lean_string_append(x_44, x_46);
-                                            const x_48 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_47, undefined);
-                                            switch (lean_tag(x_48)) {
+                                            const x_81 = x_68.fields[0];
+                                            const x_70 = x_68;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
                                               case 0: {
-                                                const x_49 = LeanJs_DemoStress_monadProg__closed_15();
-                                                const x_50 = LeanJs_DemoStress_monadProg__closed_16();
-                                                switch (lean_tag(x_50)) {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
                                                   case 0: {
-                                                    const x_51 = 1;
-                                                    switch (x_51) {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
                                                       case 0: {
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_50;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
                                                       }
                                                       case 1: {
-                                                        const x_52 = x_50.fields[0];
-                                                        const x_53 = lean_ctor(0, 1, 0, 0, x_52);
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_53;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        return x_50;
                                                       }
                                                       default: { throw new Error("no matching case"); }
                                                     }
                                                   }
                                                   case 1: {
-                                                    const x_54 = x_50.fields[0];
-                                                    const x_55 = LeanJs_DemoStress_monadProg__lam_0(x_54);
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_55;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
                                                   }
                                                   default: { throw new Error("no matching case"); }
                                                 }
                                               }
                                               case 1: {
-                                                return x_48;
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
                                               }
                                               default: { throw new Error("no matching case"); }
                                             }
                                           }
                                           case 1: {
-                                            const x_64 = x_62.fields[0];
-                                            const x_65 = lean_ctor(0, 1, 0, 0, x_64);
-                                            const x_43 = undefined;
-                                            const x_44 = x_61;
-                                            const x_45 = x_65;
-                                            const x_46 = LeanJs_DemoStress_showRes(x_45);
-                                            const x_47 = lean_string_append(x_44, x_46);
-                                            const x_48 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_47, undefined);
-                                            switch (lean_tag(x_48)) {
+                                            const x_70 = undefined;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
                                               case 0: {
-                                                const x_49 = LeanJs_DemoStress_monadProg__closed_15();
-                                                const x_50 = LeanJs_DemoStress_monadProg__closed_16();
-                                                switch (lean_tag(x_50)) {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
                                                   case 0: {
-                                                    const x_51 = 1;
-                                                    switch (x_51) {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
                                                       case 0: {
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_50;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
                                                       }
                                                       case 1: {
-                                                        const x_52 = x_50.fields[0];
-                                                        const x_53 = lean_ctor(0, 1, 0, 0, x_52);
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_53;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        return x_50;
                                                       }
                                                       default: { throw new Error("no matching case"); }
                                                     }
                                                   }
                                                   case 1: {
-                                                    const x_54 = x_50.fields[0];
-                                                    const x_55 = LeanJs_DemoStress_monadProg__lam_0(x_54);
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_55;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
                                                   }
                                                   default: { throw new Error("no matching case"); }
                                                 }
                                               }
                                               case 1: {
-                                                return x_48;
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
                                               }
                                               default: { throw new Error("no matching case"); }
                                             }
@@ -6502,195 +10878,1380 @@ function LeanJs_DemoStress_monadProg__tc() {
                                         }
                                       }
                                       case 1: {
-                                        const x_66 = x_62.fields[0];
-                                        const x_67 = LeanJs_DemoStress_monadProg__lam_0(x_66);
-                                        const x_43 = undefined;
-                                        const x_44 = x_61;
-                                        const x_45 = x_67;
-                                        const x_46 = LeanJs_DemoStress_showRes(x_45);
-                                        const x_47 = lean_string_append(x_44, x_46);
-                                        const x_48 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_47, undefined);
-                                        switch (lean_tag(x_48)) {
-                                          case 0: {
-                                            const x_49 = LeanJs_DemoStress_monadProg__closed_15();
-                                            const x_50 = LeanJs_DemoStress_monadProg__closed_16();
-                                            switch (lean_tag(x_50)) {
-                                              case 0: {
-                                                const x_51 = 1;
-                                                switch (x_51) {
-                                                  case 0: {
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_50;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
-                                                  }
-                                                  case 1: {
-                                                    const x_52 = x_50.fields[0];
-                                                    const x_53 = lean_ctor(0, 1, 0, 0, x_52);
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_53;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
-                                                  }
-                                                  default: { throw new Error("no matching case"); }
-                                                }
-                                              }
-                                              case 1: {
-                                                const x_54 = x_50.fields[0];
-                                                const x_55 = LeanJs_DemoStress_monadProg__lam_0(x_54);
-                                                const x_2 = x_49;
-                                                const x_3 = undefined;
-                                                const x_4 = x_55;
-                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                const x_6 = lean_string_append(x_2, x_5);
-                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
-                                              }
-                                              default: { throw new Error("no matching case"); }
-                                            }
-                                          }
-                                          case 1: {
-                                            return x_48;
-                                          }
-                                          default: { throw new Error("no matching case"); }
-                                        }
+                                        return x_68;
                                       }
                                       default: { throw new Error("no matching case"); }
                                     }
                                   }
                                   case 1: {
-                                    return x_60;
+                                    const x_86 = lean_ctor(0, 1, 0, 0, x_83);
+                                    const x_85 = x_86;
+                                    const x_65 = x_85;
+                                    const x_66 = LeanJs_DemoStress_showRes(x_65);
+                                    const x_67 = lean_string_append(x_44, x_66);
+                                    const x_68 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_67, undefined);
+                                    switch (lean_tag(x_68)) {
+                                      case 0: {
+                                        const x_80 = 1;
+                                        switch (x_80) {
+                                          case 0: {
+                                            const x_81 = x_68.fields[0];
+                                            const x_70 = x_68;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
+                                              case 0: {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
+                                                  case 0: {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              case 1: {
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              default: { throw new Error("no matching case"); }
+                                            }
+                                          }
+                                          case 1: {
+                                            const x_70 = undefined;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
+                                              case 0: {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
+                                                  case 0: {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              case 1: {
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              default: { throw new Error("no matching case"); }
+                                            }
+                                          }
+                                          default: { throw new Error("no matching case"); }
+                                        }
+                                      }
+                                      case 1: {
+                                        return x_68;
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
                                   }
                                   default: { throw new Error("no matching case"); }
                                 }
                               }
                               case 1: {
-                                const x_76 = x_69.fields[0];
-                                const x_77 = lean_int_of_nat(x_76);
-                                const x_78 = lean_ctor(1, 1, 0, 0, x_77);
-                                const x_57 = x_78;
-                                const x_58 = LeanJs_DemoStress_showRes(x_57);
-                                const x_59 = lean_string_append(x_42, x_58);
-                                const x_60 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_59, undefined);
-                                switch (lean_tag(x_60)) {
+                                const x_87 = x_82.fields[0];
+                                const x_88 = lean_int_of_nat(x_87);
+                                switch (x_43) {
                                   case 0: {
-                                    const x_61 = LeanJs_DemoStress_monadProg__closed_18();
-                                    const x_62 = LeanJs_DemoStress_monadProg__closed_21();
-                                    switch (lean_tag(x_62)) {
+                                    x_42.tag = 1;
+                                    x_42.fields[0] = x_88;
+                                    const x_90 = x_42;
+                                    const x_65 = x_90;
+                                    const x_66 = LeanJs_DemoStress_showRes(x_65);
+                                    const x_67 = lean_string_append(x_44, x_66);
+                                    const x_68 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_67, undefined);
+                                    switch (lean_tag(x_68)) {
                                       case 0: {
-                                        const x_63 = 1;
-                                        switch (x_63) {
+                                        const x_80 = 1;
+                                        switch (x_80) {
                                           case 0: {
-                                            const x_43 = undefined;
-                                            const x_44 = x_61;
-                                            const x_45 = x_62;
-                                            const x_46 = LeanJs_DemoStress_showRes(x_45);
-                                            const x_47 = lean_string_append(x_44, x_46);
-                                            const x_48 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_47, undefined);
-                                            switch (lean_tag(x_48)) {
+                                            const x_81 = x_68.fields[0];
+                                            const x_70 = x_68;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
                                               case 0: {
-                                                const x_49 = LeanJs_DemoStress_monadProg__closed_15();
-                                                const x_50 = LeanJs_DemoStress_monadProg__closed_16();
-                                                switch (lean_tag(x_50)) {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
                                                   case 0: {
-                                                    const x_51 = 1;
-                                                    switch (x_51) {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
                                                       case 0: {
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_50;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
                                                       }
                                                       case 1: {
-                                                        const x_52 = x_50.fields[0];
-                                                        const x_53 = lean_ctor(0, 1, 0, 0, x_52);
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_53;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        return x_50;
                                                       }
                                                       default: { throw new Error("no matching case"); }
                                                     }
                                                   }
                                                   case 1: {
-                                                    const x_54 = x_50.fields[0];
-                                                    const x_55 = LeanJs_DemoStress_monadProg__lam_0(x_54);
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_55;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
                                                   }
                                                   default: { throw new Error("no matching case"); }
                                                 }
                                               }
                                               case 1: {
-                                                return x_48;
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
                                               }
                                               default: { throw new Error("no matching case"); }
                                             }
                                           }
                                           case 1: {
-                                            const x_64 = x_62.fields[0];
-                                            const x_65 = lean_ctor(0, 1, 0, 0, x_64);
-                                            const x_43 = undefined;
-                                            const x_44 = x_61;
-                                            const x_45 = x_65;
-                                            const x_46 = LeanJs_DemoStress_showRes(x_45);
-                                            const x_47 = lean_string_append(x_44, x_46);
-                                            const x_48 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_47, undefined);
-                                            switch (lean_tag(x_48)) {
+                                            const x_70 = undefined;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
                                               case 0: {
-                                                const x_49 = LeanJs_DemoStress_monadProg__closed_15();
-                                                const x_50 = LeanJs_DemoStress_monadProg__closed_16();
-                                                switch (lean_tag(x_50)) {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
                                                   case 0: {
-                                                    const x_51 = 1;
-                                                    switch (x_51) {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
                                                       case 0: {
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_50;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
                                                       }
                                                       case 1: {
-                                                        const x_52 = x_50.fields[0];
-                                                        const x_53 = lean_ctor(0, 1, 0, 0, x_52);
-                                                        const x_2 = x_49;
-                                                        const x_3 = undefined;
-                                                        const x_4 = x_53;
-                                                        const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                        const x_6 = lean_string_append(x_2, x_5);
-                                                        return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                        return x_50;
                                                       }
                                                       default: { throw new Error("no matching case"); }
                                                     }
                                                   }
                                                   case 1: {
-                                                    const x_54 = x_50.fields[0];
-                                                    const x_55 = LeanJs_DemoStress_monadProg__lam_0(x_54);
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_55;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
                                                   }
                                                   default: { throw new Error("no matching case"); }
                                                 }
                                               }
                                               case 1: {
-                                                return x_48;
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
                                               }
                                               default: { throw new Error("no matching case"); }
                                             }
@@ -6699,67 +12260,697 @@ function LeanJs_DemoStress_monadProg__tc() {
                                         }
                                       }
                                       case 1: {
-                                        const x_66 = x_62.fields[0];
-                                        const x_67 = LeanJs_DemoStress_monadProg__lam_0(x_66);
-                                        const x_43 = undefined;
-                                        const x_44 = x_61;
-                                        const x_45 = x_67;
-                                        const x_46 = LeanJs_DemoStress_showRes(x_45);
-                                        const x_47 = lean_string_append(x_44, x_46);
-                                        const x_48 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_47, undefined);
-                                        switch (lean_tag(x_48)) {
-                                          case 0: {
-                                            const x_49 = LeanJs_DemoStress_monadProg__closed_15();
-                                            const x_50 = LeanJs_DemoStress_monadProg__closed_16();
-                                            switch (lean_tag(x_50)) {
-                                              case 0: {
-                                                const x_51 = 1;
-                                                switch (x_51) {
-                                                  case 0: {
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_50;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
-                                                  }
-                                                  case 1: {
-                                                    const x_52 = x_50.fields[0];
-                                                    const x_53 = lean_ctor(0, 1, 0, 0, x_52);
-                                                    const x_2 = x_49;
-                                                    const x_3 = undefined;
-                                                    const x_4 = x_53;
-                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                    const x_6 = lean_string_append(x_2, x_5);
-                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
-                                                  }
-                                                  default: { throw new Error("no matching case"); }
-                                                }
-                                              }
-                                              case 1: {
-                                                const x_54 = x_50.fields[0];
-                                                const x_55 = LeanJs_DemoStress_monadProg__lam_0(x_54);
-                                                const x_2 = x_49;
-                                                const x_3 = undefined;
-                                                const x_4 = x_55;
-                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
-                                                const x_6 = lean_string_append(x_2, x_5);
-                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
-                                              }
-                                              default: { throw new Error("no matching case"); }
-                                            }
-                                          }
-                                          case 1: {
-                                            return x_48;
-                                          }
-                                          default: { throw new Error("no matching case"); }
-                                        }
+                                        return x_68;
                                       }
                                       default: { throw new Error("no matching case"); }
                                     }
                                   }
                                   case 1: {
-                                    return x_60;
+                                    const x_91 = lean_ctor(1, 1, 0, 0, x_88);
+                                    const x_90 = x_91;
+                                    const x_65 = x_90;
+                                    const x_66 = LeanJs_DemoStress_showRes(x_65);
+                                    const x_67 = lean_string_append(x_44, x_66);
+                                    const x_68 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_67, undefined);
+                                    switch (lean_tag(x_68)) {
+                                      case 0: {
+                                        const x_80 = 1;
+                                        switch (x_80) {
+                                          case 0: {
+                                            const x_81 = x_68.fields[0];
+                                            const x_70 = x_68;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
+                                              case 0: {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
+                                                  case 0: {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              case 1: {
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              default: { throw new Error("no matching case"); }
+                                            }
+                                          }
+                                          case 1: {
+                                            const x_70 = undefined;
+                                            const x_71 = x_80;
+                                            const x_72 = LeanJs_DemoStress_monadProg__closed_18();
+                                            const x_73 = LeanJs_DemoStress_monadProg__closed_21();
+                                            switch (lean_tag(x_73)) {
+                                              case 0: {
+                                                const x_74 = x_73.fields[0];
+                                                switch (x_71) {
+                                                  case 0: {
+                                                    x_70.fields[0] = x_74;
+                                                    const x_76 = x_70;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    const x_77 = lean_ctor(0, 1, 0, 0, x_74);
+                                                    const x_76 = x_77;
+                                                    const x_46 = x_72;
+                                                    const x_47 = x_76;
+                                                    const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                    const x_49 = lean_string_append(x_46, x_48);
+                                                    const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                    switch (lean_tag(x_50)) {
+                                                      case 0: {
+                                                        const x_62 = 1;
+                                                        switch (x_62) {
+                                                          case 0: {
+                                                            const x_63 = x_50.fields[0];
+                                                            const x_52 = x_50;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_52 = undefined;
+                                                            const x_53 = x_62;
+                                                            const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                            const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                            switch (lean_tag(x_55)) {
+                                                              case 0: {
+                                                                const x_56 = x_55.fields[0];
+                                                                switch (x_53) {
+                                                                  case 0: {
+                                                                    x_52.fields[0] = x_56;
+                                                                    const x_58 = x_52;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  case 1: {
+                                                                    const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                    const x_58 = x_59;
+                                                                    const x_3 = x_54;
+                                                                    const x_4 = x_58;
+                                                                    const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                    const x_6 = lean_string_append(x_3, x_5);
+                                                                    return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                                  }
+                                                                  default: { throw new Error("no matching case"); }
+                                                                }
+                                                              }
+                                                              case 1: {
+                                                                const x_60 = x_55.fields[0];
+                                                                const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_61;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        return x_50;
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              case 1: {
+                                                const x_78 = x_73.fields[0];
+                                                const x_79 = LeanJs_DemoStress_monadProg__lam_0(x_78);
+                                                const x_46 = x_72;
+                                                const x_47 = x_79;
+                                                const x_48 = LeanJs_DemoStress_showRes(x_47);
+                                                const x_49 = lean_string_append(x_46, x_48);
+                                                const x_50 = IO_println__at__LeanJs_DemoStress_parserProg_spec_0(x_49, undefined);
+                                                switch (lean_tag(x_50)) {
+                                                  case 0: {
+                                                    const x_62 = 1;
+                                                    switch (x_62) {
+                                                      case 0: {
+                                                        const x_63 = x_50.fields[0];
+                                                        const x_52 = x_50;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      case 1: {
+                                                        const x_52 = undefined;
+                                                        const x_53 = x_62;
+                                                        const x_54 = LeanJs_DemoStress_monadProg__closed_15();
+                                                        const x_55 = LeanJs_DemoStress_monadProg__closed_16();
+                                                        switch (lean_tag(x_55)) {
+                                                          case 0: {
+                                                            const x_56 = x_55.fields[0];
+                                                            switch (x_53) {
+                                                              case 0: {
+                                                                x_52.fields[0] = x_56;
+                                                                const x_58 = x_52;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              case 1: {
+                                                                const x_59 = lean_ctor(0, 1, 0, 0, x_56);
+                                                                const x_58 = x_59;
+                                                                const x_3 = x_54;
+                                                                const x_4 = x_58;
+                                                                const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                                const x_6 = lean_string_append(x_3, x_5);
+                                                                return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                              }
+                                                              default: { throw new Error("no matching case"); }
+                                                            }
+                                                          }
+                                                          case 1: {
+                                                            const x_60 = x_55.fields[0];
+                                                            const x_61 = LeanJs_DemoStress_monadProg__lam_0(x_60);
+                                                            const x_3 = x_54;
+                                                            const x_4 = x_61;
+                                                            const x_5 = LeanJs_DemoStress_showRes(x_4);
+                                                            const x_6 = lean_string_append(x_3, x_5);
+                                                            return { __tc: 1, f: IO_println__at__LeanJs_DemoStress_parserProg_spec_0__tc, a: [x_6, undefined] };
+                                                          }
+                                                          default: { throw new Error("no matching case"); }
+                                                        }
+                                                      }
+                                                      default: { throw new Error("no matching case"); }
+                                                    }
+                                                  }
+                                                  case 1: {
+                                                    return x_50;
+                                                  }
+                                                  default: { throw new Error("no matching case"); }
+                                                }
+                                              }
+                                              default: { throw new Error("no matching case"); }
+                                            }
+                                          }
+                                          default: { throw new Error("no matching case"); }
+                                        }
+                                      }
+                                      case 1: {
+                                        return x_68;
+                                      }
+                                      default: { throw new Error("no matching case"); }
+                                    }
                                   }
                                   default: { throw new Error("no matching case"); }
                                 }
@@ -6771,31 +12962,31 @@ function LeanJs_DemoStress_monadProg__tc() {
                         }
                       }
                       case 1: {
-                        return x_41;
+                        return x_40;
                       }
                       default: { throw new Error("no matching case"); }
                     }
                   }
                   case 1: {
-                    return x_39;
+                    return x_38;
                   }
                   default: { throw new Error("no matching case"); }
                 }
               }
               case 1: {
-                return x_37;
+                return x_36;
               }
               default: { throw new Error("no matching case"); }
             }
           }
           case 1: {
-            return x_27;
+            return x_26;
           }
           default: { throw new Error("no matching case"); }
         }
       }
       case 1: {
-        return x_15;
+        return x_14;
       }
       default: { throw new Error("no matching case"); }
     }
@@ -6814,6 +13005,8 @@ function List_foldl__at__List_toString__at__LeanJs_DemoStress_dsProg_spec_2_spec
   const x_1 = ")";
   return x_1;
 }
+
+// extern String_Internal_append -> runtime prelude
 
 function List_foldl__at__List_toString__at__LeanJs_DemoStress_dsProg_spec_2_spec_3__tc(x_1, x_2) {
   while (true) {
@@ -6938,32 +13131,65 @@ function List_mapTR_loop__at__LeanJs_DemoStress_comboProg_spec_0__tc(x_1, x_2) {
         return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
-        const x_4 = 1;
-        switch (x_4) {
+        const x_4 = x_1.fields[0];
+        const x_5 = x_1.fields[1];
+        const x_15 = 1;
+        switch (x_15) {
           case 0: {
-            const x_5 = x_1.fields[0];
-            const x_6 = x_1.fields[1];
-            const x_7 = 3n;
-            const x_8 = (x_5 * x_7);
-            x_1.fields[1] = x_2;
-            x_1.fields[0] = x_8;
-            const __t_1 = x_6;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = x_1;
+            const x_8 = x_15;
+            const x_9 = 3n;
+            const x_10 = (x_4 * x_9);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_10;
+                const x_12 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                const x_12 = x_14;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_10 = x_1.fields[0];
-            const x_11 = x_1.fields[1];
-            const x_12 = 3n;
-            const x_13 = (x_10 * x_12);
-            const x_14 = lean_ctor(1, 2, 0, 0, x_13, x_2);
-            const __t_1 = x_11;
-            const __t_2 = x_14;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = undefined;
+            const x_8 = x_15;
+            const x_9 = 3n;
+            const x_10 = (x_4 * x_9);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_10;
+                const x_12 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                const x_12 = x_14;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -7011,45 +13237,213 @@ function List_zipWith__at__List_zip_spec_0__redArg__tc(x_1, x_2) {
             return x_4;
           }
           case 1: {
-            const x_5 = 1;
-            switch (x_5) {
+            const x_5 = x_1.fields[0];
+            const x_6 = x_1.fields[1];
+            const x_23 = 1;
+            switch (x_23) {
               case 0: {
-                const x_6 = 1;
-                switch (x_6) {
+                const x_8 = x_1;
+                const x_9 = x_23;
+                const x_10 = x_2.fields[0];
+                const x_11 = x_2.fields[1];
+                const x_22 = 1;
+                switch (x_22) {
                   case 0: {
-                    const x_7 = x_1.fields[1];
-                    const x_8 = x_2.fields[0];
-                    const x_9 = x_2.fields[1];
-                    x_1.tag = 0;
-                    x_1.fields[1] = x_8;
-                    const x_10 = List_zipWith__at__List_zip_spec_0__redArg(x_7, x_9);
-                    x_2.fields[1] = x_10;
-                    x_2.fields[0] = x_1;
-                    return x_2;
+                    const x_13 = x_2;
+                    const x_14 = x_22;
+                    switch (x_9) {
+                      case 0: {
+                        x_8.tag = 0;
+                        x_8.fields[1] = x_10;
+                        const x_16 = x_8;
+                        const x_17 = List_zipWith__at__List_zip_spec_0__redArg(x_6, x_11);
+                        switch (x_14) {
+                          case 0: {
+                            x_13.fields[1] = x_17;
+                            x_13.fields[0] = x_16;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 2, 0, 0, x_16, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      case 1: {
+                        const x_21 = lean_ctor(0, 2, 0, 0, x_5, x_10);
+                        const x_16 = x_21;
+                        const x_17 = List_zipWith__at__List_zip_spec_0__redArg(x_6, x_11);
+                        switch (x_14) {
+                          case 0: {
+                            x_13.fields[1] = x_17;
+                            x_13.fields[0] = x_16;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 2, 0, 0, x_16, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
                   }
                   case 1: {
-                    const x_11 = x_1.fields[1];
-                    const x_12 = x_2.fields[0];
-                    const x_13 = x_2.fields[1];
-                    x_1.tag = 0;
-                    x_1.fields[1] = x_12;
-                    const x_14 = List_zipWith__at__List_zip_spec_0__redArg(x_11, x_13);
-                    const x_15 = lean_ctor(1, 2, 0, 0, x_1, x_14);
-                    return x_15;
+                    const x_13 = undefined;
+                    const x_14 = x_22;
+                    switch (x_9) {
+                      case 0: {
+                        x_8.tag = 0;
+                        x_8.fields[1] = x_10;
+                        const x_16 = x_8;
+                        const x_17 = List_zipWith__at__List_zip_spec_0__redArg(x_6, x_11);
+                        switch (x_14) {
+                          case 0: {
+                            x_13.fields[1] = x_17;
+                            x_13.fields[0] = x_16;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 2, 0, 0, x_16, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      case 1: {
+                        const x_21 = lean_ctor(0, 2, 0, 0, x_5, x_10);
+                        const x_16 = x_21;
+                        const x_17 = List_zipWith__at__List_zip_spec_0__redArg(x_6, x_11);
+                        switch (x_14) {
+                          case 0: {
+                            x_13.fields[1] = x_17;
+                            x_13.fields[0] = x_16;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 2, 0, 0, x_16, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
                   }
                   default: { throw new Error("no matching case"); }
                 }
               }
               case 1: {
-                const x_16 = x_1.fields[0];
-                const x_17 = x_1.fields[1];
-                const x_18 = x_2.fields[0];
-                const x_19 = x_2.fields[1];
-                const x_20 = null;
-                const x_21 = lean_ctor(0, 2, 0, 0, x_16, x_18);
-                const x_22 = List_zipWith__at__List_zip_spec_0__redArg(x_17, x_19);
-                const x_23 = lean_ctor(1, 2, 0, 0, x_21, x_22);
-                return x_23;
+                const x_8 = undefined;
+                const x_9 = x_23;
+                const x_10 = x_2.fields[0];
+                const x_11 = x_2.fields[1];
+                const x_22 = 1;
+                switch (x_22) {
+                  case 0: {
+                    const x_13 = x_2;
+                    const x_14 = x_22;
+                    switch (x_9) {
+                      case 0: {
+                        x_8.tag = 0;
+                        x_8.fields[1] = x_10;
+                        const x_16 = x_8;
+                        const x_17 = List_zipWith__at__List_zip_spec_0__redArg(x_6, x_11);
+                        switch (x_14) {
+                          case 0: {
+                            x_13.fields[1] = x_17;
+                            x_13.fields[0] = x_16;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 2, 0, 0, x_16, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      case 1: {
+                        const x_21 = lean_ctor(0, 2, 0, 0, x_5, x_10);
+                        const x_16 = x_21;
+                        const x_17 = List_zipWith__at__List_zip_spec_0__redArg(x_6, x_11);
+                        switch (x_14) {
+                          case 0: {
+                            x_13.fields[1] = x_17;
+                            x_13.fields[0] = x_16;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 2, 0, 0, x_16, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
+                  }
+                  case 1: {
+                    const x_13 = undefined;
+                    const x_14 = x_22;
+                    switch (x_9) {
+                      case 0: {
+                        x_8.tag = 0;
+                        x_8.fields[1] = x_10;
+                        const x_16 = x_8;
+                        const x_17 = List_zipWith__at__List_zip_spec_0__redArg(x_6, x_11);
+                        switch (x_14) {
+                          case 0: {
+                            x_13.fields[1] = x_17;
+                            x_13.fields[0] = x_16;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 2, 0, 0, x_16, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      case 1: {
+                        const x_21 = lean_ctor(0, 2, 0, 0, x_5, x_10);
+                        const x_16 = x_21;
+                        const x_17 = List_zipWith__at__List_zip_spec_0__redArg(x_6, x_11);
+                        switch (x_14) {
+                          case 0: {
+                            x_13.fields[1] = x_17;
+                            x_13.fields[0] = x_16;
+                            const x_19 = x_13;
+                            return x_19;
+                          }
+                          case 1: {
+                            const x_20 = lean_ctor(1, 2, 0, 0, x_16, x_17);
+                            const x_19 = x_20;
+                            return x_19;
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               default: { throw new Error("no matching case"); }
             }
@@ -7083,34 +13477,67 @@ function List_mapTR_loop__at__LeanJs_DemoStress_comboProg_spec_1__tc(x_1, x_2) {
         return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
-        const x_4 = 1;
-        switch (x_4) {
+        const x_4 = x_1.fields[0];
+        const x_5 = x_1.fields[1];
+        const x_16 = 1;
+        switch (x_16) {
           case 0: {
-            const x_5 = x_1.fields[0];
-            const x_6 = x_1.fields[1];
-            const x_7 = x_5.fields[0];
-            const x_8 = x_5.fields[1];
-            const x_9 = (x_7 * x_8);
-            x_1.fields[1] = x_2;
-            x_1.fields[0] = x_9;
-            const __t_1 = x_6;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = x_1;
+            const x_8 = x_16;
+            const x_9 = x_4.fields[0];
+            const x_10 = x_4.fields[1];
+            const x_11 = (x_9 * x_10);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_11;
+                const x_13 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_13;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_2);
+                const x_13 = x_15;
+                const __t_1 = x_5;
+                const __t_2 = x_13;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_11 = x_1.fields[0];
-            const x_12 = x_1.fields[1];
-            const x_13 = x_11.fields[0];
-            const x_14 = x_11.fields[1];
-            const x_15 = (x_13 * x_14);
-            const x_16 = lean_ctor(1, 2, 0, 0, x_15, x_2);
-            const __t_1 = x_12;
-            const __t_2 = x_16;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = undefined;
+            const x_8 = x_16;
+            const x_9 = x_4.fields[0];
+            const x_10 = x_4.fields[1];
+            const x_11 = (x_9 * x_10);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_11;
+                const x_13 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_13;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_2);
+                const x_13 = x_15;
+                const __t_1 = x_5;
+                const __t_2 = x_13;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -7218,7 +13645,7 @@ function Array_range__closed_0() {
 
 // extern Array_push -> runtime prelude
 
-function _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg__tc(x_1, x_2, x_3, x_4) {
+function Array_ofFn_go__redArg__tc(x_1, x_2, x_3, x_4) {
   while (true) {
     const x_5 = 0n;
     const x_6 = lean_nat_dec_eq(x_4, x_5);
@@ -7247,14 +13674,14 @@ function _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg__tc(x_1, x_2, x_
     }
   }
 }
-function _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg(x_1, x_2, x_3, x_4) {
-  return lean_trampoline(_private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg__tc(x_1, x_2, x_3, x_4));
+function Array_ofFn_go__redArg(x_1, x_2, x_3, x_4) {
+  return lean_trampoline(Array_ofFn_go__redArg__tc(x_1, x_2, x_3, x_4));
 }
 
 function Array_ofFn__redArg__tc(x_1, x_2) {
   while (true) {
     const x_3 = [];
-    return { __tc: 1, f: _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg__tc, a: [x_1, x_2, x_3, x_1] };
+    return { __tc: 1, f: Array_ofFn_go__redArg__tc, a: [x_1, x_2, x_3, x_1] };
   }
 }
 function Array_ofFn__redArg(x_1, x_2) {
@@ -7428,26 +13855,59 @@ function List_reverseAux__redArg__tc(x_1, x_2) {
         return x_2;
       }
       case 1: {
-        const x_3 = 1;
-        switch (x_3) {
+        const x_3 = x_1.fields[0];
+        const x_4 = x_1.fields[1];
+        const x_12 = 1;
+        switch (x_12) {
           case 0: {
-            const x_4 = x_1.fields[1];
-            x_1.fields[1] = x_2;
-            const __t_1 = x_4;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_6 = x_1;
+            const x_7 = x_12;
+            switch (x_7) {
+              case 0: {
+                x_6.fields[1] = x_2;
+                const x_9 = x_6;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_11 = lean_ctor(1, 2, 0, 0, x_3, x_2);
+                const x_9 = x_11;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_6 = x_1.fields[0];
-            const x_7 = x_1.fields[1];
-            const x_8 = lean_ctor(1, 2, 0, 0, x_6, x_2);
-            const __t_1 = x_7;
-            const __t_2 = x_8;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_6 = undefined;
+            const x_7 = x_12;
+            switch (x_7) {
+              case 0: {
+                x_6.fields[1] = x_2;
+                const x_9 = x_6;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_11 = lean_ctor(1, 2, 0, 0, x_3, x_2);
+                const x_9 = x_11;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -7479,32 +13939,65 @@ function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0__tc
         return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
-        const x_4 = 1;
-        switch (x_4) {
+        const x_4 = x_1.fields[0];
+        const x_5 = x_1.fields[1];
+        const x_15 = 1;
+        switch (x_15) {
           case 0: {
-            const x_5 = x_1.fields[0];
-            const x_6 = x_1.fields[1];
-            const x_7 = lean_usize_of_nat(x_5);
-            const x_8 = lean_string_of_usize(x_7);
-            x_1.fields[1] = x_2;
-            x_1.fields[0] = x_8;
-            const __t_1 = x_6;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = x_1;
+            const x_8 = x_15;
+            const x_9 = lean_usize_of_nat(x_4);
+            const x_10 = lean_string_of_usize(x_9);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_10;
+                const x_12 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                const x_12 = x_14;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_10 = x_1.fields[0];
-            const x_11 = x_1.fields[1];
-            const x_12 = lean_usize_of_nat(x_10);
-            const x_13 = lean_string_of_usize(x_12);
-            const x_14 = lean_ctor(1, 2, 0, 0, x_13, x_2);
-            const __t_1 = x_11;
-            const __t_2 = x_14;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = undefined;
+            const x_8 = x_15;
+            const x_9 = lean_usize_of_nat(x_4);
+            const x_10 = lean_string_of_usize(x_9);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_10;
+                const x_12 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                const x_12 = x_14;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -7845,7 +14338,7 @@ function Nat_toDigits(x_1, x_2) {
 
 // extern USize_repr -> runtime prelude
 
-// extern Array_getInternal -> runtime prelude
+// extern Array_getInternalBorrowed -> runtime prelude
 
 function Nat_reprFast__tc(x_1) {
   while (true) {
@@ -7872,7 +14365,7 @@ function Nat_reprFast__tc(x_1) {
         }
       }
       case 1: {
-        const x_12 = lean_array_uget(x_2, x_1);
+        const x_12 = lean_array_fget_borrowed(x_2, x_1);
         return x_12;
       }
       default: { throw new Error("no matching case"); }
@@ -7962,8 +14455,6 @@ function LeanJs_DemoStress_comboProg__closed_15() {
   const x_1 = "#";
   return x_1;
 }
-
-// extern String_Internal_append -> runtime prelude
 
 function LeanJs_DemoStress_comboProg__closed_18() {
   const x_1 = LeanJs_DemoStress_comboProg__closed_17();

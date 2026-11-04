@@ -141,6 +141,7 @@ const lean_panic_fn = (defaultVal, msg) => {
   if (_leanExitOnPanic) process.exit(1);
   return defaultVal;
 };
+const lean_panic_fn_borrowed = lean_panic_fn;
 // FnBody.unreachable -> lean_internal_panic_unreachable: FATAL. Dead match arms
 // are never meant to run; print and terminate (never fall through).
 const lean_internal_panic = (msg) => {
@@ -240,7 +241,7 @@ const _u64 = _mkUIntBig(64), _usz = _mkUIntBig(WORD_BITS);
 const lean_uint8_of_nat = _u8.ofNat, lean_uint8_add = _u8.add, lean_uint8_sub = _u8.sub, lean_uint8_mul = _u8.mul, lean_uint8_div = _u8.div, lean_uint8_mod = _u8.mod, lean_uint8_land = _u8.land, lean_uint8_lor = _u8.lor, lean_uint8_xor = _u8.xor, lean_uint8_complement = _u8.complement, lean_uint8_neg = _u8.neg, lean_uint8_shift_left = _u8.shiftLeft, lean_uint8_shift_right = _u8.shiftRight, lean_uint8_dec_eq = _u8.decEq, lean_uint8_dec_lt = _u8.decLt, lean_uint8_dec_le = _u8.decLe, lean_uint8_to_nat = _u8.toNat;
 const lean_uint16_of_nat = _u16.ofNat, lean_uint16_add = _u16.add, lean_uint16_sub = _u16.sub, lean_uint16_mul = _u16.mul, lean_uint16_div = _u16.div, lean_uint16_mod = _u16.mod, lean_uint16_land = _u16.land, lean_uint16_lor = _u16.lor, lean_uint16_xor = _u16.xor, lean_uint16_complement = _u16.complement, lean_uint16_neg = _u16.neg, lean_uint16_shift_left = _u16.shiftLeft, lean_uint16_shift_right = _u16.shiftRight, lean_uint16_dec_eq = _u16.decEq, lean_uint16_dec_lt = _u16.decLt, lean_uint16_dec_le = _u16.decLe, lean_uint16_to_nat = _u16.toNat;
 const lean_uint32_add = _u32.add, lean_uint32_sub = _u32.sub, lean_uint32_mul = _u32.mul, lean_uint32_div = _u32.div, lean_uint32_mod = _u32.mod, lean_uint32_land = _u32.land, lean_uint32_lor = _u32.lor, lean_uint32_xor = _u32.xor, lean_uint32_complement = _u32.complement, lean_uint32_neg = _u32.neg, lean_uint32_shift_left = _u32.shiftLeft, lean_uint32_shift_right = _u32.shiftRight, lean_uint32_dec_eq = _u32.decEq, lean_uint32_dec_lt = _u32.decLt, lean_uint32_dec_le = _u32.decLe, lean_uint32_to_nat = _u32.toNat;
-const lean_uint64_of_nat = _u64.ofNat, lean_uint64_add = _u64.add, lean_uint64_sub = _u64.sub, lean_uint64_mul = _u64.mul, lean_uint64_div = _u64.div, lean_uint64_mod = _u64.mod, lean_uint64_land = _u64.land, lean_uint64_lor = _u64.lor, lean_uint64_xor = _u64.xor, lean_uint64_complement = _u64.complement, lean_uint64_neg = _u64.neg, lean_uint64_shift_left = _u64.shiftLeft, lean_uint64_shift_right = _u64.shiftRight, lean_uint64_dec_eq = _u64.decEq, lean_uint64_dec_lt = _u64.decLt, lean_uint64_dec_le = _u64.decLe, lean_uint64_to_nat = _u64.toNat;
+const lean_uint64_of_nat = _u64.ofNat, lean_uint64_of_nat_mk = _u64.ofNat, lean_uint64_add = _u64.add, lean_uint64_sub = _u64.sub, lean_uint64_mul = _u64.mul, lean_uint64_div = _u64.div, lean_uint64_mod = _u64.mod, lean_uint64_land = _u64.land, lean_uint64_lor = _u64.lor, lean_uint64_xor = _u64.xor, lean_uint64_complement = _u64.complement, lean_uint64_neg = _u64.neg, lean_uint64_shift_left = _u64.shiftLeft, lean_uint64_shift_right = _u64.shiftRight, lean_uint64_dec_eq = _u64.decEq, lean_uint64_dec_lt = _u64.decLt, lean_uint64_dec_le = _u64.decLe, lean_uint64_to_nat = _u64.toNat;
 const lean_usize_of_nat = _usz.ofNat, lean_usize_add = _usz.add, lean_usize_sub = _usz.sub, lean_usize_mul = _usz.mul, lean_usize_div = _usz.div, lean_usize_mod = _usz.mod, lean_usize_land = _usz.land, lean_usize_lor = _usz.lor, lean_usize_xor = _usz.xor, lean_usize_complement = _usz.complement, lean_usize_neg = _usz.neg, lean_usize_shift_left = _usz.shiftLeft, lean_usize_shift_right = _usz.shiftRight, lean_usize_dec_eq = _usz.decEq, lean_usize_dec_lt = _usz.decLt, lean_usize_dec_le = _usz.decLe, lean_usize_to_nat = _usz.toNat;
 // UInt64 -> USize truncates to the platform word width; on the 64-bit profile
 // this is an identity re-mask, on a 32-bit profile it drops the high 32 bits.
@@ -259,7 +260,7 @@ const _mkSInt = (bits) => {
   return {
     // toInt reinterprets the raw stored bit pattern as a signed two's-complement
     // Int. A packed signed field is stored/read through the UNSIGNED DataView
-    // path (sproj/sset only know uintN at Lean 4.29.1 — no signed IRType), so a
+    // path (sproj/sset only know uintN at Lean 4.35.0 — no signed IRType), so a
     // negative Int8 like -5 arrives here as the unsigned byte 251 (a JS number);
     // BigInt.asIntN recovers -5. Already-signed bigint inputs are idempotent in
     // range, so the same boundary works for normal Int8 arithmetic values too.
@@ -555,6 +556,7 @@ const lean_string_utf8_extract = (s, lo, hi) => {
 };
 // String.set : replace the char starting at byte pos p with codepoint c. A pos
 // that is out of range or mid-char leaves the string unchanged (Lean returns s).
+const lean_string_utf8_extract_fast = lean_string_utf8_extract;
 const lean_string_utf8_set = (s, p, c) => {
   const b = _utf8enc.encode(s), i = Number(p);
   if (i < 0 || i >= b.length || !_u8isFirst(b[i])) return s;
@@ -722,6 +724,7 @@ const lean_array_uget = (a, i) => a[Number(i)];
 // prelude is self-documenting rather than routing the Lean decls to lean_array_uget.
 const lean_array_fget_borrowed = lean_array_fget;
 const lean_array_uget_borrowed = lean_array_uget;
+const lean_array_propagate_mark = (src, dst) => dst;
 // Setters return a fresh array (functional), mirroring the ctor reuse/copy
 // model: JS arrays are reference-shared with no refcount, so in-place updates
 // from the compiler's unsafe (assumed-unique) map/foldl paths would corrupt the
@@ -749,6 +752,7 @@ const lean_nat_xor = (a, b) => a ^ b;
 
 // ---- Int / Nat conversions ----
 const lean_int_of_nat = (n) => n;
+const lean_int_neg_succ_of_nat = (n) => -(n + 1n);
 const lean_int_to_nat = (i) => (i < 0n ? 0n : i);
 const lean_nat_abs = (i) => (i < 0n ? -i : i);
 const lean_uint32_of_nat2 = (n) => Number(BigInt.asUintN(32, n));
@@ -918,6 +922,7 @@ const lean_st_ref_get = (r) => r.value;
 const lean_st_ref_set = (r, a) => { r.value = a; return 0; };
 const lean_st_ref_swap = (r, a) => { const o = r.value; r.value = a; return o; };
 const lean_st_ref_take = (r) => { const o = r.value; r.value = undefined; return o; };
+const lean_st_ref_put = lean_st_ref_set;
 const lean_st_ref_ptr_eq = (r1, r2) => (r1 === r2 ? 1 : 0);
 
 // IO.getEnv : BaseIO (Option String). BaseIO -> bare Option (no io_result wrap).
@@ -1282,30 +1287,63 @@ function List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_0__tc(x_1, x_2) {
         return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
-        const x_4 = 1;
-        switch (x_4) {
+        const x_4 = x_1.fields[0];
+        const x_5 = x_1.fields[1];
+        const x_14 = 1;
+        switch (x_14) {
           case 0: {
-            const x_5 = x_1.fields[0];
-            const x_6 = x_1.fields[1];
-            const x_7 = LeanJs_DemoVerify_render(x_5);
-            x_1.fields[1] = x_2;
-            x_1.fields[0] = x_7;
-            const __t_1 = x_6;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = x_1;
+            const x_8 = x_14;
+            const x_9 = LeanJs_DemoVerify_render(x_4);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_9;
+                const x_11 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_11;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_13 = lean_ctor(1, 2, 0, 0, x_9, x_2);
+                const x_11 = x_13;
+                const __t_1 = x_5;
+                const __t_2 = x_11;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_9 = x_1.fields[0];
-            const x_10 = x_1.fields[1];
-            const x_11 = LeanJs_DemoVerify_render(x_9);
-            const x_12 = lean_ctor(1, 2, 0, 0, x_11, x_2);
-            const __t_1 = x_10;
-            const __t_2 = x_12;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = undefined;
+            const x_8 = x_14;
+            const x_9 = LeanJs_DemoVerify_render(x_4);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_9;
+                const x_11 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_11;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_13 = lean_ctor(1, 2, 0, 0, x_9, x_2);
+                const x_11 = x_13;
+                const __t_1 = x_5;
+                const __t_2 = x_11;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -1318,12 +1356,12 @@ function List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_0(x_1, x_2) {
   return lean_trampoline(List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_0__tc(x_1, x_2));
 }
 
-function LeanJs_DemoVerify_render__closed_8() {
+function LeanJs_DemoVerify_render__closed_6() {
   const x_1 = "{";
   return x_1;
 }
 
-function LeanJs_DemoVerify_render__closed_6() {
+function LeanJs_DemoVerify_render__closed_4() {
   const x_1 = ",";
   return x_1;
 }
@@ -1345,44 +1383,77 @@ function List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_1__tc(x_1, x_2) {
         return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
-        const x_4 = 1;
-        switch (x_4) {
+        const x_4 = x_1.fields[0];
+        const x_5 = x_1.fields[1];
+        const x_21 = 1;
+        switch (x_21) {
           case 0: {
-            const x_5 = x_1.fields[0];
-            const x_6 = x_1.fields[1];
-            const x_7 = x_5.fields[0];
-            const x_8 = x_5.fields[1];
-            const x_9 = List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_1__closed_0();
-            const x_10 = lean_string_append(x_9, x_7);
-            const x_11 = List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_1__closed_1();
-            const x_12 = lean_string_append(x_10, x_11);
-            const x_13 = LeanJs_DemoVerify_render(x_8);
+            const x_7 = x_1;
+            const x_8 = x_21;
+            const x_9 = x_4.fields[0];
+            const x_10 = x_4.fields[1];
+            const x_11 = List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_1__closed_0();
+            const x_12 = lean_string_append(x_11, x_9);
+            const x_13 = List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_1__closed_1();
             const x_14 = lean_string_append(x_12, x_13);
-            x_1.fields[1] = x_2;
-            x_1.fields[0] = x_14;
-            const __t_1 = x_6;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_15 = LeanJs_DemoVerify_render(x_10);
+            const x_16 = lean_string_append(x_14, x_15);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_16;
+                const x_18 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_18;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_20 = lean_ctor(1, 2, 0, 0, x_16, x_2);
+                const x_18 = x_20;
+                const __t_1 = x_5;
+                const __t_2 = x_18;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_16 = x_1.fields[0];
-            const x_17 = x_1.fields[1];
-            const x_18 = x_16.fields[0];
-            const x_19 = x_16.fields[1];
-            const x_20 = List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_1__closed_0();
-            const x_21 = lean_string_append(x_20, x_18);
-            const x_22 = List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_1__closed_1();
-            const x_23 = lean_string_append(x_21, x_22);
-            const x_24 = LeanJs_DemoVerify_render(x_19);
-            const x_25 = lean_string_append(x_23, x_24);
-            const x_26 = lean_ctor(1, 2, 0, 0, x_25, x_2);
-            const __t_1 = x_17;
-            const __t_2 = x_26;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = undefined;
+            const x_8 = x_21;
+            const x_9 = x_4.fields[0];
+            const x_10 = x_4.fields[1];
+            const x_11 = List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_1__closed_0();
+            const x_12 = lean_string_append(x_11, x_9);
+            const x_13 = List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_1__closed_1();
+            const x_14 = lean_string_append(x_12, x_13);
+            const x_15 = LeanJs_DemoVerify_render(x_10);
+            const x_16 = lean_string_append(x_14, x_15);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_16;
+                const x_18 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_18;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_20 = lean_ctor(1, 2, 0, 0, x_16, x_2);
+                const x_18 = x_20;
+                const __t_1 = x_5;
+                const __t_2 = x_18;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -1451,7 +1522,7 @@ function String_intercalate(x_1, x_2) {
   return lean_trampoline(String_intercalate__tc(x_1, x_2));
 }
 
-function LeanJs_DemoVerify_render__closed_9() {
+function LeanJs_DemoVerify_render__closed_7() {
   const x_1 = "}";
   return x_1;
 }
@@ -1476,56 +1547,38 @@ function LeanJs_DemoVerify_render__tc(x_1) {
       }
       case 2: {
         const x_6 = x_1.fields[0];
-        const x_7 = LeanJs_DemoVerify_render__closed_3();
-        const x_8 = lean_int_dec_lt(x_6, x_7);
-        switch (x_8) {
-          case 0: {
-            const x_9 = lean_nat_abs(x_6);
-            return { __tc: 1, f: Nat_reprFast__tc, a: [x_9] };
-          }
-          case 1: {
-            const x_11 = lean_nat_abs(x_6);
-            const x_12 = 1n;
-            const x_13 = (x_11 > x_12 ? x_11 - x_12 : 0n);
-            const x_14 = LeanJs_DemoVerify_render__closed_4();
-            const x_15 = (x_13 + x_12);
-            const x_16 = Nat_reprFast(x_15);
-            const x_17 = lean_string_append(x_14, x_16);
-            return x_17;
-          }
-          default: { throw new Error("no matching case"); }
-        }
+        return { __tc: 1, f: Int_repr__tc, a: [x_6] };
       }
       case 3: {
-        const x_18 = x_1.fields[0];
-        const x_19 = List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_1__closed_0();
-        const x_20 = lean_string_append(x_19, x_18);
-        const x_21 = lean_string_append(x_20, x_19);
-        return x_21;
+        const x_8 = x_1.fields[0];
+        const x_9 = List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_1__closed_0();
+        const x_10 = lean_string_append(x_9, x_8);
+        const x_11 = lean_string_append(x_10, x_9);
+        return x_11;
       }
       case 4: {
-        const x_22 = x_1.fields[0];
-        const x_23 = LeanJs_DemoVerify_render__closed_5();
-        const x_24 = LeanJs_DemoVerify_render__closed_6();
-        const x_25 = 0;
-        const x_26 = List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_0(x_22, x_25);
-        const x_27 = String_intercalate(x_24, x_26);
-        const x_28 = lean_string_append(x_23, x_27);
-        const x_29 = LeanJs_DemoVerify_render__closed_7();
-        const x_30 = lean_string_append(x_28, x_29);
-        return x_30;
+        const x_12 = x_1.fields[0];
+        const x_13 = LeanJs_DemoVerify_render__closed_3();
+        const x_14 = LeanJs_DemoVerify_render__closed_4();
+        const x_15 = 0;
+        const x_16 = List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_0(x_12, x_15);
+        const x_17 = String_intercalate(x_14, x_16);
+        const x_18 = lean_string_append(x_13, x_17);
+        const x_19 = LeanJs_DemoVerify_render__closed_5();
+        const x_20 = lean_string_append(x_18, x_19);
+        return x_20;
       }
       case 5: {
-        const x_31 = x_1.fields[0];
-        const x_32 = LeanJs_DemoVerify_render__closed_8();
-        const x_33 = LeanJs_DemoVerify_render__closed_6();
-        const x_34 = 0;
-        const x_35 = List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_1(x_31, x_34);
-        const x_36 = String_intercalate(x_33, x_35);
-        const x_37 = lean_string_append(x_32, x_36);
-        const x_38 = LeanJs_DemoVerify_render__closed_9();
-        const x_39 = lean_string_append(x_37, x_38);
-        return x_39;
+        const x_21 = x_1.fields[0];
+        const x_22 = LeanJs_DemoVerify_render__closed_6();
+        const x_23 = LeanJs_DemoVerify_render__closed_4();
+        const x_24 = 0;
+        const x_25 = List_mapTR_loop__at__LeanJs_DemoVerify_render_spec_1(x_21, x_24);
+        const x_26 = String_intercalate(x_23, x_25);
+        const x_27 = lean_string_append(x_22, x_26);
+        const x_28 = LeanJs_DemoVerify_render__closed_7();
+        const x_29 = lean_string_append(x_27, x_28);
+        return x_29;
       }
       default: { throw new Error("no matching case"); }
     }
@@ -1569,42 +1622,75 @@ function List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_1__tc(x_1, x_2) 
         return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
-        const x_4 = 1;
-        switch (x_4) {
+        const x_4 = x_1.fields[0];
+        const x_5 = x_1.fields[1];
+        const x_20 = 1;
+        switch (x_20) {
           case 0: {
-            const x_5 = x_1.fields[0];
-            const x_6 = x_1.fields[1];
-            const x_7 = x_5.fields[0];
-            const x_8 = x_5.fields[1];
-            const x_9 = List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_1__closed_0();
-            const x_10 = x_7;
-            const x_11 = lean_string_push(x_9, x_10);
-            const x_12 = Nat_reprFast(x_8);
-            const x_13 = lean_string_append(x_11, x_12);
-            x_1.fields[1] = x_2;
-            x_1.fields[0] = x_13;
-            const __t_1 = x_6;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = x_1;
+            const x_8 = x_20;
+            const x_9 = x_4.fields[0];
+            const x_10 = x_4.fields[1];
+            const x_11 = List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_1__closed_0();
+            const x_12 = x_9;
+            const x_13 = lean_string_push(x_11, x_12);
+            const x_14 = Nat_reprFast(x_10);
+            const x_15 = lean_string_append(x_13, x_14);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_15;
+                const x_17 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_17;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_19 = lean_ctor(1, 2, 0, 0, x_15, x_2);
+                const x_17 = x_19;
+                const __t_1 = x_5;
+                const __t_2 = x_17;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_15 = x_1.fields[0];
-            const x_16 = x_1.fields[1];
-            const x_17 = x_15.fields[0];
-            const x_18 = x_15.fields[1];
-            const x_19 = List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_1__closed_0();
-            const x_20 = x_17;
-            const x_21 = lean_string_push(x_19, x_20);
-            const x_22 = Nat_reprFast(x_18);
-            const x_23 = lean_string_append(x_21, x_22);
-            const x_24 = lean_ctor(1, 2, 0, 0, x_23, x_2);
-            const __t_1 = x_16;
-            const __t_2 = x_24;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = undefined;
+            const x_8 = x_20;
+            const x_9 = x_4.fields[0];
+            const x_10 = x_4.fields[1];
+            const x_11 = List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_1__closed_0();
+            const x_12 = x_9;
+            const x_13 = lean_string_push(x_11, x_12);
+            const x_14 = Nat_reprFast(x_10);
+            const x_15 = lean_string_append(x_13, x_14);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_15;
+                const x_17 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_17;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_19 = lean_ctor(1, 2, 0, 0, x_15, x_2);
+                const x_17 = x_19;
+                const __t_1 = x_5;
+                const __t_2 = x_17;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -1665,15 +1751,15 @@ function List_toString__at__LeanJs_DemoVerify_verifyMain_spec_2__tc(x_1) {
         switch (lean_tag(x_3)) {
           case 0: {
             const x_4 = x_1.fields[0];
-            const x_5 = LeanJs_DemoVerify_render__closed_5();
+            const x_5 = LeanJs_DemoVerify_render__closed_3();
             const x_6 = lean_string_append(x_5, x_4);
-            const x_7 = LeanJs_DemoVerify_render__closed_7();
+            const x_7 = LeanJs_DemoVerify_render__closed_5();
             const x_8 = lean_string_append(x_6, x_7);
             return x_8;
           }
           default: {
             const x_9 = x_1.fields[0];
-            const x_10 = LeanJs_DemoVerify_render__closed_5();
+            const x_10 = LeanJs_DemoVerify_render__closed_3();
             const x_11 = lean_string_append(x_10, x_9);
             const x_12 = List_foldl__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_2_spec_3(x_11, x_3);
             const x_13 = 93;
@@ -1717,59 +1803,51 @@ function LeanJs_DemoVerify_verifyMain__closed_13() {
   return x_1;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_37() {
+function LeanJs_DemoVerify_verifyMain__closed_28() {
   const x_1 = 12n;
   const x_2 = lean_int_of_nat(x_1);
   return x_2;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_36() {
+function LeanJs_DemoVerify_verifyMain__closed_27() {
   const x_1 = 11n;
   const x_2 = lean_int_of_nat(x_1);
   return x_2;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_38() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_36();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_26();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
+function LeanJs_DemoVerify_verifyMain__closed_29() {
+  const x_1 = LeanJs_DemoVerify_verifyMain__closed_28();
+  const x_2 = LeanJs_DemoVerify_verifyMain__closed_27();
+  const x_3 = 2n;
+  const x_4 = [];
+  const x_5 = lean_array_push(x_4, x_2);
+  const x_6 = lean_array_push(x_5, x_1);
+  return x_6;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_39() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_37();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_38();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
-}
-
-function LeanJs_DemoVerify_verifyMain__closed_33() {
+function LeanJs_DemoVerify_verifyMain__closed_25() {
   const x_1 = 10n;
   const x_2 = lean_int_of_nat(x_1);
   return x_2;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_32() {
+function LeanJs_DemoVerify_verifyMain__closed_24() {
   const x_1 = 9n;
   const x_2 = lean_int_of_nat(x_1);
   return x_2;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_34() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_32();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_26();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
+function LeanJs_DemoVerify_verifyMain__closed_26() {
+  const x_1 = LeanJs_DemoVerify_verifyMain__closed_25();
+  const x_2 = LeanJs_DemoVerify_verifyMain__closed_24();
+  const x_3 = 2n;
+  const x_4 = [];
+  const x_5 = lean_array_push(x_4, x_2);
+  const x_6 = lean_array_push(x_5, x_1);
+  return x_6;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_35() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_33();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_34();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
-}
-
-function LeanJs_DemoVerify_verifyMain__closed_29() {
+function LeanJs_DemoVerify_verifyMain__closed_22() {
   const x_1 = 8n;
   const x_2 = lean_int_of_nat(x_1);
   return x_2;
@@ -1781,48 +1859,35 @@ function LeanJs_DemoVerify_sample__closed_23() {
   return x_2;
 }
 
+function LeanJs_DemoVerify_verifyMain__closed_23() {
+  const x_1 = LeanJs_DemoVerify_verifyMain__closed_22();
+  const x_2 = LeanJs_DemoVerify_sample__closed_23();
+  const x_3 = 2n;
+  const x_4 = [];
+  const x_5 = lean_array_push(x_4, x_2);
+  const x_6 = lean_array_push(x_5, x_1);
+  return x_6;
+}
+
 function LeanJs_DemoVerify_verifyMain__closed_30() {
-  const x_1 = LeanJs_DemoVerify_sample__closed_23();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_26();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
-}
-
-function LeanJs_DemoVerify_verifyMain__closed_31() {
   const x_1 = LeanJs_DemoVerify_verifyMain__closed_29();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_30();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
+  const x_2 = LeanJs_DemoVerify_verifyMain__closed_26();
+  const x_3 = LeanJs_DemoVerify_verifyMain__closed_23();
+  const x_4 = 3n;
+  const x_5 = [];
+  const x_6 = lean_array_push(x_5, x_3);
+  const x_7 = lean_array_push(x_6, x_2);
+  const x_8 = lean_array_push(x_7, x_1);
+  return x_8;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_40() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_31();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_17();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
-}
-
-function LeanJs_DemoVerify_verifyMain__closed_41() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_35();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_40();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
-}
-
-function LeanJs_DemoVerify_verifyMain__closed_42() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_39();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_41();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
-}
-
-function LeanJs_DemoVerify_verifyMain__closed_22() {
+function LeanJs_DemoVerify_verifyMain__closed_19() {
   const x_1 = 6n;
   const x_2 = lean_int_of_nat(x_1);
   return x_2;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_21() {
+function LeanJs_DemoVerify_verifyMain__closed_18() {
   const x_1 = 5n;
   const x_2 = lean_int_of_nat(x_1);
   return x_2;
@@ -1834,25 +1899,16 @@ function LeanJs_DemoVerify_sample__closed_5() {
   return x_2;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_23() {
-  const x_1 = LeanJs_DemoVerify_sample__closed_5();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_17();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
-}
-
-function LeanJs_DemoVerify_verifyMain__closed_24() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_21();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_23();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
-}
-
-function LeanJs_DemoVerify_verifyMain__closed_25() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_22();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_24();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
+function LeanJs_DemoVerify_verifyMain__closed_20() {
+  const x_1 = LeanJs_DemoVerify_verifyMain__closed_19();
+  const x_2 = LeanJs_DemoVerify_verifyMain__closed_18();
+  const x_3 = LeanJs_DemoVerify_sample__closed_5();
+  const x_4 = 3n;
+  const x_5 = [];
+  const x_6 = lean_array_push(x_5, x_3);
+  const x_7 = lean_array_push(x_6, x_2);
+  const x_8 = lean_array_push(x_7, x_1);
+  return x_8;
 }
 
 function LeanJs_DemoVerify_verifyMain__closed_16() {
@@ -1874,52 +1930,27 @@ function LeanJs_DemoVerify_verifyMain__closed_14() {
 }
 
 function LeanJs_DemoVerify_verifyMain__closed_17() {
-  const x_1 = 3n;
-  const x_2 = [];
-  return x_2;
-}
-
-function LeanJs_DemoVerify_verifyMain__closed_18() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_14();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_17();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
-}
-
-function LeanJs_DemoVerify_verifyMain__closed_19() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_15();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_18();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
-}
-
-function LeanJs_DemoVerify_verifyMain__closed_20() {
   const x_1 = LeanJs_DemoVerify_verifyMain__closed_16();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_19();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
+  const x_2 = LeanJs_DemoVerify_verifyMain__closed_15();
+  const x_3 = LeanJs_DemoVerify_verifyMain__closed_14();
+  const x_4 = 3n;
+  const x_5 = [];
+  const x_6 = lean_array_push(x_5, x_3);
+  const x_7 = lean_array_push(x_6, x_2);
+  const x_8 = lean_array_push(x_7, x_1);
+  return x_8;
 }
 
 // extern Array_mkEmpty -> runtime prelude
 
-function LeanJs_DemoVerify_verifyMain__closed_26() {
-  const x_1 = 2n;
-  const x_2 = [];
-  return x_2;
-}
-
-function LeanJs_DemoVerify_verifyMain__closed_27() {
+function LeanJs_DemoVerify_verifyMain__closed_21() {
   const x_1 = LeanJs_DemoVerify_verifyMain__closed_20();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_26();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
-}
-
-function LeanJs_DemoVerify_verifyMain__closed_28() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_25();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_27();
-  const x_3 = lean_array_push(x_2, x_1);
-  return x_3;
+  const x_2 = LeanJs_DemoVerify_verifyMain__closed_17();
+  const x_3 = 2n;
+  const x_4 = [];
+  const x_5 = lean_array_push(x_4, x_2);
+  const x_6 = lean_array_push(x_5, x_1);
+  return x_6;
 }
 
 // extern Array_usize -> runtime prelude
@@ -1975,6 +2006,12 @@ function LeanJs_DemoVerify_col(x_1, x_2) {
   return lean_trampoline(LeanJs_DemoVerify_col__tc(x_1, x_2));
 }
 
+function LeanJs_DemoVerify_dot__closed_0() {
+  const x_1 = 0n;
+  const x_2 = lean_int_of_nat(x_1);
+  return x_2;
+}
+
 function Array_range__lam_0__tc(x_1) {
   while (true) {
     return x_1;
@@ -2000,7 +2037,7 @@ function Array_range__closed_0() {
 
 // extern Array_push -> runtime prelude
 
-function _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg__tc(x_1, x_2, x_3, x_4) {
+function Array_ofFn_go__redArg__tc(x_1, x_2, x_3, x_4) {
   while (true) {
     const x_5 = 0n;
     const x_6 = lean_nat_dec_eq(x_4, x_5);
@@ -2029,14 +2066,14 @@ function _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg__tc(x_1, x_2, x_
     }
   }
 }
-function _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg(x_1, x_2, x_3, x_4) {
-  return lean_trampoline(_private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg__tc(x_1, x_2, x_3, x_4));
+function Array_ofFn_go__redArg(x_1, x_2, x_3, x_4) {
+  return lean_trampoline(Array_ofFn_go__redArg__tc(x_1, x_2, x_3, x_4));
 }
 
 function Array_ofFn__redArg__tc(x_1, x_2) {
   while (true) {
     const x_3 = [];
-    return { __tc: 1, f: _private_Init_Data_Array_Basic_0_Array_ofFn_go__redArg__tc, a: [x_1, x_2, x_3, x_1] };
+    return { __tc: 1, f: Array_ofFn_go__redArg__tc, a: [x_1, x_2, x_3, x_1] };
   }
 }
 function Array_ofFn__redArg(x_1, x_2) {
@@ -2118,7 +2155,7 @@ function _private_Init_Data_Array_Basic_0_Array_foldlMUnsafe_fold__at__LeanJs_De
 function LeanJs_DemoVerify_dot__tc(x_1, x_2) {
   while (true) {
     const x_3 = 0n;
-    const x_4 = LeanJs_DemoVerify_render__closed_3();
+    const x_4 = LeanJs_DemoVerify_dot__closed_0();
     const x_5 = lean_array_get_size(x_1);
     const x_6 = Array_range(x_5);
     const x_7 = lean_array_get_size(x_6);
@@ -2265,29 +2302,29 @@ function _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_DemoV
 
 // extern Array_emptyWithCapacity -> runtime prelude
 
-function Array_instEmptyCollection__closed_0__tc() {
+function Array_instEmptyCollection__redArg__closed_0__tc() {
   while (true) {
     const x_1 = 0n;
     const x_2 = [];
     return x_2;
   }
 }
-function Array_instEmptyCollection__closed_0() {
-  return lean_trampoline(Array_instEmptyCollection__closed_0__tc());
+function Array_instEmptyCollection__redArg__closed_0() {
+  return lean_trampoline(Array_instEmptyCollection__redArg__closed_0__tc());
 }
 
-function Array_instInhabited__tc() {
+function Array_instInhabited__redArg__tc() {
   while (true) {
-    return { __tc: 1, f: Array_instEmptyCollection__closed_0__tc, a: [] };
+    return { __tc: 1, f: Array_instEmptyCollection__redArg__closed_0__tc, a: [] };
   }
 }
-function Array_instInhabited() {
-  return lean_trampoline(Array_instInhabited__tc());
+function Array_instInhabited__redArg() {
+  return lean_trampoline(Array_instInhabited__redArg__tc());
 }
 
 function LeanJs_DemoVerify_matmul__closed_0__tc() {
   while (true) {
-    return { __tc: 1, f: Array_instInhabited__tc, a: [undefined] };
+    return { __tc: 1, f: Array_instInhabited__redArg__tc, a: [undefined] };
   }
 }
 function LeanJs_DemoVerify_matmul__closed_0() {
@@ -2306,16 +2343,16 @@ function LeanJs_DemoVerify_matmul__tc(x_1, x_2) {
         const x_11 = LeanJs_DemoVerify_matmul__closed_0();
         const x_12 = lean_array_get_borrowed(x_11, x_2, x_9);
         const x_13 = lean_array_get_size(x_12);
-        const x_3 = x_13;
-        const x_4 = lean_array_usize(x_1);
-        const x_5 = 0n;
-        return { __tc: 1, f: _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_DemoVerify_matmul_spec_1__tc, a: [x_2, x_3, x_4, x_5, x_1] };
+        const x_4 = x_13;
+        const x_5 = lean_array_usize(x_1);
+        const x_6 = 0n;
+        return { __tc: 1, f: _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_DemoVerify_matmul_spec_1__tc, a: [x_2, x_4, x_5, x_6, x_1] };
       }
       case 1: {
-        const x_3 = x_9;
-        const x_4 = lean_array_usize(x_1);
-        const x_5 = 0n;
-        return { __tc: 1, f: _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_DemoVerify_matmul_spec_1__tc, a: [x_2, x_3, x_4, x_5, x_1] };
+        const x_4 = x_9;
+        const x_5 = lean_array_usize(x_1);
+        const x_6 = 0n;
+        return { __tc: 1, f: _private_Init_Data_Array_Basic_0_Array_mapMUnsafe_map__at__LeanJs_DemoVerify_matmul_spec_1__tc, a: [x_2, x_4, x_5, x_6, x_1] };
       }
       default: { throw new Error("no matching case"); }
     }
@@ -2325,24 +2362,68 @@ function LeanJs_DemoVerify_matmul(x_1, x_2) {
   return lean_trampoline(LeanJs_DemoVerify_matmul__tc(x_1, x_2));
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_44__tc() {
+function LeanJs_DemoVerify_verifyMain__closed_32__tc() {
   while (true) {
-    const x_1 = LeanJs_DemoVerify_verifyMain__closed_42();
-    const x_2 = LeanJs_DemoVerify_verifyMain__closed_28();
+    const x_1 = LeanJs_DemoVerify_verifyMain__closed_30();
+    const x_2 = LeanJs_DemoVerify_verifyMain__closed_21();
     return { __tc: 1, f: LeanJs_DemoVerify_matmul__tc, a: [x_2, x_1] };
   }
 }
-function LeanJs_DemoVerify_verifyMain__closed_44() {
-  return lean_trampoline(LeanJs_DemoVerify_verifyMain__closed_44__tc());
+function LeanJs_DemoVerify_verifyMain__closed_32() {
+  return lean_trampoline(LeanJs_DemoVerify_verifyMain__closed_32__tc());
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_45() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_44();
+function LeanJs_DemoVerify_verifyMain__closed_33() {
+  const x_1 = LeanJs_DemoVerify_verifyMain__closed_32();
   const x_2 = lean_array_to_list(x_1);
   return x_2;
 }
 
 // extern Array_toList -> runtime prelude
+
+// extern Int_ofNat -> runtime prelude
+
+function Int_repr__closed_0() {
+  const x_1 = 0n;
+  const x_2 = lean_int_of_nat(x_1);
+  return x_2;
+}
+
+// extern Int_decLt -> runtime prelude
+
+// extern Int_natAbs -> runtime prelude
+
+function Int_repr__closed_1() {
+  const x_1 = "-";
+  return x_1;
+}
+
+function Int_repr__tc(x_1) {
+  while (true) {
+    const x_2 = Int_repr__closed_0();
+    const x_3 = lean_int_dec_lt(x_1, x_2);
+    switch (x_3) {
+      case 0: {
+        const x_4 = lean_nat_abs(x_1);
+        return { __tc: 1, f: Nat_reprFast__tc, a: [x_4] };
+      }
+      case 1: {
+        const x_6 = lean_nat_abs(x_1);
+        const x_7 = 1n;
+        const x_8 = (x_6 > x_7 ? x_6 - x_7 : 0n);
+        const x_9 = Int_repr__closed_1();
+        const x_10 = (x_8 + x_7);
+        const x_11 = Nat_reprFast(x_10);
+        const x_12 = lean_string_append(x_9, x_11);
+        return x_12;
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  }
+}
+function Int_repr(x_1) {
+  return lean_trampoline(Int_repr__tc(x_1));
+}
 
 function List_foldl__at__List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_5_spec_6__tc(x_1, x_2) {
   while (true) {
@@ -2355,36 +2436,13 @@ function List_foldl__at__List_toString__at__List_toString__at__LeanJs_DemoVerify
         const x_4 = x_2.fields[1];
         const x_5 = List_foldl__at__List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_5_spec_6__closed_0();
         const x_6 = lean_string_append(x_1, x_5);
-        const x_7 = LeanJs_DemoVerify_render__closed_3();
-        const x_8 = lean_int_dec_lt(x_3, x_7);
-        switch (x_8) {
-          case 0: {
-            const x_9 = lean_nat_abs(x_3);
-            const x_10 = Nat_reprFast(x_9);
-            const x_11 = lean_string_append(x_6, x_10);
-            const __t_1 = x_11;
-            const __t_2 = x_4;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
-          }
-          case 1: {
-            const x_13 = lean_nat_abs(x_3);
-            const x_14 = 1n;
-            const x_15 = (x_13 > x_14 ? x_13 - x_14 : 0n);
-            const x_16 = LeanJs_DemoVerify_render__closed_4();
-            const x_17 = (x_15 + x_14);
-            const x_18 = Nat_reprFast(x_17);
-            const x_19 = lean_string_append(x_16, x_18);
-            const x_20 = lean_string_append(x_6, x_19);
-            const __t_1 = x_20;
-            const __t_2 = x_4;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
-          }
-          default: { throw new Error("no matching case"); }
-        }
+        const x_7 = Int_repr(x_3);
+        const x_8 = lean_string_append(x_6, x_7);
+        const __t_1 = x_8;
+        const __t_2 = x_4;
+        x_1 = __t_1;
+        x_2 = __t_2;
+        continue;
       }
       default: { throw new Error("no matching case"); }
     }
@@ -2392,23 +2450,6 @@ function List_foldl__at__List_toString__at__List_toString__at__LeanJs_DemoVerify
 }
 function List_foldl__at__List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_5_spec_6(x_1, x_2) {
   return lean_trampoline(List_foldl__at__List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_5_spec_6__tc(x_1, x_2));
-}
-
-// extern Int_ofNat -> runtime prelude
-
-function LeanJs_DemoVerify_render__closed_3() {
-  const x_1 = 0n;
-  const x_2 = lean_int_of_nat(x_1);
-  return x_2;
-}
-
-// extern Int_decLt -> runtime prelude
-
-// extern Int_natAbs -> runtime prelude
-
-function LeanJs_DemoVerify_render__closed_4() {
-  const x_1 = "-";
-  return x_1;
 }
 
 function List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_5__tc(x_1) {
@@ -2422,69 +2463,22 @@ function List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec
         switch (lean_tag(x_3)) {
           case 0: {
             const x_4 = x_1.fields[0];
-            const x_5 = LeanJs_DemoVerify_render__closed_5();
-            const x_11 = LeanJs_DemoVerify_render__closed_3();
-            const x_12 = lean_int_dec_lt(x_4, x_11);
-            switch (x_12) {
-              case 0: {
-                const x_13 = lean_nat_abs(x_4);
-                const x_14 = Nat_reprFast(x_13);
-                const x_6 = x_14;
-                const x_7 = lean_string_append(x_5, x_6);
-                const x_8 = LeanJs_DemoVerify_render__closed_7();
-                const x_9 = lean_string_append(x_7, x_8);
-                return x_9;
-              }
-              case 1: {
-                const x_15 = lean_nat_abs(x_4);
-                const x_16 = 1n;
-                const x_17 = (x_15 > x_16 ? x_15 - x_16 : 0n);
-                const x_18 = LeanJs_DemoVerify_render__closed_4();
-                const x_19 = (x_17 + x_16);
-                const x_20 = Nat_reprFast(x_19);
-                const x_21 = lean_string_append(x_18, x_20);
-                const x_6 = x_21;
-                const x_7 = lean_string_append(x_5, x_6);
-                const x_8 = LeanJs_DemoVerify_render__closed_7();
-                const x_9 = lean_string_append(x_7, x_8);
-                return x_9;
-              }
-              default: { throw new Error("no matching case"); }
-            }
+            const x_5 = LeanJs_DemoVerify_render__closed_3();
+            const x_6 = Int_repr(x_4);
+            const x_7 = lean_string_append(x_5, x_6);
+            const x_8 = LeanJs_DemoVerify_render__closed_5();
+            const x_9 = lean_string_append(x_7, x_8);
+            return x_9;
           }
           default: {
-            const x_22 = x_1.fields[0];
-            const x_23 = LeanJs_DemoVerify_render__closed_5();
-            const x_30 = LeanJs_DemoVerify_render__closed_3();
-            const x_31 = lean_int_dec_lt(x_22, x_30);
-            switch (x_31) {
-              case 0: {
-                const x_32 = lean_nat_abs(x_22);
-                const x_33 = Nat_reprFast(x_32);
-                const x_24 = x_33;
-                const x_25 = lean_string_append(x_23, x_24);
-                const x_26 = List_foldl__at__List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_5_spec_6(x_25, x_3);
-                const x_27 = 93;
-                const x_28 = lean_string_push(x_26, x_27);
-                return x_28;
-              }
-              case 1: {
-                const x_34 = lean_nat_abs(x_22);
-                const x_35 = 1n;
-                const x_36 = (x_34 > x_35 ? x_34 - x_35 : 0n);
-                const x_37 = LeanJs_DemoVerify_render__closed_4();
-                const x_38 = (x_36 + x_35);
-                const x_39 = Nat_reprFast(x_38);
-                const x_40 = lean_string_append(x_37, x_39);
-                const x_24 = x_40;
-                const x_25 = lean_string_append(x_23, x_24);
-                const x_26 = List_foldl__at__List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_5_spec_6(x_25, x_3);
-                const x_27 = 93;
-                const x_28 = lean_string_push(x_26, x_27);
-                return x_28;
-              }
-              default: { throw new Error("no matching case"); }
-            }
+            const x_10 = x_1.fields[0];
+            const x_11 = LeanJs_DemoVerify_render__closed_3();
+            const x_12 = Int_repr(x_10);
+            const x_13 = lean_string_append(x_11, x_12);
+            const x_14 = List_foldl__at__List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_5_spec_6(x_13, x_3);
+            const x_15 = 93;
+            const x_16 = lean_string_push(x_14, x_15);
+            return x_16;
           }
         }
       }
@@ -2537,19 +2531,19 @@ function List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3__tc(x_1) {
         switch (lean_tag(x_3)) {
           case 0: {
             const x_4 = x_1.fields[0];
-            const x_5 = LeanJs_DemoVerify_render__closed_5();
+            const x_5 = LeanJs_DemoVerify_render__closed_3();
             const x_6 = List_foldl__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_6__closed_0();
             const x_7 = lean_array_to_list(x_4);
             const x_8 = List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_5(x_7);
             const x_9 = lean_string_append(x_6, x_8);
             const x_10 = lean_string_append(x_5, x_9);
-            const x_11 = LeanJs_DemoVerify_render__closed_7();
+            const x_11 = LeanJs_DemoVerify_render__closed_5();
             const x_12 = lean_string_append(x_10, x_11);
             return x_12;
           }
           default: {
             const x_13 = x_1.fields[0];
-            const x_14 = LeanJs_DemoVerify_render__closed_5();
+            const x_14 = LeanJs_DemoVerify_render__closed_3();
             const x_15 = List_foldl__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_6__closed_0();
             const x_16 = lean_array_to_list(x_13);
             const x_17 = List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_5(x_16);
@@ -2570,14 +2564,14 @@ function List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3(x_1) {
   return lean_trampoline(List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3__tc(x_1));
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_46__tc() {
+function LeanJs_DemoVerify_verifyMain__closed_34__tc() {
   while (true) {
-    const x_1 = LeanJs_DemoVerify_verifyMain__closed_45();
+    const x_1 = LeanJs_DemoVerify_verifyMain__closed_33();
     return { __tc: 1, f: List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3__tc, a: [x_1] };
   }
 }
-function LeanJs_DemoVerify_verifyMain__closed_46() {
-  return lean_trampoline(LeanJs_DemoVerify_verifyMain__closed_46__tc());
+function LeanJs_DemoVerify_verifyMain__closed_34() {
+  return lean_trampoline(LeanJs_DemoVerify_verifyMain__closed_34__tc());
 }
 
 function List_foldl__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_6__closed_0() {
@@ -2585,48 +2579,48 @@ function List_foldl__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_
   return x_1;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_47() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_46();
+function LeanJs_DemoVerify_verifyMain__closed_35() {
+  const x_1 = LeanJs_DemoVerify_verifyMain__closed_34();
   const x_2 = List_foldl__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_6__closed_0();
   const x_3 = lean_string_append(x_2, x_1);
   return x_3;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_43() {
+function LeanJs_DemoVerify_verifyMain__closed_31() {
   const x_1 = "matmul = ";
   return x_1;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_48() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_47();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_43();
+function LeanJs_DemoVerify_verifyMain__closed_36() {
+  const x_1 = LeanJs_DemoVerify_verifyMain__closed_35();
+  const x_2 = LeanJs_DemoVerify_verifyMain__closed_31();
   const x_3 = lean_string_append(x_2, x_1);
   return x_3;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_49() {
+function LeanJs_DemoVerify_verifyMain__closed_37() {
   const x_1 = 0;
   const x_2 = List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_5__closed_9();
   const x_3 = lean_ctor(1, 2, 0, 0, x_2, x_1);
   return x_3;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_50() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_49();
+function LeanJs_DemoVerify_verifyMain__closed_38() {
+  const x_1 = LeanJs_DemoVerify_verifyMain__closed_37();
   const x_2 = List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_5__closed_4();
   const x_3 = lean_ctor(1, 2, 0, 0, x_2, x_1);
   return x_3;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_51() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_50();
+function LeanJs_DemoVerify_verifyMain__closed_39() {
+  const x_1 = LeanJs_DemoVerify_verifyMain__closed_38();
   const x_2 = List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_5__closed_1();
   const x_3 = lean_ctor(1, 2, 0, 0, x_2, x_1);
   return x_3;
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_52() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_51();
+function LeanJs_DemoVerify_verifyMain__closed_40() {
+  const x_1 = LeanJs_DemoVerify_verifyMain__closed_39();
   const x_2 = List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_5__closed_0();
   const x_3 = lean_ctor(1, 2, 0, 0, x_2, x_1);
   return x_3;
@@ -2869,6 +2863,10 @@ function Std_DHashMap_Internal_AssocList_contains__at__Std_DHashMap_Internal_Raw
 
 // extern Array_replicate -> runtime prelude
 
+// extern Array_propagateMark -> runtime prelude
+
+// extern Array_getInternal -> runtime prelude
+
 // extern Array_set -> runtime prelude
 
 function Std_DHashMap_Internal_AssocList_foldlM__at___private_Std_Data_DHashMap_Internal_Defs_0_Std_DHashMap_Internal_Raw_x8320__expand_go__at__Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_3_spec_4_spec_6__redArg__tc(x_1, x_2) {
@@ -2878,58 +2876,92 @@ function Std_DHashMap_Internal_AssocList_foldlM__at___private_Std_Data_DHashMap_
         return x_1;
       }
       case 1: {
-        const x_3 = 1;
-        switch (x_3) {
+        const x_3 = x_2.fields[0];
+        const x_4 = x_2.fields[1];
+        const x_5 = x_2.fields[2];
+        const x_28 = 1;
+        switch (x_28) {
           case 0: {
-            const x_4 = x_2.fields[0];
-            const x_5 = x_2.fields[2];
-            const x_6 = lean_array_get_size(x_1);
-            const x_7 = lean_string_hash(x_4);
-            const x_8 = 32n;
-            const x_9 = lean_uint64_shift_right(x_7, x_8);
-            const x_10 = lean_uint64_xor(x_7, x_9);
-            const x_11 = 16n;
+            const x_7 = x_2;
+            const x_8 = x_28;
+            const x_9 = lean_array_get_size(x_1);
+            const x_10 = lean_string_hash(x_3);
+            const x_11 = 32n;
             const x_12 = lean_uint64_shift_right(x_10, x_11);
             const x_13 = lean_uint64_xor(x_10, x_12);
-            const x_14 = lean_uint64_to_usize(x_13);
-            const x_15 = lean_usize_of_nat(x_6);
-            const x_16 = 1n;
-            const x_17 = lean_usize_sub(x_15, x_16);
-            const x_18 = lean_usize_land(x_14, x_17);
-            const x_19 = lean_array_uget_borrowed(x_1, x_18);
-            x_2.fields[2] = x_19;
-            const x_20 = lean_array_uset(x_1, x_18, x_2);
-            const __t_1 = x_20;
-            const __t_2 = x_5;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_14 = 16n;
+            const x_15 = lean_uint64_shift_right(x_13, x_14);
+            const x_16 = lean_uint64_xor(x_13, x_15);
+            const x_17 = lean_uint64_to_usize(x_16);
+            const x_18 = lean_usize_of_nat(x_9);
+            const x_19 = 1n;
+            const x_20 = lean_usize_sub(x_18, x_19);
+            const x_21 = lean_usize_land(x_17, x_20);
+            const x_22 = lean_array_uget_borrowed(x_1, x_21);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[2] = x_22;
+                const x_24 = x_7;
+                const x_25 = lean_array_uset(x_1, x_21, x_24);
+                const __t_1 = x_25;
+                const __t_2 = x_5;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_27 = lean_ctor(1, 3, 0, 0, x_3, x_4, x_22);
+                const x_24 = x_27;
+                const x_25 = lean_array_uset(x_1, x_21, x_24);
+                const __t_1 = x_25;
+                const __t_2 = x_5;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_22 = x_2.fields[0];
-            const x_23 = x_2.fields[1];
-            const x_24 = x_2.fields[2];
-            const x_25 = lean_array_get_size(x_1);
-            const x_26 = lean_string_hash(x_22);
-            const x_27 = 32n;
-            const x_28 = lean_uint64_shift_right(x_26, x_27);
-            const x_29 = lean_uint64_xor(x_26, x_28);
-            const x_30 = 16n;
-            const x_31 = lean_uint64_shift_right(x_29, x_30);
-            const x_32 = lean_uint64_xor(x_29, x_31);
-            const x_33 = lean_uint64_to_usize(x_32);
-            const x_34 = lean_usize_of_nat(x_25);
-            const x_35 = 1n;
-            const x_36 = lean_usize_sub(x_34, x_35);
-            const x_37 = lean_usize_land(x_33, x_36);
-            const x_38 = lean_array_uget_borrowed(x_1, x_37);
-            const x_39 = lean_ctor(1, 3, 0, 0, x_22, x_23, x_38);
-            const x_40 = lean_array_uset(x_1, x_37, x_39);
-            const __t_1 = x_40;
-            const __t_2 = x_24;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = undefined;
+            const x_8 = x_28;
+            const x_9 = lean_array_get_size(x_1);
+            const x_10 = lean_string_hash(x_3);
+            const x_11 = 32n;
+            const x_12 = lean_uint64_shift_right(x_10, x_11);
+            const x_13 = lean_uint64_xor(x_10, x_12);
+            const x_14 = 16n;
+            const x_15 = lean_uint64_shift_right(x_13, x_14);
+            const x_16 = lean_uint64_xor(x_13, x_15);
+            const x_17 = lean_uint64_to_usize(x_16);
+            const x_18 = lean_usize_of_nat(x_9);
+            const x_19 = 1n;
+            const x_20 = lean_usize_sub(x_18, x_19);
+            const x_21 = lean_usize_land(x_17, x_20);
+            const x_22 = lean_array_uget_borrowed(x_1, x_21);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[2] = x_22;
+                const x_24 = x_7;
+                const x_25 = lean_array_uset(x_1, x_21, x_24);
+                const __t_1 = x_25;
+                const __t_2 = x_5;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_27 = lean_ctor(1, 3, 0, 0, x_3, x_4, x_22);
+                const x_24 = x_27;
+                const x_25 = lean_array_uset(x_1, x_21, x_24);
+                const __t_1 = x_25;
+                const __t_2 = x_5;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -2981,7 +3013,8 @@ function Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_
     const x_5 = 0n;
     const x_6 = 0;
     const x_7 = lean_mk_array(x_4, x_6);
-    return { __tc: 1, f: _private_Std_Data_DHashMap_Internal_Defs_0_Std_DHashMap_Internal_Raw_x8320__expand_go__at__Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_3_spec_4__redArg__tc, a: [x_5, x_1, x_7] };
+    const x_8 = lean_array_propagate_mark(x_1, x_7);
+    return { __tc: 1, f: _private_Std_Data_DHashMap_Internal_Defs_0_Std_DHashMap_Internal_Raw_x8320__expand_go__at__Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_3_spec_4__redArg__tc, a: [x_5, x_1, x_8] };
   }
 }
 function Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_3__redArg(x_1) {
@@ -2994,44 +3027,56 @@ function Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_
       return x_3;
     }
     case 1: {
-      const x_4 = 1;
-      switch (x_4) {
-        case 0: {
-          const x_5 = x_3.fields[0];
-          const x_6 = x_3.fields[1];
-          const x_7 = x_3.fields[2];
-          const x_8 = lean_string_dec_eq(x_5, x_1);
-          switch (x_8) {
-            case 0: {
-              const x_9 = Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_4__redArg(x_1, x_2, x_7);
-              x_3.fields[2] = x_9;
-              return x_3;
+      const x_4 = x_3.fields[0];
+      const x_5 = x_3.fields[1];
+      const x_6 = x_3.fields[2];
+      const block_7 = (x_8, x_9) => {
+        const x_10 = lean_string_dec_eq(x_4, x_1);
+        switch (x_10) {
+          case 0: {
+            const x_11 = Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_4__redArg(x_1, x_2, x_6);
+            const block_12 = (x_13) => {
+              return x_13;
+            };
+            switch (x_9) {
+              case 0: {
+                x_8.fields[2] = x_11;
+                return block_12(x_8);
+              }
+              case 1: {
+                const x_14 = lean_ctor(1, 3, 0, 0, x_4, x_5, x_11);
+                return block_12(x_14);
+              }
+              default: { throw new Error("no matching case"); }
             }
-            case 1: {
-              x_3.fields[1] = x_2;
-              x_3.fields[0] = x_1;
-              return x_3;
-            }
-            default: { throw new Error("no matching case"); }
           }
+          case 1: {
+            const block_15 = (x_16) => {
+              return x_16;
+            };
+            switch (x_9) {
+              case 0: {
+                x_8.fields[1] = x_2;
+                x_8.fields[0] = x_1;
+                return block_15(x_8);
+              }
+              case 1: {
+                const x_17 = lean_ctor(1, 3, 0, 0, x_1, x_2, x_6);
+                return block_15(x_17);
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      };
+      const x_18 = 1;
+      switch (x_18) {
+        case 0: {
+          return block_7(x_3, x_18);
         }
         case 1: {
-          const x_10 = x_3.fields[0];
-          const x_11 = x_3.fields[1];
-          const x_12 = x_3.fields[2];
-          const x_13 = lean_string_dec_eq(x_10, x_1);
-          switch (x_13) {
-            case 0: {
-              const x_14 = Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_4__redArg(x_1, x_2, x_12);
-              const x_15 = lean_ctor(1, 3, 0, 0, x_10, x_11, x_14);
-              return x_15;
-            }
-            case 1: {
-              const x_16 = lean_ctor(1, 3, 0, 0, x_1, x_2, x_12);
-              return x_16;
-            }
-            default: { throw new Error("no matching case"); }
-          }
+          return block_7(undefined, x_18);
         }
         default: { throw new Error("no matching case"); }
       }
@@ -3043,117 +3088,105 @@ function Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_
 // extern Array_uset -> runtime prelude
 
 function Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1__redArg(x_1, x_2, x_3) {
-  const x_4 = 1;
-  switch (x_4) {
-    case 0: {
-      const x_5 = x_1.fields[0];
-      const x_6 = x_1.fields[1];
-      const x_7 = lean_array_get_size(x_6);
-      const x_8 = lean_string_hash(x_2);
-      const x_9 = 32n;
-      const x_10 = lean_uint64_shift_right(x_8, x_9);
-      const x_11 = lean_uint64_xor(x_8, x_10);
-      const x_12 = 16n;
-      const x_13 = lean_uint64_shift_right(x_11, x_12);
-      const x_14 = lean_uint64_xor(x_11, x_13);
-      const x_15 = lean_uint64_to_usize(x_14);
-      const x_16 = lean_usize_of_nat(x_7);
-      const x_17 = 1n;
-      const x_18 = lean_usize_sub(x_16, x_17);
-      const x_19 = lean_usize_land(x_15, x_18);
-      const x_20 = lean_array_uget_borrowed(x_6, x_19);
-      const x_21 = Std_DHashMap_Internal_AssocList_contains__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_2__redArg(x_2, x_20);
-      switch (x_21) {
-        case 0: {
-          const x_22 = 1n;
-          const x_23 = (x_5 + x_22);
-          const x_24 = lean_ctor(1, 3, 0, 0, x_2, x_3, x_20);
-          const x_25 = lean_array_uset(x_6, x_19, x_24);
-          const x_26 = 4n;
-          const x_27 = (x_23 * x_26);
-          const x_28 = 3n;
-          const x_29 = (x_28 === 0n ? 0n : x_27 / x_28);
-          const x_30 = lean_array_get_size(x_25);
-          const x_31 = lean_nat_dec_le(x_29, x_30);
-          switch (x_31) {
-            case 0: {
-              const x_32 = Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_3__redArg(x_25);
-              x_1.fields[1] = x_32;
-              x_1.fields[0] = x_23;
-              return x_1;
+  const x_4 = x_1.fields[0];
+  const x_5 = x_1.fields[1];
+  const block_6 = (x_7, x_8) => {
+    const x_9 = lean_array_get_size(x_5);
+    const x_10 = lean_string_hash(x_2);
+    const x_11 = 32n;
+    const x_12 = lean_uint64_shift_right(x_10, x_11);
+    const x_13 = lean_uint64_xor(x_10, x_12);
+    const x_14 = 16n;
+    const x_15 = lean_uint64_shift_right(x_13, x_14);
+    const x_16 = lean_uint64_xor(x_13, x_15);
+    const x_17 = lean_uint64_to_usize(x_16);
+    const x_18 = lean_usize_of_nat(x_9);
+    const x_19 = 1n;
+    const x_20 = lean_usize_sub(x_18, x_19);
+    const x_21 = lean_usize_land(x_17, x_20);
+    const x_22 = lean_array_uget_borrowed(x_5, x_21);
+    const x_23 = Std_DHashMap_Internal_AssocList_contains__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_2__redArg(x_2, x_22);
+    switch (x_23) {
+      case 0: {
+        const x_24 = 1n;
+        const x_25 = (x_4 + x_24);
+        const x_26 = lean_ctor(1, 3, 0, 0, x_2, x_3, x_22);
+        const x_27 = lean_array_uset(x_5, x_21, x_26);
+        const x_28 = 4n;
+        const x_29 = (x_25 * x_28);
+        const x_30 = 3n;
+        const x_31 = (x_30 === 0n ? 0n : x_29 / x_30);
+        const x_32 = lean_array_get_size(x_27);
+        const x_33 = lean_nat_dec_le(x_31, x_32);
+        switch (x_33) {
+          case 0: {
+            const x_34 = Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_3__redArg(x_27);
+            const block_35 = (x_36) => {
+              return x_36;
+            };
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_34;
+                x_7.fields[0] = x_25;
+                return block_35(x_7);
+              }
+              case 1: {
+                const x_37 = lean_ctor(0, 2, 0, 0, x_25, x_34);
+                return block_35(x_37);
+              }
+              default: { throw new Error("no matching case"); }
             }
-            case 1: {
-              x_1.fields[1] = x_25;
-              x_1.fields[0] = x_23;
-              return x_1;
-            }
-            default: { throw new Error("no matching case"); }
           }
+          case 1: {
+            const block_38 = (x_39) => {
+              return x_39;
+            };
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_27;
+                x_7.fields[0] = x_25;
+                return block_38(x_7);
+              }
+              case 1: {
+                const x_40 = lean_ctor(0, 2, 0, 0, x_25, x_27);
+                return block_38(x_40);
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          }
+          default: { throw new Error("no matching case"); }
         }
-        case 1: {
-          const x_33 = 0;
-          const x_34 = lean_array_uset(x_6, x_19, x_33);
-          const x_35 = Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_4__redArg(x_2, x_3, x_20);
-          const x_36 = lean_array_uset(x_34, x_19, x_35);
-          x_1.fields[1] = x_36;
-          return x_1;
-        }
-        default: { throw new Error("no matching case"); }
       }
+      case 1: {
+        const x_41 = 0;
+        const x_42 = lean_array_uset(x_5, x_21, x_41);
+        const x_43 = Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_4__redArg(x_2, x_3, x_22);
+        const x_44 = lean_array_uset(x_42, x_21, x_43);
+        const block_45 = (x_46) => {
+          return x_46;
+        };
+        switch (x_8) {
+          case 0: {
+            x_7.fields[1] = x_44;
+            return block_45(x_7);
+          }
+          case 1: {
+            const x_47 = lean_ctor(0, 2, 0, 0, x_4, x_44);
+            return block_45(x_47);
+          }
+          default: { throw new Error("no matching case"); }
+        }
+      }
+      default: { throw new Error("no matching case"); }
+    }
+  };
+  const x_48 = 1;
+  switch (x_48) {
+    case 0: {
+      return block_6(x_1, x_48);
     }
     case 1: {
-      const x_37 = x_1.fields[0];
-      const x_38 = x_1.fields[1];
-      const x_39 = lean_array_get_size(x_38);
-      const x_40 = lean_string_hash(x_2);
-      const x_41 = 32n;
-      const x_42 = lean_uint64_shift_right(x_40, x_41);
-      const x_43 = lean_uint64_xor(x_40, x_42);
-      const x_44 = 16n;
-      const x_45 = lean_uint64_shift_right(x_43, x_44);
-      const x_46 = lean_uint64_xor(x_43, x_45);
-      const x_47 = lean_uint64_to_usize(x_46);
-      const x_48 = lean_usize_of_nat(x_39);
-      const x_49 = 1n;
-      const x_50 = lean_usize_sub(x_48, x_49);
-      const x_51 = lean_usize_land(x_47, x_50);
-      const x_52 = lean_array_uget_borrowed(x_38, x_51);
-      const x_53 = Std_DHashMap_Internal_AssocList_contains__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_2__redArg(x_2, x_52);
-      switch (x_53) {
-        case 0: {
-          const x_54 = 1n;
-          const x_55 = (x_37 + x_54);
-          const x_56 = lean_ctor(1, 3, 0, 0, x_2, x_3, x_52);
-          const x_57 = lean_array_uset(x_38, x_51, x_56);
-          const x_58 = 4n;
-          const x_59 = (x_55 * x_58);
-          const x_60 = 3n;
-          const x_61 = (x_60 === 0n ? 0n : x_59 / x_60);
-          const x_62 = lean_array_get_size(x_57);
-          const x_63 = lean_nat_dec_le(x_61, x_62);
-          switch (x_63) {
-            case 0: {
-              const x_64 = Std_DHashMap_Internal_Raw_x8320__expand__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_3__redArg(x_57);
-              const x_65 = lean_ctor(0, 2, 0, 0, x_55, x_64);
-              return x_65;
-            }
-            case 1: {
-              const x_66 = lean_ctor(0, 2, 0, 0, x_55, x_57);
-              return x_66;
-            }
-            default: { throw new Error("no matching case"); }
-          }
-        }
-        case 1: {
-          const x_67 = 0;
-          const x_68 = lean_array_uset(x_38, x_51, x_67);
-          const x_69 = Std_DHashMap_Internal_AssocList_replace__at__Std_DHashMap_Internal_Raw_x8320__insert__at__LeanJs_DemoVerify_relax_spec_1_spec_4__redArg(x_2, x_3, x_52);
-          const x_70 = lean_array_uset(x_68, x_51, x_69);
-          const x_71 = lean_ctor(0, 2, 0, 0, x_37, x_70);
-          return x_71;
-        }
-        default: { throw new Error("no matching case"); }
-      }
+      return block_6(undefined, x_48);
     }
     default: { throw new Error("no matching case"); }
   }
@@ -3356,36 +3389,69 @@ function List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_5__tc(x_1, x_2) 
         return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
-        const x_4 = 1;
-        switch (x_4) {
+        const x_4 = x_1.fields[0];
+        const x_5 = x_1.fields[1];
+        const x_17 = 1;
+        switch (x_17) {
           case 0: {
-            const x_5 = x_1.fields[0];
-            const x_6 = x_1.fields[1];
-            const x_7 = List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_5__closed_19();
-            const x_8 = 999n;
-            const x_9 = Std_DHashMap_Internal_Raw_x8320__Const_getD__at__LeanJs_DemoVerify_verifyMain_spec_4__redArg(x_7, x_5, x_8);
-            const x_10 = lean_ctor(0, 2, 0, 0, x_5, x_9);
-            x_1.fields[1] = x_2;
-            x_1.fields[0] = x_10;
-            const __t_1 = x_6;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = x_1;
+            const x_8 = x_17;
+            const x_9 = List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_5__closed_19();
+            const x_10 = 999n;
+            const x_11 = Std_DHashMap_Internal_Raw_x8320__Const_getD__at__LeanJs_DemoVerify_verifyMain_spec_4__redArg(x_9, x_4, x_10);
+            const x_12 = lean_ctor(0, 2, 0, 0, x_4, x_11);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_12;
+                const x_14 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_14;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_16 = lean_ctor(1, 2, 0, 0, x_12, x_2);
+                const x_14 = x_16;
+                const __t_1 = x_5;
+                const __t_2 = x_14;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_12 = x_1.fields[0];
-            const x_13 = x_1.fields[1];
-            const x_14 = List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_5__closed_19();
-            const x_15 = 999n;
-            const x_16 = Std_DHashMap_Internal_Raw_x8320__Const_getD__at__LeanJs_DemoVerify_verifyMain_spec_4__redArg(x_14, x_12, x_15);
-            const x_17 = lean_ctor(0, 2, 0, 0, x_12, x_16);
-            const x_18 = lean_ctor(1, 2, 0, 0, x_17, x_2);
-            const __t_1 = x_13;
-            const __t_2 = x_18;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = undefined;
+            const x_8 = x_17;
+            const x_9 = List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_5__closed_19();
+            const x_10 = 999n;
+            const x_11 = Std_DHashMap_Internal_Raw_x8320__Const_getD__at__LeanJs_DemoVerify_verifyMain_spec_4__redArg(x_9, x_4, x_10);
+            const x_12 = lean_ctor(0, 2, 0, 0, x_4, x_11);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_12;
+                const x_14 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_14;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_16 = lean_ctor(1, 2, 0, 0, x_12, x_2);
+                const x_14 = x_16;
+                const __t_1 = x_5;
+                const __t_2 = x_14;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -3398,15 +3464,15 @@ function List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_5(x_1, x_2) {
   return lean_trampoline(List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_5__tc(x_1, x_2));
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_54__tc() {
+function LeanJs_DemoVerify_verifyMain__closed_42__tc() {
   while (true) {
     const x_1 = 0;
-    const x_2 = LeanJs_DemoVerify_verifyMain__closed_52();
+    const x_2 = LeanJs_DemoVerify_verifyMain__closed_40();
     return { __tc: 1, f: List_mapTR_loop__at__LeanJs_DemoVerify_verifyMain_spec_5__tc, a: [x_2, x_1] };
   }
 }
-function LeanJs_DemoVerify_verifyMain__closed_54() {
-  return lean_trampoline(LeanJs_DemoVerify_verifyMain__closed_54__tc());
+function LeanJs_DemoVerify_verifyMain__closed_42() {
+  return lean_trampoline(LeanJs_DemoVerify_verifyMain__closed_42__tc());
 }
 
 function List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_5__closed_0__tc() {
@@ -3419,12 +3485,12 @@ function List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec
   return lean_trampoline(List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_5__closed_0__tc());
 }
 
-function LeanJs_DemoVerify_render__closed_7() {
+function LeanJs_DemoVerify_render__closed_5() {
   const x_1 = "]";
   return x_1;
 }
 
-function LeanJs_DemoVerify_render__closed_5() {
+function LeanJs_DemoVerify_render__closed_3() {
   const x_1 = "[";
   return x_1;
 }
@@ -3492,32 +3558,65 @@ function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0__tc
         return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
-        const x_4 = 1;
-        switch (x_4) {
+        const x_4 = x_1.fields[0];
+        const x_5 = x_1.fields[1];
+        const x_15 = 1;
+        switch (x_15) {
           case 0: {
-            const x_5 = x_1.fields[0];
-            const x_6 = x_1.fields[1];
-            const x_7 = lean_usize_of_nat(x_5);
-            const x_8 = lean_string_of_usize(x_7);
-            x_1.fields[1] = x_2;
-            x_1.fields[0] = x_8;
-            const __t_1 = x_6;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = x_1;
+            const x_8 = x_15;
+            const x_9 = lean_usize_of_nat(x_4);
+            const x_10 = lean_string_of_usize(x_9);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_10;
+                const x_12 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                const x_12 = x_14;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_10 = x_1.fields[0];
-            const x_11 = x_1.fields[1];
-            const x_12 = lean_usize_of_nat(x_10);
-            const x_13 = lean_string_of_usize(x_12);
-            const x_14 = lean_ctor(1, 2, 0, 0, x_13, x_2);
-            const __t_1 = x_11;
-            const __t_2 = x_14;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = undefined;
+            const x_8 = x_15;
+            const x_9 = lean_usize_of_nat(x_4);
+            const x_10 = lean_string_of_usize(x_9);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_10;
+                const x_12 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                const x_12 = x_14;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -3844,7 +3943,7 @@ function Nat_toDigits(x_1, x_2) {
 
 // extern USize_repr -> runtime prelude
 
-// extern Array_getInternal -> runtime prelude
+// extern Array_getInternalBorrowed -> runtime prelude
 
 function Nat_reprFast__tc(x_1) {
   while (true) {
@@ -3871,7 +3970,7 @@ function Nat_reprFast__tc(x_1) {
         }
       }
       case 1: {
-        const x_12 = lean_array_uget(x_2, x_1);
+        const x_12 = lean_array_fget_borrowed(x_2, x_1);
         return x_12;
       }
       default: { throw new Error("no matching case"); }
@@ -3937,7 +4036,7 @@ function List_toString__at__LeanJs_DemoVerify_verifyMain_spec_6__tc(x_1) {
             const x_4 = x_1.fields[0];
             const x_5 = x_4.fields[0];
             const x_6 = x_4.fields[1];
-            const x_7 = LeanJs_DemoVerify_render__closed_5();
+            const x_7 = LeanJs_DemoVerify_render__closed_3();
             const x_8 = List_foldl__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_6_spec_11__closed_0();
             const x_9 = lean_string_append(x_8, x_5);
             const x_10 = List_foldl__at__List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_5_spec_6__closed_0();
@@ -3947,7 +4046,7 @@ function List_toString__at__LeanJs_DemoVerify_verifyMain_spec_6__tc(x_1) {
             const x_14 = List_foldl__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_6_spec_11__closed_1();
             const x_15 = lean_string_append(x_13, x_14);
             const x_16 = lean_string_append(x_7, x_15);
-            const x_17 = LeanJs_DemoVerify_render__closed_7();
+            const x_17 = LeanJs_DemoVerify_render__closed_5();
             const x_18 = lean_string_append(x_16, x_17);
             return x_18;
           }
@@ -3955,7 +4054,7 @@ function List_toString__at__LeanJs_DemoVerify_verifyMain_spec_6__tc(x_1) {
             const x_19 = x_1.fields[0];
             const x_20 = x_19.fields[0];
             const x_21 = x_19.fields[1];
-            const x_22 = LeanJs_DemoVerify_render__closed_5();
+            const x_22 = LeanJs_DemoVerify_render__closed_3();
             const x_23 = List_foldl__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_6_spec_11__closed_0();
             const x_24 = lean_string_append(x_23, x_20);
             const x_25 = List_foldl__at__List_toString__at__List_toString__at__LeanJs_DemoVerify_verifyMain_spec_3_spec_5_spec_6__closed_0();
@@ -3980,26 +4079,26 @@ function List_toString__at__LeanJs_DemoVerify_verifyMain_spec_6(x_1) {
   return lean_trampoline(List_toString__at__LeanJs_DemoVerify_verifyMain_spec_6__tc(x_1));
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_55__tc() {
+function LeanJs_DemoVerify_verifyMain__closed_43__tc() {
   while (true) {
-    const x_1 = LeanJs_DemoVerify_verifyMain__closed_54();
+    const x_1 = LeanJs_DemoVerify_verifyMain__closed_42();
     return { __tc: 1, f: List_toString__at__LeanJs_DemoVerify_verifyMain_spec_6__tc, a: [x_1] };
   }
 }
-function LeanJs_DemoVerify_verifyMain__closed_55() {
-  return lean_trampoline(LeanJs_DemoVerify_verifyMain__closed_55__tc());
+function LeanJs_DemoVerify_verifyMain__closed_43() {
+  return lean_trampoline(LeanJs_DemoVerify_verifyMain__closed_43__tc());
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_53() {
+function LeanJs_DemoVerify_verifyMain__closed_41() {
   const x_1 = "dist = ";
   return x_1;
 }
 
 // extern String_append -> runtime prelude
 
-function LeanJs_DemoVerify_verifyMain__closed_56() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_55();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_53();
+function LeanJs_DemoVerify_verifyMain__closed_44() {
+  const x_1 = LeanJs_DemoVerify_verifyMain__closed_43();
+  const x_2 = LeanJs_DemoVerify_verifyMain__closed_41();
   const x_3 = lean_string_append(x_2, x_1);
   return x_3;
 }
@@ -4030,7 +4129,7 @@ function IO_println__at__LeanJs_DemoVerify_verifyMain_spec_0(x_1) {
   return lean_trampoline(IO_println__at__LeanJs_DemoVerify_verifyMain_spec_0__tc(x_1));
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_59() {
+function LeanJs_DemoVerify_verifyMain__closed_47() {
   const x_1 = LeanJs_DemoVerify_verifyMain__closed_7();
   const x_2 = lean_string_mk(x_1);
   return x_2;
@@ -4086,30 +4185,43 @@ function LeanJs_DemoVerify_rleGo__tc(x_1, x_2, x_3) {
         return x_7;
       }
       case 1: {
-        const x_8 = 1;
-        switch (x_8) {
+        const x_8 = x_3.fields[0];
+        const x_9 = x_3.fields[1];
+        const x_26 = 1;
+        switch (x_26) {
           case 0: {
-            const x_9 = x_3.fields[0];
-            const x_10 = x_3.fields[1];
-            const x_11 = x_9;
-            const x_12 = lean_uint32_dec_eq(x_11, x_1);
-            switch (x_12) {
+            const x_11 = x_3;
+            const x_12 = x_26;
+            const x_13 = x_8;
+            const x_14 = lean_uint32_dec_eq(x_13, x_1);
+            switch (x_14) {
               case 0: {
-                const x_13 = x_1;
-                const x_14 = lean_ctor(0, 2, 0, 0, x_13, x_2);
-                const x_15 = 1n;
-                const x_16 = x_9;
-                const x_17 = LeanJs_DemoVerify_rleGo(x_16, x_15, x_10);
-                x_3.fields[1] = x_17;
-                x_3.fields[0] = x_14;
-                return x_3;
+                const x_15 = x_1;
+                const x_16 = lean_ctor(0, 2, 0, 0, x_15, x_2);
+                const x_17 = 1n;
+                const x_18 = x_8;
+                const x_19 = LeanJs_DemoVerify_rleGo(x_18, x_17, x_9);
+                switch (x_12) {
+                  case 0: {
+                    x_11.fields[1] = x_19;
+                    x_11.fields[0] = x_16;
+                    const x_21 = x_11;
+                    return x_21;
+                  }
+                  case 1: {
+                    const x_22 = lean_ctor(1, 2, 0, 0, x_16, x_19);
+                    const x_21 = x_22;
+                    return x_21;
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               case 1: {
-                const x_18 = 1n;
-                const x_19 = (x_2 + x_18);
+                const x_23 = 1n;
+                const x_24 = (x_2 + x_23);
                 const __t_1 = x_1;
-                const __t_2 = x_19;
-                const __t_3 = x_10;
+                const __t_2 = x_24;
+                const __t_3 = x_9;
                 x_1 = __t_1;
                 x_2 = __t_2;
                 x_3 = __t_3;
@@ -4119,26 +4231,38 @@ function LeanJs_DemoVerify_rleGo__tc(x_1, x_2, x_3) {
             }
           }
           case 1: {
-            const x_21 = x_3.fields[0];
-            const x_22 = x_3.fields[1];
-            const x_23 = x_21;
-            const x_24 = lean_uint32_dec_eq(x_23, x_1);
-            switch (x_24) {
+            const x_11 = undefined;
+            const x_12 = x_26;
+            const x_13 = x_8;
+            const x_14 = lean_uint32_dec_eq(x_13, x_1);
+            switch (x_14) {
               case 0: {
-                const x_25 = x_1;
-                const x_26 = lean_ctor(0, 2, 0, 0, x_25, x_2);
-                const x_27 = 1n;
-                const x_28 = x_21;
-                const x_29 = LeanJs_DemoVerify_rleGo(x_28, x_27, x_22);
-                const x_30 = lean_ctor(1, 2, 0, 0, x_26, x_29);
-                return x_30;
+                const x_15 = x_1;
+                const x_16 = lean_ctor(0, 2, 0, 0, x_15, x_2);
+                const x_17 = 1n;
+                const x_18 = x_8;
+                const x_19 = LeanJs_DemoVerify_rleGo(x_18, x_17, x_9);
+                switch (x_12) {
+                  case 0: {
+                    x_11.fields[1] = x_19;
+                    x_11.fields[0] = x_16;
+                    const x_21 = x_11;
+                    return x_21;
+                  }
+                  case 1: {
+                    const x_22 = lean_ctor(1, 2, 0, 0, x_16, x_19);
+                    const x_21 = x_22;
+                    return x_21;
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               case 1: {
-                const x_31 = 1n;
-                const x_32 = (x_2 + x_31);
+                const x_23 = 1n;
+                const x_24 = (x_2 + x_23);
                 const __t_1 = x_1;
-                const __t_2 = x_32;
-                const __t_3 = x_22;
+                const __t_2 = x_24;
+                const __t_3 = x_9;
                 x_1 = __t_1;
                 x_2 = __t_2;
                 x_3 = __t_3;
@@ -4263,26 +4387,59 @@ function List_reverseAux__redArg__tc(x_1, x_2) {
         return x_2;
       }
       case 1: {
-        const x_3 = 1;
-        switch (x_3) {
+        const x_3 = x_1.fields[0];
+        const x_4 = x_1.fields[1];
+        const x_12 = 1;
+        switch (x_12) {
           case 0: {
-            const x_4 = x_1.fields[1];
-            x_1.fields[1] = x_2;
-            const __t_1 = x_4;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_6 = x_1;
+            const x_7 = x_12;
+            switch (x_7) {
+              case 0: {
+                x_6.fields[1] = x_2;
+                const x_9 = x_6;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_11 = lean_ctor(1, 2, 0, 0, x_3, x_2);
+                const x_9 = x_11;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_6 = x_1.fields[0];
-            const x_7 = x_1.fields[1];
-            const x_8 = lean_ctor(1, 2, 0, 0, x_6, x_2);
-            const __t_1 = x_7;
-            const __t_2 = x_8;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_6 = undefined;
+            const x_7 = x_12;
+            switch (x_7) {
+              case 0: {
+                x_6.fields[1] = x_2;
+                const x_9 = x_6;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_11 = lean_ctor(1, 2, 0, 0, x_3, x_2);
+                const x_9 = x_11;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -4371,29 +4528,29 @@ function LeanJs_DemoVerify_rleDec(x_1) {
   return lean_trampoline(LeanJs_DemoVerify_rleDec__tc(x_1));
 }
 
-function LeanJs_DemoVerify_verifyMain__closed_57__tc() {
+function LeanJs_DemoVerify_verifyMain__closed_45__tc() {
   while (true) {
     const x_1 = LeanJs_DemoVerify_verifyMain__closed_8();
     return { __tc: 1, f: LeanJs_DemoVerify_rleDec__tc, a: [x_1] };
   }
 }
-function LeanJs_DemoVerify_verifyMain__closed_57() {
-  return lean_trampoline(LeanJs_DemoVerify_verifyMain__closed_57__tc());
+function LeanJs_DemoVerify_verifyMain__closed_45() {
+  return lean_trampoline(LeanJs_DemoVerify_verifyMain__closed_45__tc());
 }
 
 // extern String_ofList -> runtime prelude
 
-function LeanJs_DemoVerify_verifyMain__closed_58() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_57();
+function LeanJs_DemoVerify_verifyMain__closed_46() {
+  const x_1 = LeanJs_DemoVerify_verifyMain__closed_45();
   const x_2 = lean_string_mk(x_1);
   return x_2;
 }
 
 // extern String_decEq -> runtime prelude
 
-function LeanJs_DemoVerify_verifyMain__closed_60() {
-  const x_1 = LeanJs_DemoVerify_verifyMain__closed_59();
-  const x_2 = LeanJs_DemoVerify_verifyMain__closed_58();
+function LeanJs_DemoVerify_verifyMain__closed_48() {
+  const x_1 = LeanJs_DemoVerify_verifyMain__closed_47();
+  const x_2 = LeanJs_DemoVerify_verifyMain__closed_46();
   const x_3 = lean_string_dec_eq(x_2, x_1);
   return x_3;
 }
@@ -4429,56 +4586,56 @@ function LeanJs_DemoVerify_verifyMain__tc() {
         switch (lean_tag(x_5)) {
           case 0: {
             const x_6 = LeanJs_DemoVerify_verifyMain__closed_13();
-            const x_15 = LeanJs_DemoVerify_verifyMain__closed_60();
+            const x_15 = LeanJs_DemoVerify_verifyMain__closed_48();
             switch (x_15) {
               case 0: {
                 const x_16 = LeanJs_DemoVerify_render__closed_1();
-                const x_7 = x_16;
-                const x_8 = lean_string_append(x_6, x_7);
-                const x_9 = IO_println__at__LeanJs_DemoVerify_verifyMain_spec_0(x_8, undefined);
-                switch (lean_tag(x_9)) {
+                const x_8 = x_16;
+                const x_9 = lean_string_append(x_6, x_8);
+                const x_10 = IO_println__at__LeanJs_DemoVerify_verifyMain_spec_0(x_9, undefined);
+                switch (lean_tag(x_10)) {
                   case 0: {
-                    const x_10 = LeanJs_DemoVerify_verifyMain__closed_48();
-                    const x_11 = IO_println__at__LeanJs_DemoVerify_verifyMain_spec_0(x_10, undefined);
-                    switch (lean_tag(x_11)) {
+                    const x_11 = LeanJs_DemoVerify_verifyMain__closed_36();
+                    const x_12 = IO_println__at__LeanJs_DemoVerify_verifyMain_spec_0(x_11, undefined);
+                    switch (lean_tag(x_12)) {
                       case 0: {
-                        const x_12 = LeanJs_DemoVerify_verifyMain__closed_56();
-                        return { __tc: 1, f: IO_println__at__LeanJs_DemoVerify_verifyMain_spec_0__tc, a: [x_12, undefined] };
+                        const x_13 = LeanJs_DemoVerify_verifyMain__closed_44();
+                        return { __tc: 1, f: IO_println__at__LeanJs_DemoVerify_verifyMain_spec_0__tc, a: [x_13, undefined] };
                       }
                       case 1: {
-                        return x_11;
+                        return x_12;
                       }
                       default: { throw new Error("no matching case"); }
                     }
                   }
                   case 1: {
-                    return x_9;
+                    return x_10;
                   }
                   default: { throw new Error("no matching case"); }
                 }
               }
               case 1: {
                 const x_17 = LeanJs_DemoVerify_render__closed_2();
-                const x_7 = x_17;
-                const x_8 = lean_string_append(x_6, x_7);
-                const x_9 = IO_println__at__LeanJs_DemoVerify_verifyMain_spec_0(x_8, undefined);
-                switch (lean_tag(x_9)) {
+                const x_8 = x_17;
+                const x_9 = lean_string_append(x_6, x_8);
+                const x_10 = IO_println__at__LeanJs_DemoVerify_verifyMain_spec_0(x_9, undefined);
+                switch (lean_tag(x_10)) {
                   case 0: {
-                    const x_10 = LeanJs_DemoVerify_verifyMain__closed_48();
-                    const x_11 = IO_println__at__LeanJs_DemoVerify_verifyMain_spec_0(x_10, undefined);
-                    switch (lean_tag(x_11)) {
+                    const x_11 = LeanJs_DemoVerify_verifyMain__closed_36();
+                    const x_12 = IO_println__at__LeanJs_DemoVerify_verifyMain_spec_0(x_11, undefined);
+                    switch (lean_tag(x_12)) {
                       case 0: {
-                        const x_12 = LeanJs_DemoVerify_verifyMain__closed_56();
-                        return { __tc: 1, f: IO_println__at__LeanJs_DemoVerify_verifyMain_spec_0__tc, a: [x_12, undefined] };
+                        const x_13 = LeanJs_DemoVerify_verifyMain__closed_44();
+                        return { __tc: 1, f: IO_println__at__LeanJs_DemoVerify_verifyMain_spec_0__tc, a: [x_13, undefined] };
                       }
                       case 1: {
-                        return x_11;
+                        return x_12;
                       }
                       default: { throw new Error("no matching case"); }
                     }
                   }
                   case 1: {
-                    return x_9;
+                    return x_10;
                   }
                   default: { throw new Error("no matching case"); }
                 }

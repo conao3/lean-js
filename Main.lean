@@ -78,7 +78,6 @@ def main (args : List String) : IO Unit := do
       { module := `LeanJs.DemoVerify },
       { module := `LeanJs.Fuzz },
       { module := `LeanTodo.Basic }] {}
-    (loadExts := true)
   let prelude ← IO.FS.readFile preludePath
   let decls := LeanJs.collectTransitive env rootNames
   -- Fail loud (non-zero exit, no output written) if any reached extern has no

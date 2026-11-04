@@ -141,6 +141,7 @@ const lean_panic_fn = (defaultVal, msg) => {
   if (_leanExitOnPanic) process.exit(1);
   return defaultVal;
 };
+const lean_panic_fn_borrowed = lean_panic_fn;
 // FnBody.unreachable -> lean_internal_panic_unreachable: FATAL. Dead match arms
 // are never meant to run; print and terminate (never fall through).
 const lean_internal_panic = (msg) => {
@@ -240,7 +241,7 @@ const _u64 = _mkUIntBig(64), _usz = _mkUIntBig(WORD_BITS);
 const lean_uint8_of_nat = _u8.ofNat, lean_uint8_add = _u8.add, lean_uint8_sub = _u8.sub, lean_uint8_mul = _u8.mul, lean_uint8_div = _u8.div, lean_uint8_mod = _u8.mod, lean_uint8_land = _u8.land, lean_uint8_lor = _u8.lor, lean_uint8_xor = _u8.xor, lean_uint8_complement = _u8.complement, lean_uint8_neg = _u8.neg, lean_uint8_shift_left = _u8.shiftLeft, lean_uint8_shift_right = _u8.shiftRight, lean_uint8_dec_eq = _u8.decEq, lean_uint8_dec_lt = _u8.decLt, lean_uint8_dec_le = _u8.decLe, lean_uint8_to_nat = _u8.toNat;
 const lean_uint16_of_nat = _u16.ofNat, lean_uint16_add = _u16.add, lean_uint16_sub = _u16.sub, lean_uint16_mul = _u16.mul, lean_uint16_div = _u16.div, lean_uint16_mod = _u16.mod, lean_uint16_land = _u16.land, lean_uint16_lor = _u16.lor, lean_uint16_xor = _u16.xor, lean_uint16_complement = _u16.complement, lean_uint16_neg = _u16.neg, lean_uint16_shift_left = _u16.shiftLeft, lean_uint16_shift_right = _u16.shiftRight, lean_uint16_dec_eq = _u16.decEq, lean_uint16_dec_lt = _u16.decLt, lean_uint16_dec_le = _u16.decLe, lean_uint16_to_nat = _u16.toNat;
 const lean_uint32_add = _u32.add, lean_uint32_sub = _u32.sub, lean_uint32_mul = _u32.mul, lean_uint32_div = _u32.div, lean_uint32_mod = _u32.mod, lean_uint32_land = _u32.land, lean_uint32_lor = _u32.lor, lean_uint32_xor = _u32.xor, lean_uint32_complement = _u32.complement, lean_uint32_neg = _u32.neg, lean_uint32_shift_left = _u32.shiftLeft, lean_uint32_shift_right = _u32.shiftRight, lean_uint32_dec_eq = _u32.decEq, lean_uint32_dec_lt = _u32.decLt, lean_uint32_dec_le = _u32.decLe, lean_uint32_to_nat = _u32.toNat;
-const lean_uint64_of_nat = _u64.ofNat, lean_uint64_add = _u64.add, lean_uint64_sub = _u64.sub, lean_uint64_mul = _u64.mul, lean_uint64_div = _u64.div, lean_uint64_mod = _u64.mod, lean_uint64_land = _u64.land, lean_uint64_lor = _u64.lor, lean_uint64_xor = _u64.xor, lean_uint64_complement = _u64.complement, lean_uint64_neg = _u64.neg, lean_uint64_shift_left = _u64.shiftLeft, lean_uint64_shift_right = _u64.shiftRight, lean_uint64_dec_eq = _u64.decEq, lean_uint64_dec_lt = _u64.decLt, lean_uint64_dec_le = _u64.decLe, lean_uint64_to_nat = _u64.toNat;
+const lean_uint64_of_nat = _u64.ofNat, lean_uint64_of_nat_mk = _u64.ofNat, lean_uint64_add = _u64.add, lean_uint64_sub = _u64.sub, lean_uint64_mul = _u64.mul, lean_uint64_div = _u64.div, lean_uint64_mod = _u64.mod, lean_uint64_land = _u64.land, lean_uint64_lor = _u64.lor, lean_uint64_xor = _u64.xor, lean_uint64_complement = _u64.complement, lean_uint64_neg = _u64.neg, lean_uint64_shift_left = _u64.shiftLeft, lean_uint64_shift_right = _u64.shiftRight, lean_uint64_dec_eq = _u64.decEq, lean_uint64_dec_lt = _u64.decLt, lean_uint64_dec_le = _u64.decLe, lean_uint64_to_nat = _u64.toNat;
 const lean_usize_of_nat = _usz.ofNat, lean_usize_add = _usz.add, lean_usize_sub = _usz.sub, lean_usize_mul = _usz.mul, lean_usize_div = _usz.div, lean_usize_mod = _usz.mod, lean_usize_land = _usz.land, lean_usize_lor = _usz.lor, lean_usize_xor = _usz.xor, lean_usize_complement = _usz.complement, lean_usize_neg = _usz.neg, lean_usize_shift_left = _usz.shiftLeft, lean_usize_shift_right = _usz.shiftRight, lean_usize_dec_eq = _usz.decEq, lean_usize_dec_lt = _usz.decLt, lean_usize_dec_le = _usz.decLe, lean_usize_to_nat = _usz.toNat;
 // UInt64 -> USize truncates to the platform word width; on the 64-bit profile
 // this is an identity re-mask, on a 32-bit profile it drops the high 32 bits.
@@ -259,7 +260,7 @@ const _mkSInt = (bits) => {
   return {
     // toInt reinterprets the raw stored bit pattern as a signed two's-complement
     // Int. A packed signed field is stored/read through the UNSIGNED DataView
-    // path (sproj/sset only know uintN at Lean 4.29.1 — no signed IRType), so a
+    // path (sproj/sset only know uintN at Lean 4.35.0 — no signed IRType), so a
     // negative Int8 like -5 arrives here as the unsigned byte 251 (a JS number);
     // BigInt.asIntN recovers -5. Already-signed bigint inputs are idempotent in
     // range, so the same boundary works for normal Int8 arithmetic values too.
@@ -555,6 +556,7 @@ const lean_string_utf8_extract = (s, lo, hi) => {
 };
 // String.set : replace the char starting at byte pos p with codepoint c. A pos
 // that is out of range or mid-char leaves the string unchanged (Lean returns s).
+const lean_string_utf8_extract_fast = lean_string_utf8_extract;
 const lean_string_utf8_set = (s, p, c) => {
   const b = _utf8enc.encode(s), i = Number(p);
   if (i < 0 || i >= b.length || !_u8isFirst(b[i])) return s;
@@ -722,6 +724,7 @@ const lean_array_uget = (a, i) => a[Number(i)];
 // prelude is self-documenting rather than routing the Lean decls to lean_array_uget.
 const lean_array_fget_borrowed = lean_array_fget;
 const lean_array_uget_borrowed = lean_array_uget;
+const lean_array_propagate_mark = (src, dst) => dst;
 // Setters return a fresh array (functional), mirroring the ctor reuse/copy
 // model: JS arrays are reference-shared with no refcount, so in-place updates
 // from the compiler's unsafe (assumed-unique) map/foldl paths would corrupt the
@@ -749,6 +752,7 @@ const lean_nat_xor = (a, b) => a ^ b;
 
 // ---- Int / Nat conversions ----
 const lean_int_of_nat = (n) => n;
+const lean_int_neg_succ_of_nat = (n) => -(n + 1n);
 const lean_int_to_nat = (i) => (i < 0n ? 0n : i);
 const lean_nat_abs = (i) => (i < 0n ? -i : i);
 const lean_uint32_of_nat2 = (n) => Number(BigInt.asUintN(32, n));
@@ -918,6 +922,7 @@ const lean_st_ref_get = (r) => r.value;
 const lean_st_ref_set = (r, a) => { r.value = a; return 0; };
 const lean_st_ref_swap = (r, a) => { const o = r.value; r.value = a; return o; };
 const lean_st_ref_take = (r) => { const o = r.value; r.value = undefined; return o; };
+const lean_st_ref_put = lean_st_ref_set;
 const lean_st_ref_ptr_eq = (r1, r2) => (r1 === r2 ? 1 : 0);
 
 // IO.getEnv : BaseIO (Option String). BaseIO -> bare Option (no io_result wrap).
@@ -1110,118 +1115,47 @@ function LeanJs_DemoIO_main__closed_4() {
   return x_3;
 }
 
-function LeanJs_DemoIO_main__closed_6__tc() {
-  while (true) {
-    const x_1 = 5n;
-    return { __tc: 1, f: Nat_reprFast__tc, a: [x_1] };
-  }
-}
-function LeanJs_DemoIO_main__closed_6() {
-  return lean_trampoline(LeanJs_DemoIO_main__closed_6__tc());
+function LeanJs_DemoIO_main__closed_5() {
+  const x_1 = "2 + 3 = 5";
+  return x_1;
 }
 
-function LeanJs_DemoIO_main__closed_5() {
-  const x_1 = "2 + 3 = ";
+function LeanJs_DemoIO_main__closed_6() {
+  const x_1 = "big1 = 1000000000000000000";
   return x_1;
 }
 
 function LeanJs_DemoIO_main__closed_7() {
-  const x_1 = LeanJs_DemoIO_main__closed_6();
-  const x_2 = LeanJs_DemoIO_main__closed_5();
-  const x_3 = lean_string_append(x_2, x_1);
-  return x_3;
-}
-
-function LeanJs_DemoIO_main__closed_9__tc() {
-  while (true) {
-    const x_1 = 1000000000000000000n;
-    return { __tc: 1, f: Nat_reprFast__tc, a: [x_1] };
-  }
-}
-function LeanJs_DemoIO_main__closed_9() {
-  return lean_trampoline(LeanJs_DemoIO_main__closed_9__tc());
+  const x_1 = "big2 = 1152921504606846976";
+  return x_1;
 }
 
 function LeanJs_DemoIO_main__closed_8() {
-  const x_1 = "big1 = ";
+  const x_1 = "huge = 123456789012345678901234567890";
   return x_1;
-}
-
-function LeanJs_DemoIO_main__closed_10() {
-  const x_1 = LeanJs_DemoIO_main__closed_9();
-  const x_2 = LeanJs_DemoIO_main__closed_8();
-  const x_3 = lean_string_append(x_2, x_1);
-  return x_3;
-}
-
-function LeanJs_DemoIO_main__closed_12__tc() {
-  while (true) {
-    const x_1 = 1152921504606846976n;
-    return { __tc: 1, f: Nat_reprFast__tc, a: [x_1] };
-  }
-}
-function LeanJs_DemoIO_main__closed_12() {
-  return lean_trampoline(LeanJs_DemoIO_main__closed_12__tc());
-}
-
-function LeanJs_DemoIO_main__closed_11() {
-  const x_1 = "big2 = ";
-  return x_1;
-}
-
-function LeanJs_DemoIO_main__closed_13() {
-  const x_1 = LeanJs_DemoIO_main__closed_12();
-  const x_2 = LeanJs_DemoIO_main__closed_11();
-  const x_3 = lean_string_append(x_2, x_1);
-  return x_3;
-}
-
-function LeanJs_DemoIO_main__closed_15() {
-  const x_1 = 123456789012345678901234567890n;
-  return x_1;
-}
-
-function LeanJs_DemoIO_main__closed_16__tc() {
-  while (true) {
-    const x_1 = LeanJs_DemoIO_main__closed_15();
-    return { __tc: 1, f: Nat_reprFast__tc, a: [x_1] };
-  }
-}
-function LeanJs_DemoIO_main__closed_16() {
-  return lean_trampoline(LeanJs_DemoIO_main__closed_16__tc());
-}
-
-function LeanJs_DemoIO_main__closed_14() {
-  const x_1 = "huge = ";
-  return x_1;
-}
-
-function LeanJs_DemoIO_main__closed_17() {
-  const x_1 = LeanJs_DemoIO_main__closed_16();
-  const x_2 = LeanJs_DemoIO_main__closed_14();
-  const x_3 = lean_string_append(x_2, x_1);
-  return x_3;
 }
 
 // extern ST_Prim_mkRef -> runtime prelude
 
+// extern ST_Prim_Ref_swap -> runtime prelude
+
 // extern ST_Prim_Ref_take -> runtime prelude
 
-// extern ST_Prim_Ref_set -> runtime prelude
+// extern ST_Prim_Ref_put -> runtime prelude
 
 // extern ST_Prim_Ref_get -> runtime prelude
 
-function LeanJs_DemoIO_main__closed_18() {
+function LeanJs_DemoIO_main__closed_9() {
   const x_1 = "ref = ";
   return x_1;
 }
 
-function LeanJs_DemoIO_main__closed_21() {
+function LeanJs_DemoIO_main__closed_12() {
   const x_1 = "walk dog";
   return x_1;
 }
 
-function LeanJs_DemoIO_main__closed_19() {
+function LeanJs_DemoIO_main__closed_10() {
   const x_1 = "buy milk";
   return x_1;
 }
@@ -1247,45 +1181,70 @@ function LeanTodo_TodoList_empty() {
   return lean_trampoline(LeanTodo_TodoList_empty__tc());
 }
 
-function LeanJs_DemoIO_main__closed_20__tc() {
+function LeanJs_DemoIO_main__closed_11__tc() {
   while (true) {
-    const x_1 = LeanJs_DemoIO_main__closed_19();
+    const x_1 = LeanJs_DemoIO_main__closed_10();
     const x_2 = LeanTodo_TodoList_empty();
     return { __tc: 1, f: LeanTodo_TodoList_add__tc, a: [x_2, x_1] };
   }
 }
-function LeanJs_DemoIO_main__closed_20() {
-  return lean_trampoline(LeanJs_DemoIO_main__closed_20__tc());
+function LeanJs_DemoIO_main__closed_11() {
+  return lean_trampoline(LeanJs_DemoIO_main__closed_11__tc());
 }
 
 function LeanTodo_TodoList_add__tc(x_1, x_2) {
   while (true) {
-    const x_3 = 1;
-    switch (x_3) {
+    const x_3 = x_1.fields[0];
+    const x_4 = x_1.fields[1];
+    const x_16 = 1;
+    switch (x_16) {
       case 0: {
-        const x_4 = x_1.fields[0];
-        const x_5 = x_1.fields[1];
-        const x_6 = 0;
-        const x_7 = lean_ctor(0, 2, 0, 1, x_5, x_2);
-        lean_ctor_set_u8(x_7, 0, x_6);
-        const x_8 = lean_ctor(1, 2, 0, 0, x_7, x_4);
-        const x_9 = 1n;
-        const x_10 = (x_5 + x_9);
-        x_1.fields[1] = x_10;
-        x_1.fields[0] = x_8;
-        return x_1;
+        const x_6 = x_1;
+        const x_7 = x_16;
+        const x_8 = 0;
+        const x_9 = lean_ctor(0, 2, 0, 1, x_4, x_2);
+        lean_ctor_set_u8(x_9, 0, x_8);
+        const x_10 = lean_ctor(1, 2, 0, 0, x_9, x_3);
+        const x_11 = 1n;
+        const x_12 = (x_4 + x_11);
+        switch (x_7) {
+          case 0: {
+            x_6.fields[1] = x_12;
+            x_6.fields[0] = x_10;
+            const x_14 = x_6;
+            return x_14;
+          }
+          case 1: {
+            const x_15 = lean_ctor(0, 2, 0, 0, x_10, x_12);
+            const x_14 = x_15;
+            return x_14;
+          }
+          default: { throw new Error("no matching case"); }
+        }
       }
       case 1: {
-        const x_11 = x_1.fields[0];
-        const x_12 = x_1.fields[1];
-        const x_13 = 0;
-        const x_14 = lean_ctor(0, 2, 0, 1, x_12, x_2);
-        lean_ctor_set_u8(x_14, 0, x_13);
-        const x_15 = lean_ctor(1, 2, 0, 0, x_14, x_11);
-        const x_16 = 1n;
-        const x_17 = (x_12 + x_16);
-        const x_18 = lean_ctor(0, 2, 0, 0, x_15, x_17);
-        return x_18;
+        const x_6 = undefined;
+        const x_7 = x_16;
+        const x_8 = 0;
+        const x_9 = lean_ctor(0, 2, 0, 1, x_4, x_2);
+        lean_ctor_set_u8(x_9, 0, x_8);
+        const x_10 = lean_ctor(1, 2, 0, 0, x_9, x_3);
+        const x_11 = 1n;
+        const x_12 = (x_4 + x_11);
+        switch (x_7) {
+          case 0: {
+            x_6.fields[1] = x_12;
+            x_6.fields[0] = x_10;
+            const x_14 = x_6;
+            return x_14;
+          }
+          case 1: {
+            const x_15 = lean_ctor(0, 2, 0, 0, x_10, x_12);
+            const x_14 = x_15;
+            return x_14;
+          }
+          default: { throw new Error("no matching case"); }
+        }
       }
       default: { throw new Error("no matching case"); }
     }
@@ -1295,15 +1254,15 @@ function LeanTodo_TodoList_add(x_1, x_2) {
   return lean_trampoline(LeanTodo_TodoList_add__tc(x_1, x_2));
 }
 
-function LeanJs_DemoIO_main__closed_22__tc() {
+function LeanJs_DemoIO_main__closed_13__tc() {
   while (true) {
-    const x_1 = LeanJs_DemoIO_main__closed_21();
-    const x_2 = LeanJs_DemoIO_main__closed_20();
+    const x_1 = LeanJs_DemoIO_main__closed_12();
+    const x_2 = LeanJs_DemoIO_main__closed_11();
     return { __tc: 1, f: LeanTodo_TodoList_add__tc, a: [x_2, x_1] };
   }
 }
-function LeanJs_DemoIO_main__closed_22() {
-  return lean_trampoline(LeanJs_DemoIO_main__closed_22__tc());
+function LeanJs_DemoIO_main__closed_13() {
+  return lean_trampoline(LeanJs_DemoIO_main__closed_13__tc());
 }
 
 function List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0__tc(x_1, x_2, x_3) {
@@ -1315,50 +1274,37 @@ function List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0__tc(x_1, x_2, x_3)
       case 1: {
         const x_5 = x_2.fields[0];
         const x_6 = x_2.fields[1];
-        const x_7 = null;
-        const x_12 = x_5.fields[0];
-        const x_13 = x_5.fields[1];
-        const x_14 = lean_ctor_get_u8(x_5, 0);
-        const x_15 = lean_nat_dec_eq(x_12, x_1);
-        switch (x_15) {
+        const x_33 = 1;
+        switch (x_33) {
           case 0: {
-            const x_8 = x_5;
-            const x_9 = lean_ctor(1, 2, 0, 0, x_8, x_3);
-            const __t_1 = x_1;
-            const __t_2 = x_6;
-            const __t_3 = x_9;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            x_3 = __t_3;
-            continue;
-          }
-          case 1: {
-            const x_16 = 1;
-            switch (x_16) {
+            const x_8 = x_2;
+            const x_9 = x_33;
+            const x_16 = x_5.fields[0];
+            const x_17 = x_5.fields[1];
+            const x_18 = lean_ctor_get_u8(x_5, 0);
+            const x_19 = lean_nat_dec_eq(x_16, x_1);
+            switch (x_19) {
               case 0: {
-                const x_17 = x_5.fields[1];
-                const x_18 = x_5.fields[0];
-                switch (x_14) {
+                const x_11 = x_5;
+                switch (x_9) {
                   case 0: {
-                    lean_ctor_set_u8(x_5, 0, x_15);
-                    const x_8 = x_5;
-                    const x_9 = lean_ctor(1, 2, 0, 0, x_8, x_3);
+                    x_8.fields[1] = x_3;
+                    x_8.fields[0] = x_11;
+                    const x_13 = x_8;
                     const __t_1 = x_1;
                     const __t_2 = x_6;
-                    const __t_3 = x_9;
+                    const __t_3 = x_13;
                     x_1 = __t_1;
                     x_2 = __t_2;
                     x_3 = __t_3;
                     continue;
                   }
                   case 1: {
-                    const x_19 = 0;
-                    lean_ctor_set_u8(x_5, 0, x_19);
-                    const x_8 = x_5;
-                    const x_9 = lean_ctor(1, 2, 0, 0, x_8, x_3);
+                    const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                    const x_13 = x_15;
                     const __t_1 = x_1;
                     const __t_2 = x_6;
-                    const __t_3 = x_9;
+                    const __t_3 = x_13;
                     x_1 = __t_1;
                     x_2 = __t_2;
                     x_3 = __t_3;
@@ -1368,33 +1314,633 @@ function List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0__tc(x_1, x_2, x_3)
                 }
               }
               case 1: {
-                switch (x_14) {
+                const x_30 = 1;
+                switch (x_30) {
                   case 0: {
-                    const x_20 = lean_ctor(0, 2, 0, 1, x_12, x_13);
-                    lean_ctor_set_u8(x_20, 0, x_15);
-                    const x_8 = x_20;
-                    const x_9 = lean_ctor(1, 2, 0, 0, x_8, x_3);
+                    const x_31 = x_5.fields[1];
+                    const x_32 = x_5.fields[0];
+                    const x_21 = x_5;
+                    const x_22 = x_30;
+                    switch (x_18) {
+                      case 0: {
+                        switch (x_22) {
+                          case 0: {
+                            const x_24 = x_21;
+                            lean_ctor_set_u8(x_24, 0, x_19);
+                            const x_11 = x_24;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          case 1: {
+                            const x_25 = lean_ctor(0, 2, 0, 1, x_16, x_17);
+                            const x_24 = x_25;
+                            lean_ctor_set_u8(x_24, 0, x_19);
+                            const x_11 = x_24;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      case 1: {
+                        const x_26 = 0;
+                        switch (x_22) {
+                          case 0: {
+                            const x_28 = x_21;
+                            lean_ctor_set_u8(x_28, 0, x_26);
+                            const x_11 = x_28;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          case 1: {
+                            const x_29 = lean_ctor(0, 2, 0, 1, x_16, x_17);
+                            const x_28 = x_29;
+                            lean_ctor_set_u8(x_28, 0, x_26);
+                            const x_11 = x_28;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
+                  }
+                  case 1: {
+                    const x_21 = undefined;
+                    const x_22 = x_30;
+                    switch (x_18) {
+                      case 0: {
+                        switch (x_22) {
+                          case 0: {
+                            const x_24 = x_21;
+                            lean_ctor_set_u8(x_24, 0, x_19);
+                            const x_11 = x_24;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          case 1: {
+                            const x_25 = lean_ctor(0, 2, 0, 1, x_16, x_17);
+                            const x_24 = x_25;
+                            lean_ctor_set_u8(x_24, 0, x_19);
+                            const x_11 = x_24;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      case 1: {
+                        const x_26 = 0;
+                        switch (x_22) {
+                          case 0: {
+                            const x_28 = x_21;
+                            lean_ctor_set_u8(x_28, 0, x_26);
+                            const x_11 = x_28;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          case 1: {
+                            const x_29 = lean_ctor(0, 2, 0, 1, x_16, x_17);
+                            const x_28 = x_29;
+                            lean_ctor_set_u8(x_28, 0, x_26);
+                            const x_11 = x_28;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
+              }
+              default: { throw new Error("no matching case"); }
+            }
+          }
+          case 1: {
+            const x_8 = undefined;
+            const x_9 = x_33;
+            const x_16 = x_5.fields[0];
+            const x_17 = x_5.fields[1];
+            const x_18 = lean_ctor_get_u8(x_5, 0);
+            const x_19 = lean_nat_dec_eq(x_16, x_1);
+            switch (x_19) {
+              case 0: {
+                const x_11 = x_5;
+                switch (x_9) {
+                  case 0: {
+                    x_8.fields[1] = x_3;
+                    x_8.fields[0] = x_11;
+                    const x_13 = x_8;
                     const __t_1 = x_1;
                     const __t_2 = x_6;
-                    const __t_3 = x_9;
+                    const __t_3 = x_13;
                     x_1 = __t_1;
                     x_2 = __t_2;
                     x_3 = __t_3;
                     continue;
                   }
                   case 1: {
-                    const x_21 = 0;
-                    const x_22 = lean_ctor(0, 2, 0, 1, x_12, x_13);
-                    lean_ctor_set_u8(x_22, 0, x_21);
-                    const x_8 = x_22;
-                    const x_9 = lean_ctor(1, 2, 0, 0, x_8, x_3);
+                    const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                    const x_13 = x_15;
                     const __t_1 = x_1;
                     const __t_2 = x_6;
-                    const __t_3 = x_9;
+                    const __t_3 = x_13;
                     x_1 = __t_1;
                     x_2 = __t_2;
                     x_3 = __t_3;
                     continue;
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
+              }
+              case 1: {
+                const x_30 = 1;
+                switch (x_30) {
+                  case 0: {
+                    const x_31 = x_5.fields[1];
+                    const x_32 = x_5.fields[0];
+                    const x_21 = x_5;
+                    const x_22 = x_30;
+                    switch (x_18) {
+                      case 0: {
+                        switch (x_22) {
+                          case 0: {
+                            const x_24 = x_21;
+                            lean_ctor_set_u8(x_24, 0, x_19);
+                            const x_11 = x_24;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          case 1: {
+                            const x_25 = lean_ctor(0, 2, 0, 1, x_16, x_17);
+                            const x_24 = x_25;
+                            lean_ctor_set_u8(x_24, 0, x_19);
+                            const x_11 = x_24;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      case 1: {
+                        const x_26 = 0;
+                        switch (x_22) {
+                          case 0: {
+                            const x_28 = x_21;
+                            lean_ctor_set_u8(x_28, 0, x_26);
+                            const x_11 = x_28;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          case 1: {
+                            const x_29 = lean_ctor(0, 2, 0, 1, x_16, x_17);
+                            const x_28 = x_29;
+                            lean_ctor_set_u8(x_28, 0, x_26);
+                            const x_11 = x_28;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
+                  }
+                  case 1: {
+                    const x_21 = undefined;
+                    const x_22 = x_30;
+                    switch (x_18) {
+                      case 0: {
+                        switch (x_22) {
+                          case 0: {
+                            const x_24 = x_21;
+                            lean_ctor_set_u8(x_24, 0, x_19);
+                            const x_11 = x_24;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          case 1: {
+                            const x_25 = lean_ctor(0, 2, 0, 1, x_16, x_17);
+                            const x_24 = x_25;
+                            lean_ctor_set_u8(x_24, 0, x_19);
+                            const x_11 = x_24;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      case 1: {
+                        const x_26 = 0;
+                        switch (x_22) {
+                          case 0: {
+                            const x_28 = x_21;
+                            lean_ctor_set_u8(x_28, 0, x_26);
+                            const x_11 = x_28;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          case 1: {
+                            const x_29 = lean_ctor(0, 2, 0, 1, x_16, x_17);
+                            const x_28 = x_29;
+                            lean_ctor_set_u8(x_28, 0, x_26);
+                            const x_11 = x_28;
+                            switch (x_9) {
+                              case 0: {
+                                x_8.fields[1] = x_3;
+                                x_8.fields[0] = x_11;
+                                const x_13 = x_8;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              case 1: {
+                                const x_15 = lean_ctor(1, 2, 0, 0, x_11, x_3);
+                                const x_13 = x_15;
+                                const __t_1 = x_1;
+                                const __t_2 = x_6;
+                                const __t_3 = x_13;
+                                x_1 = __t_1;
+                                x_2 = __t_2;
+                                x_3 = __t_3;
+                                continue;
+                              }
+                              default: { throw new Error("no matching case"); }
+                            }
+                          }
+                          default: { throw new Error("no matching case"); }
+                        }
+                      }
+                      default: { throw new Error("no matching case"); }
+                    }
                   }
                   default: { throw new Error("no matching case"); }
                 }
@@ -1415,22 +1961,47 @@ function List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_1, x_2, x_3) {
 
 function LeanTodo_TodoList_toggle__tc(x_1, x_2) {
   while (true) {
-    const x_3 = 1;
-    switch (x_3) {
+    const x_3 = x_1.fields[0];
+    const x_4 = x_1.fields[1];
+    const x_13 = 1;
+    switch (x_13) {
       case 0: {
-        const x_4 = x_1.fields[0];
-        const x_5 = 0;
-        const x_6 = List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_2, x_4, x_5);
-        x_1.fields[0] = x_6;
-        return x_1;
+        const x_6 = x_1;
+        const x_7 = x_13;
+        const x_8 = 0;
+        const x_9 = List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_2, x_3, x_8);
+        switch (x_7) {
+          case 0: {
+            x_6.fields[0] = x_9;
+            const x_11 = x_6;
+            return x_11;
+          }
+          case 1: {
+            const x_12 = lean_ctor(0, 2, 0, 0, x_9, x_4);
+            const x_11 = x_12;
+            return x_11;
+          }
+          default: { throw new Error("no matching case"); }
+        }
       }
       case 1: {
-        const x_7 = x_1.fields[0];
-        const x_8 = x_1.fields[1];
-        const x_9 = 0;
-        const x_10 = List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_2, x_7, x_9);
-        const x_11 = lean_ctor(0, 2, 0, 0, x_10, x_8);
-        return x_11;
+        const x_6 = undefined;
+        const x_7 = x_13;
+        const x_8 = 0;
+        const x_9 = List_mapTR_loop__at__LeanTodo_TodoList_toggle_spec_0(x_2, x_3, x_8);
+        switch (x_7) {
+          case 0: {
+            x_6.fields[0] = x_9;
+            const x_11 = x_6;
+            return x_11;
+          }
+          case 1: {
+            const x_12 = lean_ctor(0, 2, 0, 0, x_9, x_4);
+            const x_11 = x_12;
+            return x_11;
+          }
+          default: { throw new Error("no matching case"); }
+        }
       }
       default: { throw new Error("no matching case"); }
     }
@@ -1440,15 +2011,15 @@ function LeanTodo_TodoList_toggle(x_1, x_2) {
   return lean_trampoline(LeanTodo_TodoList_toggle__tc(x_1, x_2));
 }
 
-function LeanJs_DemoIO_main__closed_23__tc() {
+function LeanJs_DemoIO_main__closed_14__tc() {
   while (true) {
     const x_1 = 0n;
-    const x_2 = LeanJs_DemoIO_main__closed_22();
+    const x_2 = LeanJs_DemoIO_main__closed_13();
     return { __tc: 1, f: LeanTodo_TodoList_toggle__tc, a: [x_2, x_1] };
   }
 }
-function LeanJs_DemoIO_main__closed_23() {
-  return lean_trampoline(LeanJs_DemoIO_main__closed_23__tc());
+function LeanJs_DemoIO_main__closed_14() {
+  return lean_trampoline(LeanJs_DemoIO_main__closed_14__tc());
 }
 
 function LeanJs_DemoIO_showList__closed_0() {
@@ -1480,23 +2051,23 @@ function LeanJs_DemoIO_showTodo(x_1) {
   const x_2 = x_1.fields[0];
   const x_3 = x_1.fields[1];
   const x_4 = lean_ctor_get_u8(x_1, 0);
-  const block_12 = (x_5) => {
-    const x_6 = Nat_reprFast(x_2);
-    const x_7 = LeanJs_DemoIO_showTodo__closed_0();
-    const x_8 = lean_string_append(x_6, x_7);
-    const x_9 = lean_string_append(x_8, x_3);
-    const x_10 = lean_string_append(x_9, x_7);
-    const x_11 = lean_string_append(x_10, x_5);
-    return x_11;
+  const block_5 = (x_6) => {
+    const x_7 = Nat_reprFast(x_2);
+    const x_8 = LeanJs_DemoIO_showTodo__closed_0();
+    const x_9 = lean_string_append(x_7, x_8);
+    const x_10 = lean_string_append(x_9, x_3);
+    const x_11 = lean_string_append(x_10, x_8);
+    const x_12 = lean_string_append(x_11, x_6);
+    return x_12;
   };
   switch (x_4) {
     case 0: {
       const x_13 = LeanJs_DemoIO_showTodo__closed_1();
-      return block_12(x_13);
+      return block_5(x_13);
     }
     case 1: {
       const x_14 = LeanJs_DemoIO_showTodo__closed_2();
-      return block_12(x_14);
+      return block_5(x_14);
     }
     default: { throw new Error("no matching case"); }
   }
@@ -1509,30 +2080,63 @@ function List_mapTR_loop__at__LeanJs_DemoIO_showList_spec_0__tc(x_1, x_2) {
         return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
-        const x_4 = 1;
-        switch (x_4) {
+        const x_4 = x_1.fields[0];
+        const x_5 = x_1.fields[1];
+        const x_14 = 1;
+        switch (x_14) {
           case 0: {
-            const x_5 = x_1.fields[0];
-            const x_6 = x_1.fields[1];
-            const x_7 = LeanJs_DemoIO_showTodo(x_5);
-            x_1.fields[1] = x_2;
-            x_1.fields[0] = x_7;
-            const __t_1 = x_6;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = x_1;
+            const x_8 = x_14;
+            const x_9 = LeanJs_DemoIO_showTodo(x_4);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_9;
+                const x_11 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_11;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_13 = lean_ctor(1, 2, 0, 0, x_9, x_2);
+                const x_11 = x_13;
+                const __t_1 = x_5;
+                const __t_2 = x_11;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_9 = x_1.fields[0];
-            const x_10 = x_1.fields[1];
-            const x_11 = LeanJs_DemoIO_showTodo(x_9);
-            const x_12 = lean_ctor(1, 2, 0, 0, x_11, x_2);
-            const __t_1 = x_10;
-            const __t_2 = x_12;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = undefined;
+            const x_8 = x_14;
+            const x_9 = LeanJs_DemoIO_showTodo(x_4);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_9;
+                const x_11 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_11;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_13 = lean_ctor(1, 2, 0, 0, x_9, x_2);
+                const x_11 = x_13;
+                const __t_1 = x_5;
+                const __t_2 = x_11;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -1627,24 +2231,24 @@ function LeanJs_DemoIO_showList(x_1) {
   return lean_trampoline(LeanJs_DemoIO_showList__tc(x_1));
 }
 
-function LeanJs_DemoIO_main__closed_25__tc() {
+function LeanJs_DemoIO_main__closed_16__tc() {
   while (true) {
-    const x_1 = LeanJs_DemoIO_main__closed_23();
+    const x_1 = LeanJs_DemoIO_main__closed_14();
     return { __tc: 1, f: LeanJs_DemoIO_showList__tc, a: [x_1] };
   }
 }
-function LeanJs_DemoIO_main__closed_25() {
-  return lean_trampoline(LeanJs_DemoIO_main__closed_25__tc());
+function LeanJs_DemoIO_main__closed_16() {
+  return lean_trampoline(LeanJs_DemoIO_main__closed_16__tc());
 }
 
-function LeanJs_DemoIO_main__closed_24() {
+function LeanJs_DemoIO_main__closed_15() {
   const x_1 = "todo = ";
   return x_1;
 }
 
-function LeanJs_DemoIO_main__closed_26() {
-  const x_1 = LeanJs_DemoIO_main__closed_25();
-  const x_2 = LeanJs_DemoIO_main__closed_24();
+function LeanJs_DemoIO_main__closed_17() {
+  const x_1 = LeanJs_DemoIO_main__closed_16();
+  const x_2 = LeanJs_DemoIO_main__closed_15();
   const x_3 = lean_string_append(x_2, x_1);
   return x_3;
 }
@@ -1838,26 +2442,59 @@ function List_reverseAux__redArg__tc(x_1, x_2) {
         return x_2;
       }
       case 1: {
-        const x_3 = 1;
-        switch (x_3) {
+        const x_3 = x_1.fields[0];
+        const x_4 = x_1.fields[1];
+        const x_12 = 1;
+        switch (x_12) {
           case 0: {
-            const x_4 = x_1.fields[1];
-            x_1.fields[1] = x_2;
-            const __t_1 = x_4;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_6 = x_1;
+            const x_7 = x_12;
+            switch (x_7) {
+              case 0: {
+                x_6.fields[1] = x_2;
+                const x_9 = x_6;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_11 = lean_ctor(1, 2, 0, 0, x_3, x_2);
+                const x_9 = x_11;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_6 = x_1.fields[0];
-            const x_7 = x_1.fields[1];
-            const x_8 = lean_ctor(1, 2, 0, 0, x_6, x_2);
-            const __t_1 = x_7;
-            const __t_2 = x_8;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_6 = undefined;
+            const x_7 = x_12;
+            switch (x_7) {
+              case 0: {
+                x_6.fields[1] = x_2;
+                const x_9 = x_6;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_11 = lean_ctor(1, 2, 0, 0, x_3, x_2);
+                const x_9 = x_11;
+                const __t_1 = x_4;
+                const __t_2 = x_9;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -1889,32 +2526,65 @@ function List_mapTR_loop__at___private_Init_Data_Repr_0_Nat_reprArray_spec_0__tc
         return { __tc: 1, f: List_reverse__redArg__tc, a: [x_2] };
       }
       case 1: {
-        const x_4 = 1;
-        switch (x_4) {
+        const x_4 = x_1.fields[0];
+        const x_5 = x_1.fields[1];
+        const x_15 = 1;
+        switch (x_15) {
           case 0: {
-            const x_5 = x_1.fields[0];
-            const x_6 = x_1.fields[1];
-            const x_7 = lean_usize_of_nat(x_5);
-            const x_8 = lean_string_of_usize(x_7);
-            x_1.fields[1] = x_2;
-            x_1.fields[0] = x_8;
-            const __t_1 = x_6;
-            const __t_2 = x_1;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = x_1;
+            const x_8 = x_15;
+            const x_9 = lean_usize_of_nat(x_4);
+            const x_10 = lean_string_of_usize(x_9);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_10;
+                const x_12 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                const x_12 = x_14;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           case 1: {
-            const x_10 = x_1.fields[0];
-            const x_11 = x_1.fields[1];
-            const x_12 = lean_usize_of_nat(x_10);
-            const x_13 = lean_string_of_usize(x_12);
-            const x_14 = lean_ctor(1, 2, 0, 0, x_13, x_2);
-            const __t_1 = x_11;
-            const __t_2 = x_14;
-            x_1 = __t_1;
-            x_2 = __t_2;
-            continue;
+            const x_7 = undefined;
+            const x_8 = x_15;
+            const x_9 = lean_usize_of_nat(x_4);
+            const x_10 = lean_string_of_usize(x_9);
+            switch (x_8) {
+              case 0: {
+                x_7.fields[1] = x_2;
+                x_7.fields[0] = x_10;
+                const x_12 = x_7;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              case 1: {
+                const x_14 = lean_ctor(1, 2, 0, 0, x_10, x_2);
+                const x_12 = x_14;
+                const __t_1 = x_5;
+                const __t_2 = x_12;
+                x_1 = __t_1;
+                x_2 = __t_2;
+                continue;
+              }
+              default: { throw new Error("no matching case"); }
+            }
           }
           default: { throw new Error("no matching case"); }
         }
@@ -2255,7 +2925,7 @@ function Nat_toDigits(x_1, x_2) {
 
 // extern USize_repr -> runtime prelude
 
-// extern Array_getInternal -> runtime prelude
+// extern Array_getInternalBorrowed -> runtime prelude
 
 function Nat_reprFast__tc(x_1) {
   while (true) {
@@ -2282,7 +2952,7 @@ function Nat_reprFast__tc(x_1) {
         }
       }
       case 1: {
-        const x_12 = lean_array_uget(x_2, x_1);
+        const x_12 = lean_array_fget_borrowed(x_2, x_1);
         return x_12;
       }
       default: { throw new Error("no matching case"); }
@@ -2408,19 +3078,44 @@ function IO_Error_toString__tc(x_1) {
           case 1: {
             const x_13 = lean_ctor_get_u32(x_1, 0);
             const x_14 = x_1.fields[1];
-            const x_15 = 1;
-            switch (x_15) {
+            const x_15 = x_7.fields[0];
+            const x_24 = 1;
+            switch (x_24) {
               case 0: {
-                const x_16 = x_7.fields[0];
-                const x_17 = IO_Error_toString__closed_0();
-                x_7.fields[0] = x_14;
-                return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_17, x_16, x_13, x_7] };
+                const x_17 = x_7;
+                const x_18 = x_24;
+                const x_19 = IO_Error_toString__closed_0();
+                switch (x_18) {
+                  case 0: {
+                    x_17.fields[0] = x_14;
+                    const x_21 = x_17;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_19, x_15, x_13, x_21] };
+                  }
+                  case 1: {
+                    const x_23 = lean_ctor(1, 1, 0, 0, x_14);
+                    const x_21 = x_23;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_19, x_15, x_13, x_21] };
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               case 1: {
-                const x_19 = x_7.fields[0];
-                const x_20 = IO_Error_toString__closed_0();
-                const x_21 = lean_ctor(1, 1, 0, 0, x_14);
-                return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_20, x_19, x_13, x_21] };
+                const x_17 = undefined;
+                const x_18 = x_24;
+                const x_19 = IO_Error_toString__closed_0();
+                switch (x_18) {
+                  case 0: {
+                    x_17.fields[0] = x_14;
+                    const x_21 = x_17;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_19, x_15, x_13, x_21] };
+                  }
+                  case 1: {
+                    const x_23 = lean_ctor(1, 1, 0, 0, x_14);
+                    const x_21 = x_23;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_19, x_15, x_13, x_21] };
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               default: { throw new Error("no matching case"); }
             }
@@ -2429,108 +3124,133 @@ function IO_Error_toString__tc(x_1) {
         }
       }
       case 1: {
-        const x_23 = lean_ctor_get_u32(x_1, 0);
-        const x_24 = x_1.fields[0];
-        const x_2 = x_23;
-        const x_3 = x_24;
-        const x_4 = 0;
-        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_3, x_2, x_4] };
-      }
-      case 2: {
         const x_25 = lean_ctor_get_u32(x_1, 0);
         const x_26 = x_1.fields[0];
-        const x_27 = IO_Error_toString__closed_1();
-        const x_28 = lean_ctor(1, 1, 0, 0, x_26);
-        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_27, x_25, x_28] };
+        const x_3 = x_25;
+        const x_4 = x_26;
+        const x_5 = 0;
+        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_4, x_3, x_5] };
+      }
+      case 2: {
+        const x_27 = lean_ctor_get_u32(x_1, 0);
+        const x_28 = x_1.fields[0];
+        const x_29 = IO_Error_toString__closed_1();
+        const x_30 = lean_ctor(1, 1, 0, 0, x_28);
+        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_29, x_27, x_30] };
       }
       case 3: {
-        const x_30 = lean_ctor_get_u32(x_1, 0);
-        const x_31 = x_1.fields[0];
-        const x_32 = IO_Error_toString__closed_2();
-        const x_33 = lean_ctor(1, 1, 0, 0, x_31);
-        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_32, x_30, x_33] };
+        const x_32 = lean_ctor_get_u32(x_1, 0);
+        const x_33 = x_1.fields[0];
+        const x_34 = IO_Error_toString__closed_2();
+        const x_35 = lean_ctor(1, 1, 0, 0, x_33);
+        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_34, x_32, x_35] };
       }
       case 4: {
-        const x_35 = lean_ctor_get_u32(x_1, 0);
-        const x_36 = x_1.fields[0];
-        const x_37 = IO_Error_toString__closed_3();
-        const x_38 = lean_ctor(1, 1, 0, 0, x_36);
-        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_37, x_35, x_38] };
+        const x_37 = lean_ctor_get_u32(x_1, 0);
+        const x_38 = x_1.fields[0];
+        const x_39 = IO_Error_toString__closed_3();
+        const x_40 = lean_ctor(1, 1, 0, 0, x_38);
+        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_39, x_37, x_40] };
       }
       case 5: {
-        const x_40 = lean_ctor_get_u32(x_1, 0);
-        const x_41 = IO_Error_toString__closed_4();
-        const x_42 = 0;
-        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_41, x_40, x_42] };
+        const x_42 = lean_ctor_get_u32(x_1, 0);
+        const x_43 = IO_Error_toString__closed_4();
+        const x_44 = 0;
+        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_43, x_42, x_44] };
       }
       case 6: {
-        const x_44 = lean_ctor_get_u32(x_1, 0);
-        const x_45 = IO_Error_toString__closed_5();
-        const x_46 = 0;
-        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_45, x_44, x_46] };
+        const x_46 = lean_ctor_get_u32(x_1, 0);
+        const x_47 = IO_Error_toString__closed_5();
+        const x_48 = 0;
+        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_47, x_46, x_48] };
       }
       case 7: {
-        const x_48 = lean_ctor_get_u32(x_1, 0);
-        const x_49 = x_1.fields[0];
-        const x_50 = IO_Error_toString__closed_6();
-        const x_51 = lean_ctor(1, 1, 0, 0, x_49);
-        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_50, x_48, x_51] };
+        const x_50 = lean_ctor_get_u32(x_1, 0);
+        const x_51 = x_1.fields[0];
+        const x_52 = IO_Error_toString__closed_6();
+        const x_53 = lean_ctor(1, 1, 0, 0, x_51);
+        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_52, x_50, x_53] };
       }
       case 8: {
-        const x_53 = lean_ctor_get_u32(x_1, 0);
-        const x_54 = x_1.fields[0];
-        const x_55 = IO_Error_toString__closed_7();
-        const x_56 = lean_ctor(1, 1, 0, 0, x_54);
-        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_55, x_53, x_56] };
+        const x_55 = lean_ctor_get_u32(x_1, 0);
+        const x_56 = x_1.fields[0];
+        const x_57 = IO_Error_toString__closed_7();
+        const x_58 = lean_ctor(1, 1, 0, 0, x_56);
+        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_57, x_55, x_58] };
       }
       case 9: {
-        const x_58 = lean_ctor_get_u32(x_1, 0);
-        const x_59 = x_1.fields[0];
-        const x_60 = IO_Error_toString__closed_8();
-        const x_61 = lean_ctor(1, 1, 0, 0, x_59);
-        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_60, x_58, x_61] };
+        const x_60 = lean_ctor_get_u32(x_1, 0);
+        const x_61 = x_1.fields[0];
+        const x_62 = IO_Error_toString__closed_8();
+        const x_63 = lean_ctor(1, 1, 0, 0, x_61);
+        return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_62, x_60, x_63] };
       }
       case 10: {
-        const x_63 = x_1.fields[0];
-        const x_64 = lean_ctor_get_u32(x_1, 0);
-        const x_65 = x_1.fields[1];
-        const x_66 = IO_Error_toString__closed_9();
-        const x_67 = lean_ctor(1, 1, 0, 0, x_65);
-        return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_66, x_63, x_64, x_67] };
+        const x_65 = x_1.fields[0];
+        const x_66 = lean_ctor_get_u32(x_1, 0);
+        const x_67 = x_1.fields[1];
+        const x_68 = IO_Error_toString__closed_9();
+        const x_69 = lean_ctor(1, 1, 0, 0, x_67);
+        return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_68, x_65, x_66, x_69] };
       }
       case 11: {
-        const x_69 = x_1.fields[0];
-        const x_70 = lean_ctor_get_u32(x_1, 0);
-        const x_71 = IO_Error_toString__closed_10();
-        const x_72 = 0;
-        return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_71, x_69, x_70, x_72] };
+        const x_71 = x_1.fields[0];
+        const x_72 = lean_ctor_get_u32(x_1, 0);
+        const x_73 = IO_Error_toString__closed_10();
+        const x_74 = 0;
+        return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_73, x_71, x_72, x_74] };
       }
       case 12: {
-        const x_74 = x_1.fields[0];
-        switch (lean_tag(x_74)) {
+        const x_76 = x_1.fields[0];
+        switch (lean_tag(x_76)) {
           case 0: {
-            const x_75 = lean_ctor_get_u32(x_1, 0);
-            const x_76 = x_1.fields[1];
-            const x_77 = IO_Error_toString__closed_11();
-            const x_78 = lean_ctor(1, 1, 0, 0, x_76);
-            return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_77, x_75, x_78] };
+            const x_77 = lean_ctor_get_u32(x_1, 0);
+            const x_78 = x_1.fields[1];
+            const x_79 = IO_Error_toString__closed_11();
+            const x_80 = lean_ctor(1, 1, 0, 0, x_78);
+            return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_79, x_77, x_80] };
           }
           case 1: {
-            const x_80 = lean_ctor_get_u32(x_1, 0);
-            const x_81 = x_1.fields[1];
-            const x_82 = 1;
-            switch (x_82) {
+            const x_82 = lean_ctor_get_u32(x_1, 0);
+            const x_83 = x_1.fields[1];
+            const x_84 = x_76.fields[0];
+            const x_93 = 1;
+            switch (x_93) {
               case 0: {
-                const x_83 = x_74.fields[0];
-                const x_84 = IO_Error_toString__closed_11();
-                x_74.fields[0] = x_81;
-                return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_84, x_83, x_80, x_74] };
+                const x_86 = x_76;
+                const x_87 = x_93;
+                const x_88 = IO_Error_toString__closed_11();
+                switch (x_87) {
+                  case 0: {
+                    x_86.fields[0] = x_83;
+                    const x_90 = x_86;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_88, x_84, x_82, x_90] };
+                  }
+                  case 1: {
+                    const x_92 = lean_ctor(1, 1, 0, 0, x_83);
+                    const x_90 = x_92;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_88, x_84, x_82, x_90] };
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               case 1: {
-                const x_86 = x_74.fields[0];
-                const x_87 = IO_Error_toString__closed_11();
-                const x_88 = lean_ctor(1, 1, 0, 0, x_81);
-                return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_87, x_86, x_80, x_88] };
+                const x_86 = undefined;
+                const x_87 = x_93;
+                const x_88 = IO_Error_toString__closed_11();
+                switch (x_87) {
+                  case 0: {
+                    x_86.fields[0] = x_83;
+                    const x_90 = x_86;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_88, x_84, x_82, x_90] };
+                  }
+                  case 1: {
+                    const x_92 = lean_ctor(1, 1, 0, 0, x_83);
+                    const x_90 = x_92;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_88, x_84, x_82, x_90] };
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               default: { throw new Error("no matching case"); }
             }
@@ -2539,52 +3259,77 @@ function IO_Error_toString__tc(x_1) {
         }
       }
       case 13: {
-        const x_90 = x_1.fields[0];
-        switch (lean_tag(x_90)) {
+        const x_94 = x_1.fields[0];
+        switch (lean_tag(x_94)) {
           case 0: {
-            const x_91 = lean_ctor_get_u32(x_1, 0);
-            const x_92 = x_1.fields[1];
-            const x_2 = x_91;
-            const x_3 = x_92;
-            const x_4 = 0;
-            return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_3, x_2, x_4] };
+            const x_95 = lean_ctor_get_u32(x_1, 0);
+            const x_96 = x_1.fields[1];
+            const x_3 = x_95;
+            const x_4 = x_96;
+            const x_5 = 0;
+            return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_4, x_3, x_5] };
           }
           case 1: {
-            const x_93 = lean_ctor_get_u32(x_1, 0);
-            const x_94 = x_1.fields[1];
-            const x_95 = x_90.fields[0];
-            const x_96 = 0;
-            return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_94, x_95, x_93, x_96] };
+            const x_97 = lean_ctor_get_u32(x_1, 0);
+            const x_98 = x_1.fields[1];
+            const x_99 = x_94.fields[0];
+            const x_100 = 0;
+            return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_98, x_99, x_97, x_100] };
           }
           default: { throw new Error("no matching case"); }
         }
       }
       case 14: {
-        const x_98 = x_1.fields[0];
-        switch (lean_tag(x_98)) {
+        const x_102 = x_1.fields[0];
+        switch (lean_tag(x_102)) {
           case 0: {
-            const x_99 = lean_ctor_get_u32(x_1, 0);
-            const x_100 = x_1.fields[1];
-            const x_101 = IO_Error_toString__closed_12();
-            const x_102 = lean_ctor(1, 1, 0, 0, x_100);
-            return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_101, x_99, x_102] };
+            const x_103 = lean_ctor_get_u32(x_1, 0);
+            const x_104 = x_1.fields[1];
+            const x_105 = IO_Error_toString__closed_12();
+            const x_106 = lean_ctor(1, 1, 0, 0, x_104);
+            return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_105, x_103, x_106] };
           }
           case 1: {
-            const x_104 = lean_ctor_get_u32(x_1, 0);
-            const x_105 = x_1.fields[1];
-            const x_106 = 1;
-            switch (x_106) {
+            const x_108 = lean_ctor_get_u32(x_1, 0);
+            const x_109 = x_1.fields[1];
+            const x_110 = x_102.fields[0];
+            const x_119 = 1;
+            switch (x_119) {
               case 0: {
-                const x_107 = x_98.fields[0];
-                const x_108 = IO_Error_toString__closed_12();
-                x_98.fields[0] = x_105;
-                return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_108, x_107, x_104, x_98] };
+                const x_112 = x_102;
+                const x_113 = x_119;
+                const x_114 = IO_Error_toString__closed_12();
+                switch (x_113) {
+                  case 0: {
+                    x_112.fields[0] = x_109;
+                    const x_116 = x_112;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_114, x_110, x_108, x_116] };
+                  }
+                  case 1: {
+                    const x_118 = lean_ctor(1, 1, 0, 0, x_109);
+                    const x_116 = x_118;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_114, x_110, x_108, x_116] };
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               case 1: {
-                const x_110 = x_98.fields[0];
-                const x_111 = IO_Error_toString__closed_12();
-                const x_112 = lean_ctor(1, 1, 0, 0, x_105);
-                return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_111, x_110, x_104, x_112] };
+                const x_112 = undefined;
+                const x_113 = x_119;
+                const x_114 = IO_Error_toString__closed_12();
+                switch (x_113) {
+                  case 0: {
+                    x_112.fields[0] = x_109;
+                    const x_116 = x_112;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_114, x_110, x_108, x_116] };
+                  }
+                  case 1: {
+                    const x_118 = lean_ctor(1, 1, 0, 0, x_109);
+                    const x_116 = x_118;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_114, x_110, x_108, x_116] };
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               default: { throw new Error("no matching case"); }
             }
@@ -2593,31 +3338,56 @@ function IO_Error_toString__tc(x_1) {
         }
       }
       case 15: {
-        const x_114 = x_1.fields[0];
-        switch (lean_tag(x_114)) {
+        const x_120 = x_1.fields[0];
+        switch (lean_tag(x_120)) {
           case 0: {
-            const x_115 = lean_ctor_get_u32(x_1, 0);
-            const x_116 = x_1.fields[1];
-            const x_117 = IO_Error_toString__closed_13();
-            const x_118 = lean_ctor(1, 1, 0, 0, x_116);
-            return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_117, x_115, x_118] };
+            const x_121 = lean_ctor_get_u32(x_1, 0);
+            const x_122 = x_1.fields[1];
+            const x_123 = IO_Error_toString__closed_13();
+            const x_124 = lean_ctor(1, 1, 0, 0, x_122);
+            return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_123, x_121, x_124] };
           }
           case 1: {
-            const x_120 = lean_ctor_get_u32(x_1, 0);
-            const x_121 = x_1.fields[1];
-            const x_122 = 1;
-            switch (x_122) {
+            const x_126 = lean_ctor_get_u32(x_1, 0);
+            const x_127 = x_1.fields[1];
+            const x_128 = x_120.fields[0];
+            const x_137 = 1;
+            switch (x_137) {
               case 0: {
-                const x_123 = x_114.fields[0];
-                const x_124 = IO_Error_toString__closed_13();
-                x_114.fields[0] = x_121;
-                return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_124, x_123, x_120, x_114] };
+                const x_130 = x_120;
+                const x_131 = x_137;
+                const x_132 = IO_Error_toString__closed_13();
+                switch (x_131) {
+                  case 0: {
+                    x_130.fields[0] = x_127;
+                    const x_134 = x_130;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_132, x_128, x_126, x_134] };
+                  }
+                  case 1: {
+                    const x_136 = lean_ctor(1, 1, 0, 0, x_127);
+                    const x_134 = x_136;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_132, x_128, x_126, x_134] };
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               case 1: {
-                const x_126 = x_114.fields[0];
-                const x_127 = IO_Error_toString__closed_13();
-                const x_128 = lean_ctor(1, 1, 0, 0, x_121);
-                return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_127, x_126, x_120, x_128] };
+                const x_130 = undefined;
+                const x_131 = x_137;
+                const x_132 = IO_Error_toString__closed_13();
+                switch (x_131) {
+                  case 0: {
+                    x_130.fields[0] = x_127;
+                    const x_134 = x_130;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_132, x_128, x_126, x_134] };
+                  }
+                  case 1: {
+                    const x_136 = lean_ctor(1, 1, 0, 0, x_127);
+                    const x_134 = x_136;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_132, x_128, x_126, x_134] };
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               default: { throw new Error("no matching case"); }
             }
@@ -2626,31 +3396,56 @@ function IO_Error_toString__tc(x_1) {
         }
       }
       case 16: {
-        const x_130 = x_1.fields[0];
-        switch (lean_tag(x_130)) {
+        const x_138 = x_1.fields[0];
+        switch (lean_tag(x_138)) {
           case 0: {
-            const x_131 = lean_ctor_get_u32(x_1, 0);
-            const x_132 = x_1.fields[1];
-            const x_133 = IO_Error_toString__closed_14();
-            const x_134 = lean_ctor(1, 1, 0, 0, x_132);
-            return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_133, x_131, x_134] };
+            const x_139 = lean_ctor_get_u32(x_1, 0);
+            const x_140 = x_1.fields[1];
+            const x_141 = IO_Error_toString__closed_14();
+            const x_142 = lean_ctor(1, 1, 0, 0, x_140);
+            return { __tc: 1, f: IO_Error_otherErrorToString__tc, a: [x_141, x_139, x_142] };
           }
           case 1: {
-            const x_136 = lean_ctor_get_u32(x_1, 0);
-            const x_137 = x_1.fields[1];
-            const x_138 = 1;
-            switch (x_138) {
+            const x_144 = lean_ctor_get_u32(x_1, 0);
+            const x_145 = x_1.fields[1];
+            const x_146 = x_138.fields[0];
+            const x_155 = 1;
+            switch (x_155) {
               case 0: {
-                const x_139 = x_130.fields[0];
-                const x_140 = IO_Error_toString__closed_14();
-                x_130.fields[0] = x_137;
-                return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_140, x_139, x_136, x_130] };
+                const x_148 = x_138;
+                const x_149 = x_155;
+                const x_150 = IO_Error_toString__closed_14();
+                switch (x_149) {
+                  case 0: {
+                    x_148.fields[0] = x_145;
+                    const x_152 = x_148;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_150, x_146, x_144, x_152] };
+                  }
+                  case 1: {
+                    const x_154 = lean_ctor(1, 1, 0, 0, x_145);
+                    const x_152 = x_154;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_150, x_146, x_144, x_152] };
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               case 1: {
-                const x_142 = x_130.fields[0];
-                const x_143 = IO_Error_toString__closed_14();
-                const x_144 = lean_ctor(1, 1, 0, 0, x_137);
-                return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_143, x_142, x_136, x_144] };
+                const x_148 = undefined;
+                const x_149 = x_155;
+                const x_150 = IO_Error_toString__closed_14();
+                switch (x_149) {
+                  case 0: {
+                    x_148.fields[0] = x_145;
+                    const x_152 = x_148;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_150, x_146, x_144, x_152] };
+                  }
+                  case 1: {
+                    const x_154 = lean_ctor(1, 1, 0, 0, x_145);
+                    const x_152 = x_154;
+                    return { __tc: 1, f: IO_Error_fopenErrorToString__tc, a: [x_150, x_146, x_144, x_152] };
+                  }
+                  default: { throw new Error("no matching case"); }
+                }
               }
               default: { throw new Error("no matching case"); }
             }
@@ -2662,8 +3457,8 @@ function IO_Error_toString__tc(x_1) {
         return { __tc: 1, f: IO_Error_toString__closed_15__tc, a: [] };
       }
       case 18: {
-        const x_147 = x_1.fields[0];
-        return x_147;
+        const x_157 = x_1.fields[0];
+        return x_157;
       }
       default: { throw new Error("no matching case"); }
     }
@@ -2701,7 +3496,7 @@ function LeanJs_DemoIO_tryCatchIO() {
   return x_3;
 }
 
-function LeanJs_DemoIO_main__closed_27() {
+function LeanJs_DemoIO_main__closed_18() {
   const x_1 = "trycatch = ";
   return x_1;
 }
@@ -2732,7 +3527,7 @@ function IO_println__at__LeanJs_DemoIO_main_spec_0(x_1) {
   return lean_trampoline(IO_println__at__LeanJs_DemoIO_main_spec_0__tc(x_1));
 }
 
-function LeanJs_DemoIO_main__closed_28() {
+function LeanJs_DemoIO_main__closed_19() {
   const x_1 = "diagnostic to stderr";
   return x_1;
 }
@@ -2773,49 +3568,49 @@ function LeanJs_DemoIO_main__tc() {
         const x_5 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_4, undefined);
         switch (lean_tag(x_5)) {
           case 0: {
-            const x_6 = LeanJs_DemoIO_main__closed_7();
+            const x_6 = LeanJs_DemoIO_main__closed_5();
             const x_7 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_6, undefined);
             switch (lean_tag(x_7)) {
               case 0: {
-                const x_8 = LeanJs_DemoIO_main__closed_10();
+                const x_8 = LeanJs_DemoIO_main__closed_6();
                 const x_9 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_8, undefined);
                 switch (lean_tag(x_9)) {
                   case 0: {
-                    const x_10 = LeanJs_DemoIO_main__closed_13();
+                    const x_10 = LeanJs_DemoIO_main__closed_7();
                     const x_11 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_10, undefined);
                     switch (lean_tag(x_11)) {
                       case 0: {
-                        const x_12 = LeanJs_DemoIO_main__closed_17();
+                        const x_12 = LeanJs_DemoIO_main__closed_8();
                         const x_13 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_12, undefined);
                         switch (lean_tag(x_13)) {
                           case 0: {
                             const x_14 = 0n;
                             const x_15 = lean_st_mk_ref(x_14);
                             const x_16 = 41n;
-                            const x_17 = lean_st_ref_set(x_15, x_16);
+                            const x_17 = lean_st_ref_swap(x_15, x_16);
                             const x_18 = lean_st_ref_take(x_15);
                             const x_19 = 1n;
                             const x_20 = (x_18 + x_19);
-                            const x_21 = lean_st_ref_set(x_15, x_20);
+                            const x_21 = lean_st_ref_put(x_15, x_20);
                             const x_22 = lean_st_ref_get(x_15);
-                            const x_23 = LeanJs_DemoIO_main__closed_18();
+                            const x_23 = LeanJs_DemoIO_main__closed_9();
                             const x_24 = Nat_reprFast(x_22);
                             const x_25 = lean_string_append(x_23, x_24);
                             const x_26 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_25, undefined);
                             switch (lean_tag(x_26)) {
                               case 0: {
-                                const x_27 = LeanJs_DemoIO_main__closed_26();
+                                const x_27 = LeanJs_DemoIO_main__closed_17();
                                 const x_28 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_27, undefined);
                                 switch (lean_tag(x_28)) {
                                   case 0: {
                                     const x_29 = LeanJs_DemoIO_tryCatchIO(undefined);
                                     const x_30 = x_29.fields[0];
-                                    const x_31 = LeanJs_DemoIO_main__closed_27();
+                                    const x_31 = LeanJs_DemoIO_main__closed_18();
                                     const x_32 = lean_string_append(x_31, x_30);
                                     const x_33 = IO_println__at__LeanJs_DemoIO_main_spec_0(x_32, undefined);
                                     switch (lean_tag(x_33)) {
                                       case 0: {
-                                        const x_34 = LeanJs_DemoIO_main__closed_28();
+                                        const x_34 = LeanJs_DemoIO_main__closed_19();
                                         return { __tc: 1, f: IO_eprintln__at___private_Init_System_IO_0_IO_eprintlnAux_spec_0__tc, a: [x_34, undefined] };
                                       }
                                       case 1: {

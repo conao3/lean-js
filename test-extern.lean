@@ -14,7 +14,7 @@ symbol. We also assert a positive control (a fully-mapped root renders `.ok`). -
 
 def main : IO Unit := do
   initSearchPath (← findSysroot)
-  let env ← importModules #[{module := `Init}] {} (loadExts := true)
+  let env ← importModules #[{module := `Init}] {}
   -- Negative: an extern with no prelude symbol must be a hard error.
   let badDecls := collectTransitive env #[``IO.getRandomBytes]
   match renderChecked env badDecls with
