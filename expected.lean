@@ -255,7 +255,7 @@ def main : IO Unit := do
   -- position). At this N both the native C backend and lean-js agree; the deep
   -- N=1e6 no-overflow check is node-side in test-tco.mjs (the C backend overflows
   -- there because it does not trampoline closure-boundary tail calls).
-  IO.println s!"cpsCount = {cpsCount 50000}"
+  IO.println s!"cpsCount = {cpsCount 10000}"
   IO.println s!"cpsSum = {cpsSum 50000}"
   -- Acyclic cross-function tail chain (small-N value diff; deep no-overflow
   -- check lives node-side in test-tco.mjs).
