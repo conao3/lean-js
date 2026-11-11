@@ -190,7 +190,7 @@ def main : IO Unit := do
   IO.println s!"listRev = {listRev lst}"
   IO.println s!"listMapSum = {listMapSum lst}"
   -- Mutual / cross-function TCO correctness (deep no-overflow is checked
-  -- node-side in test-tco.mjs at N=1000000; the Lean interpreter caps recursion
+  -- node-side in test/difftest/tco.mjs at N=1000000; the Lean interpreter caps recursion
   -- well below the naive-JS overflow point, so the diff-test uses a safe N).
   IO.println s!"parityEven 7 = {parityEven 7}"
   IO.println s!"parityOdd 7 = {parityOdd 7}"
@@ -235,7 +235,7 @@ def main : IO Unit := do
   IO.println s!"spackF = {floatStr (spackF sp)}"
   IO.println s!"spackG = {float32Str (spackG sp)}"
   IO.println s!"spackSum = {spackSum sp}"
-  -- Higher-order / closure / typeclass / exception coverage (DemoHO).
+  -- Higher-order / closure / typeclass / exception coverage (HigherOrder).
   IO.println s!"hofApply = {hofApply}"
   IO.println s!"listMapLam = {listMapLam [1,2,3]}"
   IO.println s!"listFilterLam = {listFilterLam [1,2,3,4]}"
@@ -249,15 +249,15 @@ def main : IO Unit := do
   IO.println s!"safeDiv 10 2 = {safeDivStr 10 2}"
   IO.println s!"safeDiv 10 0 = {safeDivStr 10 0}"
   IO.println s!"hmDemo = {hmDemo}"
-  -- Closure-boundary tail calls (DemoHO.cpsCount via runStep/cpsLoop applies its
+  -- Closure-boundary tail calls (HigherOrder.cpsCount via runStep/cpsLoop applies its
   -- step closure in tail position; cpsSum applies a continuation in tail
   -- position). At this N both the native C backend and lean-ts agree; the deep
-  -- N=1e6 no-overflow check is node-side in test-tco.mjs (the C backend overflows
+  -- N=1e6 no-overflow check is node-side in test/difftest/tco.mjs (the C backend overflows
   -- there because it does not trampoline closure-boundary tail calls).
   IO.println s!"cpsCount = {cpsCount 10000}"
   IO.println s!"cpsSum = {cpsSum 50000}"
   -- Acyclic cross-function tail chain (small-N value diff; deep no-overflow
-  -- check lives node-side in test-tco.mjs).
+  -- check lives node-side in test/difftest/tco.mjs).
   IO.println s!"chainHead 10 = {chainHead 10}"
   IO.println s!"pingN 5 0 = {pingN 5 0}"
   -- Float/Float32 transcendentals via toString (6-digit, absorbs <=1-ULP noise).
@@ -284,7 +284,7 @@ def main : IO Unit := do
   IO.println s!"f32cbrt = {float32Str (LeanTsTest.Vectors.f32cbrt 27.0)}"
   IO.println s!"f32toBits = {LeanTsTest.Vectors.f32toBits 1.0}"
   -- USize / platform word width on the host (64-bit) profile. The 32-bit profile
-  -- (WORD_BITS=32) is asserted node-side in test-usize32.mjs.
+  -- (WORD_BITS=32) is asserted node-side in test/difftest/usize32.mjs.
   IO.println s!"nbits = {LeanTsTest.Vectors.nbits}"
   IO.println s!"uszOfU64 = {LeanTsTest.Vectors.uszToNat (LeanTsTest.Vectors.uszOfU64 4294967296)}"
   IO.println s!"uszAddWrap = {LeanTsTest.Vectors.uszToNat (LeanTsTest.Vectors.uszAdd 0xFFFFFFFFFFFFFFFF 1)}"

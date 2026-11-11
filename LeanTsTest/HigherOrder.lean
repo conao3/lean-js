@@ -3,7 +3,7 @@ import Std.Data.HashMap
 /-! Higher-order / closure / typeclass / exception coverage targets for the
 lean-ts CLI. Kept in a library module so their IR is persisted in the `.olean`
 and visible to `Lean.IR.findEnvDecl` on re-import. These exercise emitter paths
-that the first-order Demo functions never reach: `pap`/`ap`/closure capture
+that the first-order Vectors functions never reach: `pap`/`ap`/closure capture
 (`lean_apply`), monomorphized higher-order `List`/`Array` combinators, Monad
 dictionary passing, the `Except` error channel, and `Std.HashMap`. -/
 

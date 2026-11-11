@@ -1,113 +1,136 @@
-import LeanTs.EmitTs
-import LeanTsTest.Vectors
-import LeanTsTest.HigherOrder
-import LeanTsTest.Io
-import LeanTsTest.Init
-import LeanTsTest.Stress
-import LeanTsTest.Stress2
-import LeanTsTest.Stress3
-import LeanTsTest.Stress4
-import LeanTsTest.Verify
-import LeanTsTest.Fuzz
+import LeanTs
 
-open Lean Lean.IR
+open Lean LeanTs
 
-/-! # lean-typescript CLI
+def version : String := "0.1.0"
 
-Thin driver around `LeanTs.EmitTs`. Target functions live in imported library
-modules so their IR is persisted in the `.olean` and visible to
-`Lean.IR.findEnvDecl` when we re-import; we transitively collect dependencies
-and emit a self-contained TypeScript module (prelude + generated functions). -/
+/-- Version of the generated code. Raise it when the emitted code changes. -/
+def generatorVersion : String := "1"
 
-/-- Root names to extract. TodoList functions exercise List, String, ctor/proj,
-    Bool, and transitive helper-decl collection together. -/
-def rootNames : Array Name := #[
-  `LeanTsTest.Vectors.double, `LeanTsTest.Vectors.mkShifted, `LeanTsTest.Vectors.sumTo, `LeanTsTest.Vectors.fact,
-  `LeanTsTest.Vectors.mkMixed, `LeanTsTest.Vectors.mixedSum,
-  `LeanTsTest.Vectors.u32wrap, `LeanTsTest.Vectors.u8wrap,
-  `LeanTsTest.Vectors.intEdiv, `LeanTsTest.Vectors.intEmod, `LeanTsTest.Vectors.intNeg,
-  `LeanTsTest.Vectors.floatCalc,
-  `LeanTsTest.Vectors.strLen, `LeanTsTest.Vectors.strBytes, `LeanTsTest.Vectors.strGet0,
-  `LeanTsTest.Vectors.strGet1, `LeanTsTest.Vectors.strExtract,
-  `LeanTsTest.Vectors.arrSum, `LeanTsTest.Vectors.arrMapSum, `LeanTsTest.Vectors.arrRange,
-  `LeanTsTest.Vectors.arrGetD, `LeanTsTest.Vectors.arrAppend,
-  `LeanTsTest.Vectors.listSum, `LeanTsTest.Vectors.listLen, `LeanTsTest.Vectors.listRev,
-  `LeanTsTest.Vectors.listMapSum,
-  `LeanTsTest.Vectors.parityEven, `LeanTsTest.Vectors.parityOdd, `LeanTsTest.Vectors.cycle3,
-  `LeanTsTest.Vectors.i8wrap, `LeanTsTest.Vectors.i8neg, `LeanTsTest.Vectors.i8div, `LeanTsTest.Vectors.i8mod,
-  `LeanTsTest.Vectors.i8shr, `LeanTsTest.Vectors.i16wrap, `LeanTsTest.Vectors.i32wrap, `LeanTsTest.Vectors.i64mul,
-  `LeanTsTest.Vectors.i8toInt, `LeanTsTest.Vectors.i32toInt,
-  `LeanTsTest.Vectors.floatStr, `LeanTsTest.Vectors.float32Str,
-  `LeanTsTest.Vectors.mkSPack, `LeanTsTest.Vectors.spackA, `LeanTsTest.Vectors.spackB, `LeanTsTest.Vectors.spackC,
-  `LeanTsTest.Vectors.spackE, `LeanTsTest.Vectors.spackF, `LeanTsTest.Vectors.spackG, `LeanTsTest.Vectors.spackSum,
-  `LeanTsTest.Vectors.chainHead, `LeanTsTest.Vectors.pingN,
-  `LeanTsTest.Vectors.ftan, `LeanTsTest.Vectors.fasin, `LeanTsTest.Vectors.facos, `LeanTsTest.Vectors.fatan,
-  `LeanTsTest.Vectors.fatan2, `LeanTsTest.Vectors.fsinh, `LeanTsTest.Vectors.fcosh, `LeanTsTest.Vectors.ftanh,
-  `LeanTsTest.Vectors.fexp2, `LeanTsTest.Vectors.flog2, `LeanTsTest.Vectors.flog10, `LeanTsTest.Vectors.fcbrt,
-  `LeanTsTest.Vectors.ftoBits, `LeanTsTest.Vectors.fofBits, `LeanTsTest.Vectors.ffrExpM, `LeanTsTest.Vectors.ffrExpE,
-  `LeanTsTest.Vectors.f32tan, `LeanTsTest.Vectors.f32exp, `LeanTsTest.Vectors.f32log, `LeanTsTest.Vectors.f32cbrt,
-  `LeanTsTest.Vectors.f32toBits,
-  `LeanTsTest.Vectors.nbits, `LeanTsTest.Vectors.uszOfU64, `LeanTsTest.Vectors.uszAdd,
-  `LeanTsTest.Vectors.uszCompl, `LeanTsTest.Vectors.uszToNat,
-  `LeanTsTest.HigherOrder.hofApply,
-  `LeanTsTest.HigherOrder.listMapLam, `LeanTsTest.HigherOrder.listFilterLam, `LeanTsTest.HigherOrder.listFoldlLam,
-  `LeanTsTest.HigherOrder.arrMapLam,
-  `LeanTsTest.HigherOrder.applyAdders, `LeanTsTest.HigherOrder.currySplit,
-  `LeanTsTest.HigherOrder.optSeq, `LeanTsTest.HigherOrder.exSeq, `LeanTsTest.HigherOrder.fmapList,
-  `LeanTsTest.HigherOrder.safeDivStr, `LeanTsTest.HigherOrder.hmDemo,
-  `LeanTsTest.HigherOrder.cpsCount, `LeanTsTest.HigherOrder.cpsSum,
-  `LeanTsTest.Vectors.TodoList.add,
-  `LeanTsTest.Vectors.TodoList.toggle,
-  `LeanTsTest.Vectors.TodoList.remove,
-  `LeanTsTest.Vectors.TodoList.step,
-  `LeanTsTest.Fuzz.fNat, `LeanTsTest.Fuzz.fInt, `LeanTsTest.Fuzz.fU32, `LeanTsTest.Fuzz.fU8,
-  `LeanTsTest.Fuzz.fStr, `LeanTsTest.Fuzz.fHash, `LeanTsTest.Fuzz.fListNat, `LeanTsTest.Fuzz.fArrNat
-]
+def usage : String := "usage: lean-typescript [--version] [--generator-version] <command> <subcommand> [parameters]
 
-def main (args : List String) : IO Unit := do
-  let outPath := args.headD "out.ts"
-  let preludePath := args.getD 1 "prelude.ts"
-  let progPath := args.getD 2 "out-io.mjs"
-  initSearchPath (← findSysroot)
-  let env ← importModules
-    #[{ module := `LeanTsTest.Vectors }, { module := `LeanTsTest.HigherOrder },
-      { module := `LeanTsTest.Io }, { module := `LeanTsTest.Init },
-      { module := `LeanTsTest.Stress }, { module := `LeanTsTest.Stress2 },
-      { module := `LeanTsTest.Stress3 }, { module := `LeanTsTest.Stress4 },
-      { module := `LeanTsTest.Verify },
-      { module := `LeanTsTest.Fuzz },
-      { module := `LeanTsTest.Vectors }] {}
-  let prelude ← IO.FS.readFile preludePath
-  let decls := LeanTs.collectTransitive env rootNames
-  -- Fail loud (non-zero exit, no output written) if any reached extern has no
-  -- prelude symbol — the analogue of a C linker rejecting an unresolved symbol.
-  let body ← match LeanTs.renderChecked env decls with
-    | .ok s => pure s
-    | .error e => throw (IO.userError s!"lean-typescript: {e}")
-  let ts := prelude ++ "\n// ================ GENERATED ================\n\n" ++ body
-  IO.FS.writeFile outPath ts
-  IO.println s!"wrote {decls.size} decls to {outPath}"
-  let progBody ← match LeanTs.renderProgramChecked env `LeanTsTest.Io.main with
-    | .ok s => pure s
-    | .error e => throw (IO.userError s!"lean-typescript: {e}")
-  let prog := prelude ++ "\n// ================ GENERATED PROGRAM ================\n\n" ++ progBody
-  IO.FS.writeFile progPath prog
-  IO.println s!"wrote runnable program to {progPath}"
-  -- Extra IO programs: stdin echo + an error-throwing program, each a
-  -- self-contained runnable module diff-tested against `lean --run`.
-  let emitProg (root : Name) (path : String) : IO Unit := do
-    match LeanTs.renderProgramChecked env root with
-    | .ok body =>
-      IO.FS.writeFile path
-        (prelude ++ "\n// ================ GENERATED PROGRAM ================\n\n" ++ body)
-      IO.println s!"wrote runnable program to {path}"
-    | .error e => throw (IO.userError s!"lean-typescript: {e}")
-  emitProg `LeanTsTest.Io.stdinEcho "out-stdin.mjs"
-  emitProg `LeanTsTest.Io.errMain "out-err.mjs"
-  emitProg `LeanTsTest.Io.panicMain "out-panic.mjs"
-  emitProg `LeanTsTest.Init.main "out-init.mjs"
-  emitProg `LeanTsTest.Stress.stressMain "out-stress.mjs"
-  emitProg `LeanTsTest.Stress2.stress2Main "out-stress2.mjs"
-  emitProg `LeanTsTest.Stress3.stress3Main "out-stress3.mjs"
-  emitProg `LeanTsTest.Stress4.stress4Main "out-stress4.mjs"
-  emitProg `LeanTsTest.Verify.verifyMain "out-verify.mjs"
+commands:
+  module generate      Emit a TypeScript module for functions of a Lean module
+
+lean-typescript module generate
+  --module-name <Name>        Lean module to import (required)
+  --roots <Name> ...          Functions to export (default: the module's public definitions)
+  --main <Name>               Also emit the program entry running <Name> as `main`
+                              (after the module's init decls)
+  --import <Name> ...         More modules to import (their @[csimp] lemmas apply)
+  --search-path <dir> ...     Extra .olean search directories
+  --output-file <path>        Write the module here (default: standard output)
+  --runtime-path <specifier>  Module the generated code imports the runtime from
+                              (default: lean-ts/runtime)
+  --internal-only             Do not emit public functions and types
+  --output json|text          Format of the summary
+
+exit codes: 0 success, 252 invalid parameters, 254 input that cannot be converted, 255 other errors
+"
+
+structure Opts where
+  moduleName : Option Name := none
+  roots : Array Name := #[]
+  main? : Option Name := none
+  searchPath : Array System.FilePath := #[]
+  outputFile : Option System.FilePath := none
+  runtimePath : String := "lean-ts/runtime"
+  internalOnly : Bool := false
+  output : String := "json"
+  imports : Array Name := #[]
+
+partial def parseOpts (args : List String) (o : Opts) : Except String Opts :=
+  let takeMany (rest : List String) : List String × List String :=
+    (rest.takeWhile (!·.startsWith "--"), rest.dropWhile (!·.startsWith "--"))
+  match args with
+  | [] => .ok o
+  | "--module-name" :: v :: rest => parseOpts rest { o with moduleName := v.toName }
+  | "--main" :: v :: rest => parseOpts rest { o with main? := v.toName }
+  | "--output-file" :: v :: rest => parseOpts rest { o with outputFile := some v }
+  | "--runtime-path" :: v :: rest => parseOpts rest { o with runtimePath := v }
+  | "--internal-only" :: rest => parseOpts rest { o with internalOnly := true }
+  | "--output" :: v :: rest =>
+    if v == "json" || v == "text" then parseOpts rest { o with output := v }
+    else .error s!"--output must be json or text: {v}"
+  | "--roots" :: rest =>
+    let (vs, rest) := takeMany rest
+    parseOpts rest { o with roots := o.roots ++ vs.toArray.map String.toName }
+  | "--import" :: rest =>
+    let (vs, rest) := takeMany rest
+    parseOpts rest { o with imports := o.imports ++ vs.toArray.map String.toName }
+  | "--search-path" :: rest =>
+    let (vs, rest) := takeMany rest
+    parseOpts rest { o with searchPath := o.searchPath ++ vs.toArray.map System.FilePath.mk }
+  | a :: _ => .error s!"unknown parameter: {a}"
+
+def fail (code : UInt32) (msg : String) : IO UInt32 := do
+  IO.eprintln s!"lean-typescript: {msg}"
+  return code
+
+/-- The definitions of `mod` exported by default: public, written in the source (with a declaration
+    range), not instances or their auxiliary definitions, with IR. -/
+def defaultRoots (env : Environment) (mod : Name) : Array Name := Id.run do
+  let some idx := env.getModuleIdx? mod | return #[]
+  let mut out := #[]
+  for c in env.header.moduleData[idx.toNat]!.constNames do
+    if isPrivateName c || c.isInternalDetail || isAuxRecursor env c then continue
+    if Meta.isInstanceCore env c || Meta.isInstanceCore env c.getPrefix then continue
+    if (declRangeExt.find? (level := .exported) env c).isNone then continue
+    if (IR.findEnvDecl env c).isSome then out := out.push c
+  return out
+
+def header (o : Opts) (mod : Name) (body : String) : String :=
+  let types := if (body.splitOn "Obj").length > 1 then s!"import type \{ Obj } from \"{o.runtimePath}\"\n" else ""
+  s!"// Generated by lean-typescript (generator {generatorVersion}) from {mod}. Do not edit.\nimport * as L from \"{o.runtimePath}\"\n{types}\n"
+
+def importAll (o : Opts) (mods : Array Name) : IO (Except Name Environment) := do
+  initSearchPath (← findSysroot) o.searchPath.toList
+  let sp ← searchPathRef.get
+  for m in mods do
+    if (← sp.findWithExt "olean" m).isNone then return .error m
+  .ok <$> importModules (mods.map fun m => { module := m }) {} (trustLevel := 1024) (loadExts := true)
+
+def printSummary (o : Opts) (toStderr : Bool) (j : Json) : IO Unit := do
+  let out := if toStderr then IO.eprintln else IO.println
+  if o.output == "json" then out j.compress
+  else
+    let get (k : String) := j.getObjValD k
+    out s!"{(get "module").getStr?.toOption.getD ""}: {get "functions"} functions, {(get "externs").getArr?.toOption.getD #[] |>.size} externs"
+
+def moduleGenerate (o : Opts) : IO UInt32 := do
+  let some mod := o.moduleName | return ← fail 252 "--module-name is required"
+  let mods := (#[mod] ++ o.imports).foldl (fun a m => if a.contains m then a else a.push m) #[]
+  let env ← match ← importAll o mods with
+    | .ok env => pure env
+    | .error m => return ← fail 252 s!"module not found: {m}"
+  let roots := if o.roots.isEmpty && o.main?.isNone then defaultRoots env mod else o.roots
+  match renderModule env roots o.main? with
+  | .error e => fail 254 e
+  | .ok r =>
+    let missing := r.externs.filter (!runtimeExterns.contains ·)
+    unless missing.isEmpty do
+      return ← fail 254 s!"externs not in the runtime: {", ".intercalate missing.toList}"
+    let src := header o mod r.body ++ r.body
+    match o.outputFile with
+    | none => IO.print src
+    | some p =>
+      if let some dir := p.parent then IO.FS.createDirAll dir
+      IO.FS.writeFile p src
+    printSummary o o.outputFile.isNone <| Json.mkObj [("module", toString mod), ("functions", r.functions),
+      ("externs", Json.arr (r.externs.map Json.str)), ("public", Json.arr #[]), ("skipped", Json.arr #[])]
+    return 0
+
+unsafe def main (args : List String) : IO UInt32 := do
+  enableInitializersExecution
+  match args with
+  | ["--version"] => IO.println version; return 0
+  | ["--generator-version"] => IO.println generatorVersion; return 0
+  | [] | ["help"] | ["--help"] => IO.print usage; return 0
+  | "module" :: "help" :: _ => IO.print usage; return 0
+  | "module" :: "generate" :: rest =>
+    match parseOpts rest {} with
+    | .error e => fail 252 e
+    | .ok o =>
+      try moduleGenerate o
+      catch e => fail 255 (toString e)
+  | _ => fail 252 s!"unknown command (see `lean-typescript help`)"

@@ -1,6 +1,6 @@
 import { defineConfig, type ViteUserConfig } from "vite-plus"
 
-export default defineConfig({
+const config: ViteUserConfig = defineConfig({
   fmt: {
     semi: false,
     singleQuote: false,
@@ -32,4 +32,6 @@ export default defineConfig({
       check: { command: "vp check && vp test" },
     },
   },
-} satisfies ViteUserConfig)
+})
+
+export default config
