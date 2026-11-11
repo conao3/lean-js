@@ -1,0 +1,7 @@
+{
+  "src/calc.ts:spec": {
+    "fnv": "47fa13e76986fd4e",
+    "output": "src/_lean/calc__spec.ts",
+    "sha256": "02edf82aa624a5210e9389c9bf04f6cd4d66490a87e6144ffe6a8357b32a7c37"
+  }
+}

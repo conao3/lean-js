@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process"
 import { readFileSync } from "node:fs"
-import { leanTypescriptCli, statusPackage, SyncError, syncPackage } from "./sync.ts"
+import { leanTypescriptCli, readPackage, statusPackage, SyncError, syncPackage } from "./sync.ts"
+import { checkPackage, statusModels } from "./verify/check.ts"
 
 const USAGE = `usage: lean-ts [--version] <command> [parameters]
 
 commands:
   sync       Check the Lean blocks of a package and generate their TypeScript modules
+  check      Translate the model(...) functions and judge the proofs of their obligations
   status     List the blocks whose generated modules are stale (no Lean)
   generate   Emit a TypeScript module per Lean module of a lake project
 
@@ -14,8 +16,14 @@ lean-ts sync
   --package <dir>            The package (the directory with package.json and src/) (required)
   --lean-typescript <path>   The Lean CLI (default: $LEAN_TYPESCRIPT, then lean-typescript on PATH)
 
+lean-ts check
+  --package <dir>            The package (required)
+  --lean-typescript <path>   as for sync
+  --require proved           Exit with 254 unless every obligation is proved
+  Writes <dir>/lean-ts.lock and prints one line per obligation: <status> <module>:<function> <label>
+
 lean-ts status
-  --package <dir>            The package (required); exits with 254 when a block is stale
+  --package <dir>            The package (required); exits with 254 when a block or an obligation is stale
 
 lean-ts generate
   --lake-dir <dir>           Lake project to build (required)
@@ -83,11 +91,30 @@ async function main(argv: readonly string[]): Promise<number> {
     await syncPackage(required(args, "--package"), args.single.get("--lean-typescript"), log)
     return 0
   }
+  if (command === "check") {
+    const args = parseArgs(rest, ["--package", "--lean-typescript", "--require"])
+    const req = args.single.get("--require")
+    if (req !== undefined && req !== "proved")
+      throw new SyncError(`--require takes proved (got ${req})`, 252)
+    const { rows } = await checkPackage(
+      required(args, "--package"),
+      args.single.get("--lean-typescript"),
+      log,
+    )
+    for (const r of rows) process.stdout.write(`${r.status.padEnd(12)}${r.fn} ${r.label}\n`)
+    return req === undefined || rows.every((r) => r.status === "proved") ? 0 : 254
+  }
   if (command === "status") {
     const args = parseArgs(rest, ["--package"])
-    const rows = await statusPackage(required(args, "--package"))
+    const dir = required(args, "--package")
+    const pkg = await readPackage(dir, false)
+    const rows = statusPackage(pkg)
     for (const r of rows) process.stdout.write(`${r.state.padEnd(8)}${r.block}\n`)
-    return rows.every((r) => r.state === "fresh") ? 0 : 254
+    const models = statusModels(pkg)
+    for (const r of models) process.stdout.write(`${r.status.padEnd(12)}${r.fn} ${r.label}\n`)
+    return rows.every((r) => r.state === "fresh") && models.every((r) => r.status !== "stale")
+      ? 0
+      : 254
   }
   if (command === "generate") {
     const args = parseArgs(rest, ["--lake-dir", "--output-dir", "--modules", "--lean-typescript"])

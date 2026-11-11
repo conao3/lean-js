@@ -1,0 +1,39 @@
+{
+  "src/calc.ts:clamp": {
+    "spec_hash": "6e1419b751b3b5afa3f2d0e1e0800c83c2b87ca8addebfaaec803253641bcf83",
+    "lean": "LeanTsModel.calc.clamp",
+    "obligations": {
+      "refines": "proved",
+      "inRange": "proved"
+    }
+  },
+  "src/calc.ts:firstOr": {
+    "spec_hash": "5e5173f10edd081ab38aa4fe764f7cf19651ab135d3a691371933264527e9691",
+    "lean": "LeanTsModel.calc.firstOr",
+    "obligations": {
+      "refines": "proved"
+    }
+  },
+  "src/calc.ts:sumAbs": {
+    "spec_hash": "50020333fbe6a724bd749945dac43bdeae38e1bb98de043c2d238b4f2d2d58ae",
+    "lean": "LeanTsModel.calc.sumAbs",
+    "obligations": {
+      "nonneg": "proved"
+    }
+  },
+  "src/calc.ts:sumTo": {
+    "spec_hash": "03ad9cbc688e77a840f64c1de7f140d6ad04367a4ee65db2cf388b8d5be5f553",
+    "lean": "LeanTsModel.calc.sumTo",
+    "obligations": {
+      "refines": "sorry",
+      "returnsNat": "missing"
+    }
+  },
+  "src/calc.ts:twice": {
+    "spec_hash": "58782be2696ae87f33ca0f9d7f461560713ca19951a141f30249a49cb5b88ff2",
+    "lean": "LeanTsModel.calc.twice",
+    "obligations": {
+      "refines": "axioms"
+    }
+  }
+}

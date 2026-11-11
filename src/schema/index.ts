@@ -21,6 +21,7 @@ import { jsonSchemaOf } from "./desc.ts"
 
 export { type Issue, LeanValidationError } from "../runtime/marshal.ts"
 export * from "./desc.ts"
+export { arbitrary, type FC } from "./arbitrary.ts"
 
 export interface LeanSchema<Input, Output> {
   readonly "~standard": StandardSchemaV1.Props<Input, Output> &

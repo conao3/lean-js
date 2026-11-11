@@ -66,7 +66,7 @@ function readJson(file: string): unknown {
   return JSON.parse(readFileSync(file, "utf8"))
 }
 
-function isRecord(v: unknown): v is Readonly<Record<string, unknown>> {
+export function isRecord(v: unknown): v is Readonly<Record<string, unknown>> {
   return typeof v === "object" && v !== null && !Array.isArray(v)
 }
 
@@ -117,11 +117,11 @@ function leanIdent(s: string): string {
   return /^[0-9]/u.test(t) ? `_${t}` : t
 }
 
-function leanName(parts: readonly string[]): string {
+export function leanName(parts: readonly string[]): string {
   return parts.map((p, i) => (i === 0 ? p : `«${p}»`)).join(".")
 }
 
-function moduleParts(module: string): string[] {
+export function moduleParts(module: string): string[] {
   const parts = module.replace(/\.ts$/u, "").split("/")
   return (parts[0] === "src" ? parts.slice(1) : parts).map(leanIdent)
 }
@@ -141,7 +141,7 @@ interface Output {
   readonly at: ScannedBlock["at"]
 }
 
-function aliasFile(b: Output): string {
+export function aliasFile(b: Output): string {
   return join(dirname(b.file), "_lean", `${basename(b.file, ".ts")}.ts`)
 }
 
@@ -354,7 +354,7 @@ function leanMessages(
   return out
 }
 
-function run(
+export function run(
   cmd: string,
   args: readonly string[],
   cwd?: string,
@@ -368,7 +368,7 @@ export function leanTypescriptCli(given: string | undefined): string {
   return given ?? process.env["LEAN_TYPESCRIPT"] ?? "lean-typescript"
 }
 
-function specifier(from: string, to: string): string {
+export function specifier(from: string, to: string): string {
   const r = relative(dirname(from), to).split(sep).join("/")
   return r.startsWith(".") ? r : `./${r}`
 }
@@ -413,11 +413,35 @@ export function blocksFile(root: string): string {
   return join(root, ".lean-ts", "blocks.json")
 }
 
+export interface Named {
+  readonly lean: string
+  readonly typescript: string
+}
+
+export interface Summary {
+  readonly public: readonly Named[]
+  readonly types: readonly Named[]
+}
+
+export interface Synced {
+  readonly pkg: Package
+  readonly summaries: ReadonlyMap<string, Summary>
+}
+
+function named(v: unknown): Named[] {
+  if (!Array.isArray(v)) return []
+  return v.flatMap((x: unknown) =>
+    isRecord(x) && typeof x["lean"] === "string" && typeof x["typescript"] === "string"
+      ? [{ lean: x["lean"], typescript: x["typescript"] }]
+      : [],
+  )
+}
+
 export async function syncPackage(
   dir: string,
   cliPath: string | undefined,
   log: Log,
-): Promise<void> {
+): Promise<Synced> {
   const cli = leanTypescriptCli(cliPath)
   const gv = run(cli, ["--generator-version"])
   if (gv.status !== 0) throw new SyncError(`${cli} --generator-version failed: ${gv.stderr}`, 255)
@@ -482,6 +506,7 @@ export async function syncPackage(
   }))
   writeFileSync(join(ws, "batch.json"), JSON.stringify(jobs, null, 2) + "\n")
   const outputs = outputsOf(pkg.blocks)
+  const summaries = new Map<string, Summary>()
   if (pkg.blocks.length !== 0) {
     const gen = run(cli, [
       "module",
@@ -497,14 +522,17 @@ export async function syncPackage(
       log(gen.stderr + gen.stdout)
       throw new SyncError("lean-typescript module generate failed", gen.status)
     }
-    const summaries: unknown = JSON.parse(gen.stdout)
-    if (Array.isArray(summaries))
-      for (const s of summaries) {
+    const parsed: unknown = JSON.parse(gen.stdout)
+    if (Array.isArray(parsed))
+      parsed.forEach((s: unknown, i) => {
+        const b = pkg.blocks[i]
+        if (b !== undefined && isRecord(s))
+          summaries.set(b.outFile, { public: named(s["public"]), types: named(s["types"]) })
         const skipped: unknown = isRecord(s) ? s["skipped"] : undefined
         if (Array.isArray(skipped))
           for (const k of skipped)
             if (isRecord(k)) log(`lean-ts: skipped ${String(k["name"])}: ${String(k["reason"])}`)
-      }
+      })
   }
   for (const [f, text] of outputs) if (text !== "") writeFileSync(f, text)
   removeStale(join(pkg.root, "src"), new Set(outputs.keys()))
@@ -520,6 +548,7 @@ export async function syncPackage(
     JSON.stringify(JSON.parse(canonicalJson(registry)), null, 2) + "\n",
   )
   log(`lean-ts: ${pkg.blocks.length} blocks of ${pkg.root} checked and generated`)
+  return { pkg, summaries }
 }
 
 export interface StatusRow {
@@ -527,8 +556,7 @@ export interface StatusRow {
   readonly state: "fresh" | "stale" | "removed"
 }
 
-export async function statusPackage(dir: string): Promise<StatusRow[]> {
-  const pkg = await readPackage(dir, false)
+export function statusPackage(pkg: Package): StatusRow[] {
   const file = blocksFile(pkg.root)
   const recorded: unknown = existsSync(file) ? readJson(file) : {}
   const known = isRecord(recorded) ? recorded : {}
