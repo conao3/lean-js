@@ -1,6 +1,6 @@
 # Run the targets inside the dev shell: `nix develop -c make check`.
 
-.PHONY: install build pack gen-externs externs-check test test-public fuzz typecheck-generated embed-fixture status test-embed format format-check check
+.PHONY: install build pack gen-externs externs-check test test-public fuzz typecheck-generated embed-links embed-fixture status test-embed format format-check check
 
 install:
 	pnpm install --frozen-lockfile
@@ -32,12 +32,18 @@ test-public: build
 typecheck-generated: test test-public fuzz
 	vp lint $$(find test-out -name '*.ts' -not -path 'test-out/embed/*' -not -path 'test-out/project/*')
 
+# The fixture imports lean-ts and zod (its models are read by importing its modules).
+embed-links: install
+	mkdir -p test/embed/app/node_modules
+	ln -sfn ../../../.. test/embed/app/node_modules/lean-ts
+	ln -sfn ../../../../node_modules/zod test/embed/app/node_modules/zod
+
 # Regenerate the committed modules of the embedding fixture.
-embed-fixture: build pack
+embed-fixture: build pack embed-links
 	node src/cli.ts sync --package test/embed/app --lean-typescript .lake/build/bin/lean-typescript
 
 # The committed modules of the embedding fixture are fresh (no Lean).
-status: install
+status: pack embed-links
 	node src/cli.ts status --package test/embed/app
 
 test-embed: build pack

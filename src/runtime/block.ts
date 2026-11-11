@@ -1,7 +1,13 @@
+export interface BlockSettings {
+  readonly tagKey: string
+  readonly option: string
+}
+
 export interface BlockEntry {
   readonly name: string
   readonly module: string
   readonly fnv: string
+  readonly settings: BlockSettings
   readonly url: string
 }
 

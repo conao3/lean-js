@@ -6,3 +6,4 @@
 /test-out
 **/.lean-ts/workspace/
 /.claude-dev
+/test/embed/app/node_modules

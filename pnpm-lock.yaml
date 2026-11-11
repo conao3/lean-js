@@ -15,12 +15,21 @@ importers:
         specifier: 0.158.0
         version: 0.158.0
     devDependencies:
+      '@hono/standard-validator':
+        specifier: 0.4.1
+        version: 0.4.1(@standard-schema/spec@1.1.0)(hono@4.13.14)
       '@types/node':
         specifier: ^26.6.6
         version: 26.6.6
+      hono:
+        specifier: 4.13.14
+        version: 4.13.14
       vite-plus:
         specifier: 1.5.0
         version: 1.5.0(@types/node@26.6.6)(@vitest/ui@5.1.0)
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
 
 packages:
 
@@ -38,6 +47,12 @@ packages:
 
   '@blazediff/core@1.10.0':
     resolution: {integrity: sha512-AOQff0zgR7cGsZL+4E7hVkmujoPUpm0J9xzWGWZj5wCjd3gmxESXAPfKyuzs93VdpQNFhHlBhfOjrcZ+XTERtQ==}
+
+  '@hono/standard-validator@0.4.1':
+    resolution: {integrity: sha512-Q0+1dgMKAXEvsmJ5FNoamwnfrf/I5JNnKn7WzfynH8nJlNe1lNOW1+vlKpEQZbrBLEgmxIeys6HjRotDvZzq+A==}
+    peerDependencies:
+      '@standard-schema/spec': ^1.0.0
+      hono: '>=4.11.2'
 
   '@jridgewell/resolve-uri@3.1.2':
     resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
@@ -781,6 +796,10 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
+  hono@4.13.14:
+    resolution: {integrity: sha512-yhRLQ21U6qa9Hsu2N7Qcbh8tE+WKEcoErjIo56LeSGiGXGp9sA7UpE86Ui9uexb61KakiGwuHMn2QdV7w6i6kQ==}
+    engines: {node: '>=16.9.0'}
+
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
@@ -1060,6 +1079,9 @@ packages:
     resolution: {integrity: sha512-XrBh9ZiQK5mJVRxZBAvD6LwRyAYrK3MFtH3+onyuxFL5hFD44EC3QOmIC1FjTj6H2MMwq46/NAI+NZxLZPZgxg==}
     engines: {node: '>=14.18.0'}
 
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
+
 snapshots:
 
   '@babel/code-frame@7.29.7':
@@ -1073,6 +1095,11 @@ snapshots:
   '@babel/runtime@7.29.13': {}
 
   '@blazediff/core@1.10.0': {}
+
+  '@hono/standard-validator@0.4.1(@standard-schema/spec@1.1.0)(hono@4.13.14)':
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      hono: 4.13.14
 
   '@jridgewell/resolve-uri@3.1.2': {}
 
@@ -1502,6 +1529,8 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
+  hono@4.13.14: {}
+
   js-tokens@4.0.0: {}
 
   lightningcss-android-arm64@1.33.0:
@@ -1805,3 +1834,5 @@ snapshots:
     dependencies:
       '@yuku-toolchain/types': 0.19.0
       yuku-core: 0.19.0
+
+  zod@4.6.7: {}

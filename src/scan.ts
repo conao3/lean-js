@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs"
-import { join, relative, sep } from "node:path"
+import { dirname, join, relative, resolve, sep } from "node:path"
 import {
   type Argument,
   type CallExpression,
@@ -26,6 +26,12 @@ export interface Position {
   readonly col: number
 }
 
+export interface ModelBinding {
+  readonly name: string
+  readonly from: string
+  readonly exportName: string
+}
+
 export interface ScannedBlock {
   readonly file: string
   readonly module: string
@@ -35,6 +41,7 @@ export interface ScannedBlock {
   readonly uses: readonly string[]
   readonly output: Readonly<Record<string, string>>
   readonly modelNames: readonly string[]
+  readonly models: readonly ModelBinding[]
   readonly at: Position
   readonly sourceAt: Position
 }
@@ -123,6 +130,58 @@ export function scanFile(root: string, file: string): ScannedBlock[] {
   }
   const direct = new Set<string>()
   const namespaces = new Set<string>()
+  const bindings = new Map<string, { readonly from: string; readonly exportName: string | null }>()
+  const exported = new Set<string>()
+  const fromSpec = (spec: string): string =>
+    spec.startsWith(".") ? resolve(dirname(file), spec) : spec
+  for (const s of parsed.program.body) {
+    if (s.type === "ImportDeclaration") {
+      for (const sp of s.specifiers) {
+        if (sp.type === "ImportNamespaceSpecifier")
+          bindings.set(sp.local.name, { from: fromSpec(s.source.value), exportName: null })
+        else if (sp.type === "ImportSpecifier")
+          bindings.set(sp.local.name, {
+            from: fromSpec(s.source.value),
+            exportName: sp.imported.type === "Literal" ? sp.imported.value : sp.imported.name,
+          })
+      }
+    } else if (s.type === "ExportNamedDeclaration") {
+      const d = s.declaration
+      if (d?.type === "VariableDeclaration")
+        for (const x of d.declarations) if (x.id.type === "Identifier") exported.add(x.id.name)
+      if ((d?.type === "FunctionDeclaration" || d?.type === "ClassDeclaration") && d.id !== null)
+        exported.add(d.id.name)
+      if (s.source === null)
+        for (const sp of s.specifiers)
+          if (
+            sp.local.type === "Identifier" &&
+            sp.exported.type === "Identifier" &&
+            sp.local.name === sp.exported.name
+          )
+            exported.add(sp.local.name)
+    }
+  }
+  const binding = (name: string, e: Expression): ModelBinding => {
+    if (e.type === "Identifier") {
+      const i = bindings.get(e.name)
+      if (i !== undefined && i.exportName !== null)
+        return { name, from: i.from, exportName: i.exportName }
+      if (exported.has(e.name)) return { name, from: file, exportName: e.name }
+    } else if (
+      e.type === "MemberExpression" &&
+      !e.computed &&
+      e.object.type === "Identifier" &&
+      e.property.type === "Identifier"
+    ) {
+      const i = bindings.get(e.object.name)
+      if (i !== undefined && i.exportName === null)
+        return { name, from: i.from, exportName: e.property.name }
+    }
+    return fail(
+      e.start,
+      `the model ${name} must be an exported variable of the module, a named import or a property of a namespace import`,
+    )
+  }
   for (const s of parsed.program.body) {
     if (s.type !== "ImportDeclaration" || s.source.value !== "lean-ts" || s.importKind === "type")
       continue
@@ -188,6 +247,7 @@ export function scanFile(root: string, file: string): ScannedBlock[] {
     let uses: string[] = []
     const output: Record<string, string> = {}
     const modelNames: string[] = []
+    const models: ModelBinding[] = []
     if (optionsArg !== undefined) {
       if (optionsArg.type !== "ObjectExpression")
         return fail(optionsArg.start, "the options of lean(...) must be an object literal")
@@ -197,7 +257,10 @@ export function scanFile(root: string, file: string): ScannedBlock[] {
         else if (k === "models") {
           if (v.type !== "ObjectExpression")
             return fail(v.start, "models must be an object literal")
-          for (const [m] of objectEntries(v, "models")) modelNames.push(m)
+          for (const [m, mv] of objectEntries(v, "models")) {
+            modelNames.push(m)
+            models.push(binding(m, mv))
+          }
         } else if (k === "output") {
           if (v.type !== "ObjectExpression")
             return fail(v.start, "output must be an object literal")
@@ -217,6 +280,7 @@ export function scanFile(root: string, file: string): ScannedBlock[] {
       uses,
       output,
       modelNames,
+      models,
       at: position(starts, c.start),
       sourceAt: position(starts, sourceStart),
     }

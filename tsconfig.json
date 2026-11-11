@@ -16,7 +16,8 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "lean-ts": ["./src/index.ts"],
-      "lean-ts/runtime": ["./src/runtime/index.ts"]
+      "lean-ts/runtime": ["./src/runtime/index.ts"],
+      "lean-ts/schema": ["./src/schema/index.ts"]
     }
   },
   "include": ["src", "test", "test-out", "scripts", "vite.config.ts"]

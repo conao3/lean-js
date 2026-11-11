@@ -23,6 +23,7 @@ const config: ViteUserConfig = defineConfig({
         index: "src/index.ts",
         runtime: "src/runtime/index.ts",
         "runtime/node": "src/runtime/node.ts",
+        schema: "src/schema/index.ts",
         cli: "src/cli.ts",
       },
       platform: "neutral",

@@ -50,6 +50,10 @@ function copyProject(from: string, name: string): string {
   })
   mkdirSync(join(dir, "node_modules"), { recursive: true })
   symlinkSync(relative(join(dir, "node_modules"), ROOT), join(dir, "node_modules/lean-ts"))
+  symlinkSync(
+    relative(join(dir, "node_modules"), join(ROOT, "node_modules/zod")),
+    join(dir, "node_modules/zod"),
+  )
   return dir
 }
 
@@ -134,10 +138,10 @@ beforeAll(() => {
 
 describe("lean-ts sync", () => {
   test("checks the proofs and generates modules whose functions run", () => {
-    expect(appSync.stderr).toContain("5 blocks of")
+    expect(appSync.stderr).toContain("6 blocks of")
     expect(appSync.status).toBe(0)
     const r = run(process.execPath, ["--test", "--test-reporter=tap", "test/"], app)
-    expect(r.stdout).toContain("# pass 3")
+    expect(r.stdout).toContain("# pass 5")
     expect(r.status).toBe(0)
   })
 
@@ -151,10 +155,56 @@ describe("lean-ts sync", () => {
     ).toContain(
       "import LeanTsEmbed.«geometry».«geometry»\n\nnamespace LeanTsEmbed.«report».«report»\nopen LeanTsEmbed.«geometry».«geometry»\n",
     )
-    expect(appSync.stderr).toContain(
-      "lean-ts: skipped LeanTsEmbed.report.report.boxArea: unsupported type `LeanTsEmbed.geometry.geometry.Box` (defined by `./geometry__geometry.ts`)",
+    expect(appSync.stderr).not.toContain("skipped LeanTsEmbed.report.report.boxArea")
+    const report = readFileSync(join(app, "src/_lean/report__report.ts"), "utf8")
+    expect(report).toContain('import * as $x0 from "./geometry__geometry.ts"')
+    expect(report).toContain("export function boxArea(b: $x0.Box): bigint")
+  })
+
+  test("a model becomes a Lean structure whose constraints are proof fields", () => {
+    expect(
+      readFileSync(join(app, ".lean-ts/workspace/LeanTsModels/pricing.lean"), "utf8"),
+    ).toContain(
+      "structure LineItem where\n  kind : LeanTsEnums.«pricing».LineItem_kind\n  note? : Option String\n  qty : Nat\n  qty_ge : 1 ≤ qty\n",
+    )
+    expect(
+      readFileSync(join(app, ".lean-ts/workspace/LeanTsEmbed/pricing/pricing.lean"), "utf8"),
+    ).toContain(
+      "import LeanTsModels.«pricing»\n\nnamespace LeanTsEmbed.«pricing».«pricing»\nopen LeanTsModels.«pricing»\n",
+    )
+    const pricing = readFileSync(join(app, "src/_lean/pricing__pricing.ts"), "utf8")
+    expect(pricing).toContain('import type { LineItem as $m0 } from "../pricing.ts"')
+    expect(pricing).toContain(
+      "export function total(items: readonly L.InferOutput<typeof $m0>[], d: Discount): bigint",
     )
   })
+
+  test(
+    "a model whose JSON Schema has no Lean form stops with 254",
+    () => {
+      const dir = copyProject(FIXTURE, "bad-model")
+      edit(
+        join(dir, "src/pricing.ts"),
+        "note: z.string().optional(),",
+        "note: z.union([z.string(), z.number()]),",
+      )
+      const r = sync(dir)
+      expect(r.status).toBe(254)
+      expect(r.stderr).toContain("src/pricing.ts: the model LineItem.note: the schema")
+      const named = copyProject(FIXTURE, "inline-model")
+      edit(
+        join(named, "src/pricing.ts"),
+        "{ models: { LineItem },",
+        "{ models: { LineItem: z.object({}) },",
+      )
+      const inline = sync(named)
+      expect(inline.status).toBe(252)
+      expect(inline.stderr).toContain(
+        "the model LineItem must be an exported variable of the module",
+      )
+    },
+    TIMEOUT,
+  )
 
   test(
     "a wrong proof stops with 254 and the position in the TypeScript file",
@@ -220,6 +270,7 @@ describe("stale blocks", () => {
         [
           "stale   src/arith.ts:arith",
           "fresh   src/geometry.ts:geometry",
+          "fresh   src/pricing.ts:pricing",
           "fresh   src/report.ts:report",
           "fresh   src/text.ts:greeting",
           "fresh   src/text.ts:words",
@@ -257,7 +308,7 @@ describe("stale blocks", () => {
       writeFileSync(join(dir, "src/schemas.ts"), SCHEMAS)
       writeFileSync(join(dir, "src/priced.ts"), PRICED)
       const r = sync(dir)
-      expect(r.stderr).toContain("6 blocks of")
+      expect(r.stderr).toContain("7 blocks of")
       expect(r.status).toBe(0)
       const ok = nodeEval(
         dir,
@@ -283,6 +334,12 @@ describe("stale blocks", () => {
         }),
       )
       expect(leanTs(["status", "--package", dir]).stdout).toContain("stale   src/arith.ts:arith")
+      const pkgStale = nodeEval(dir, 'await import("./src/arith.ts")')
+      expect(pkgStale.stderr).toContain(
+        'LeanBlockStale: the Lean block "arith" is stale (the lean-ts settings of its package.json changed since `lean-ts sync` generated it)',
+      )
+      expect(sync(dir).status).toBe(0)
+      expect(nodeEval(dir, 'await import("./src/arith.ts")').status).toBe(0)
     },
     TIMEOUT,
   )
@@ -297,7 +354,7 @@ describe("without Lean", () => {
     }
     const dir = copyProject(FIXTURE, "no-lean")
     const r = run("node", ["--test", "--test-reporter=tap", "test/"], dir, env)
-    expect(r.stdout).toContain("# pass 3")
+    expect(r.stdout).toContain("# pass 5")
     expect(r.status).toBe(0)
   })
 })

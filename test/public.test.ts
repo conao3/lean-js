@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs"
 import { describe, expect, test } from "vite-plus/test"
 import * as L from "../src/runtime/index.ts"
+import * as S from "../src/schema/index.ts"
+import * as A from "../test-out/public-alt.ts"
 import * as P from "../test-out/public.ts"
 
 function issuesOf(f: () => unknown): readonly L.Issue[] {
@@ -31,21 +33,37 @@ describe("exports", () => {
   test("the public functions and namespaces, without the skipped definitions", () => {
     expect(Object.keys(P).toSorted()).toEqual([
       "Calc",
+      "Color",
+      "Discount",
+      "Flags",
+      "Labeled",
+      "Names",
+      "Point",
+      "Pos",
+      "Range",
+      "Small",
+      "Tree",
       "answer",
+      "applyDiscount",
       "big",
+      "bump",
       "bytesOf",
+      "describe",
       "double",
       "failing",
+      "finSucc",
       "firstEvenQ",
       "flip",
       "fromExcept",
       "greet",
+      "halfOff",
       "halve",
       "halve32",
       "ioEcho",
       "ioUnit",
       "isEven",
       "mix",
+      "mkRange",
       "negI32",
       "negI8",
       "negate",
@@ -54,15 +72,21 @@ describe("exports", () => {
       "openMissing",
       "orDefault",
       "range",
+      "relabel",
       "rotate",
+      "roundTrip",
       "safeDiv",
       "signed",
+      "smallDouble",
       "squares",
       "sumList",
       "swap",
+      "toSmall",
       "unit",
+      "width",
       "wrapU8",
     ])
+    expect(Object.keys(A).toSorted()).toEqual(Object.keys(P).toSorted())
     expect(Object.keys(P.Calc).toSorted()).toEqual(["add", "mul"])
   })
 })
@@ -89,13 +113,16 @@ describe("summary", () => {
           reason: "nested `Option` `Option (Option Nat)` (`none` and `some none` are both `null`)",
         },
         { name: "LeanTsTest.Public.below", reason: "takes a proof argument `_h`" },
-        {
-          name: "LeanTsTest.Public.Point.sum",
-          reason: "unsupported type `LeanTsTest.Public.Point`",
-        },
       ]),
     )
-    expect(Reflect.get(Object(summary), "skipped")).toHaveLength(5)
+    expect(Reflect.get(Object(summary), "skipped")).toHaveLength(4)
+    expect(Reflect.get(Object(summary), "types")).toEqual(
+      expect.arrayContaining([
+        { lean: "LeanTsTest.Public.Range", typescript: "Range" },
+        { lean: "LeanTsTest.Public.Small", typescript: "Small" },
+      ]),
+    )
+    expect(Reflect.get(Object(summary), "types")).toHaveLength(10)
   })
 })
 
@@ -269,5 +296,260 @@ describe("IO", () => {
     expect(missing.message).toBe(
       "no such file or directory (error code: 2)\n  file: /nonexistent/lean-ts/missing.txt",
     )
+  })
+})
+
+function readText(name: string): string {
+  return readFileSync(new URL(`../test-out/${name}`, import.meta.url), "utf8")
+}
+
+function validate(
+  s: { readonly "~standard": { readonly validate: (v: unknown) => unknown } },
+  v: unknown,
+): unknown {
+  return s["~standard"].validate(v)
+}
+
+const FLAGS = {
+  a: true,
+  b: 255,
+  c: 1,
+  d: 2,
+  e: 3n,
+  f: 1.5,
+  g: 7n,
+  h: -128,
+  k: "blue",
+  ch: "a",
+} as const
+
+describe("structures, inductive types and subtypes", () => {
+  test("a structure is a plain object and its proof field is checked", () => {
+    expect(P.width({ lo: 1n, hi: 5n })).toBe(4n)
+    expect(P.mkRange(5, 2)).toEqual({ lo: 2n, hi: 5n })
+    expect(Object.isFrozen(P.mkRange(1, 2))).toBe(false)
+    expect(validate(P.Range, { lo: 3, hi: 1 })).toEqual({
+      issues: [{ message: "Range.ok: lo ≤ hi", path: [] }],
+    })
+    expect(issuesOf(() => P.width({ lo: 3n, hi: 1n }))).toEqual([
+      { message: "Range.ok: lo ≤ hi", path: ["r"] },
+    ])
+    expect(issuesOf(() => call(P.width, { lo: -1n, hi: 1n }))).toEqual([
+      {
+        message: "expected a natural number (a non-negative bigint or safe integer)",
+        path: ["r", "lo"],
+      },
+    ])
+  })
+
+  test("an inductive type is a union discriminated by ctor", () => {
+    expect(validate(P.Discount, { percent: { p: 150 } })).toEqual({
+      issues: [{ message: "Discount.percent.h: p ≤ 100", path: [] }],
+    })
+    expect(validate(P.Discount, { percent: { p: 10 } })).toEqual({
+      value: { ctor: "percent", p: 10n },
+    })
+    expect(validate(P.Discount, { ctor: "fixed", amount: 5n })).toEqual({
+      value: { ctor: "fixed", amount: 5n },
+    })
+    expect(validate(P.Discount, { coupon: ["x", 3] })).toEqual({
+      value: { ctor: "coupon", a0: "x", a1: 3n },
+    })
+    expect(validate(P.Discount, "none")).toEqual({ value: { ctor: "none" } })
+    expect(P.applyDiscount({ ctor: "percent", p: 10n }, 200)).toBe(180n)
+    expect(P.applyDiscount({ ctor: "coupon", a0: "c", a1: 30n }, 200)).toBe(170n)
+    expect(P.halfOff()).toEqual({ ctor: "percent", p: 50n })
+    expect(issuesOf(() => call(P.applyDiscount, { percent: { p: 1 } }, 1))).toHaveLength(1)
+    expect(issuesOf(() => P.applyDiscount({ ctor: "percent", p: 101n }, 1))).toEqual([
+      { message: "Discount.percent.h: p ≤ 100", path: ["d"] },
+    ])
+  })
+
+  test("an enum is a string literal union; a recursive type round-trips", () => {
+    expect(P.Color.next("blue")).toBe("red")
+    expect(issuesOf(() => call(P.Color.next, "pink"))).toEqual([
+      { message: 'expected one of "red", "green", "blue"', path: ["arg0"] },
+    ])
+    expect(P.Tree.sum(P.Tree.build(4))).toBe(10n)
+    expect(P.Tree.build(1)).toEqual({
+      ctor: "node",
+      l: { ctor: "leaf" },
+      v: 1n,
+      r: { ctor: "leaf" },
+    })
+  })
+
+  test("a structure extending another has the parent's fields flat", () => {
+    expect(P.describe({ x: 1n, y: 2n, label: "a", note: null, tag: 3n })).toBe("a@1,2:-:3")
+    expect(P.relabel({ x: 1n, y: 2n, label: "a", note: null, tag: null }, "b")).toEqual({
+      x: 1n,
+      y: 2n,
+      label: "b",
+      note: "a",
+      tag: null,
+    })
+  })
+
+  test("scalar fields live in the packed scalar area", () => {
+    expect(P.bump(FLAGS)).toEqual({
+      a: false,
+      b: 0,
+      c: 2,
+      d: 3,
+      e: 4n,
+      f: 3,
+      g: 8n,
+      h: 127,
+      k: "red",
+      ch: "b",
+    })
+  })
+
+  test("a subtype, a trivial structure and Fin check their property", () => {
+    expect(P.smallDouble(4n)).toBe(8n)
+    expect(P.toSmall(12)).toBeNull()
+    expect(P.toSmall(3)).toBe(3n)
+    expect(issuesOf(() => P.smallDouble(12n))).toEqual([
+      { message: "Small.property: val < 10", path: ["s"] },
+    ])
+    expect(P.Pos.pred({ n: 5n })).toBe(4n)
+    expect(issuesOf(() => P.Pos.pred({ n: 0n }))).toEqual([
+      { message: "Pos.pos: 0 < n", path: ["p"] },
+    ])
+    expect(P.finSucc(4)).toBe(0)
+    expect(issuesOf(() => P.finSucc(5))).toEqual([
+      { message: "expected a natural number below 5", path: ["i"] },
+    ])
+    expect(P.Names.count({ xs: ["a"] })).toBe(1n)
+    expect(issuesOf(() => P.Names.count({ xs: ["a", "b", "c", "d"] }))).toEqual([
+      { message: "Names.short: xs.length ≤ 3", path: ["n"] },
+    ])
+  })
+
+  test("a namespace of functions is merged into the schema of the same name", () => {
+    expect(P.Point.sum({ x: 2n, y: 3n })).toBe(5n)
+    expect(P.Point["~standard"].vendor).toBe("lean-ts")
+  })
+})
+
+describe("generation settings", () => {
+  test("tagKey and option change the TypeScript form of both directions", () => {
+    expect(A.halfOff()).toEqual({ _tag: "percent", p: 50n })
+    expect(A.applyDiscount({ _tag: "fixed", amount: 5n }, 7)).toBe(2n)
+    expect(validate(A.Discount, { percent: { p: 3 } })).toEqual({
+      value: { _tag: "percent", p: 3n },
+    })
+    expect(A.relabel({ x: 1n, y: 2n, label: "a" }, "b")).toEqual({
+      x: 1n,
+      y: 2n,
+      label: "b",
+      note: "a",
+    })
+    expect(A.toSmall(12)).toBeUndefined()
+    expect(A.orDefault(undefined)).toBe("default")
+    expect(issuesOf(() => call(A.orDefault, null))).toHaveLength(1)
+    expect(validate(A.Labeled, { x: 1, y: 2, label: "a", note: null })).toEqual({
+      value: { x: 1n, y: 2n, label: "a" },
+    })
+  })
+
+  test("both settings round-trip every type through Lean", () => {
+    const d = { ctor: "coupon", a0: "c", a1: 1n } as const
+    const t = P.Tree.build(2)
+    const l = { x: 1n, y: 2n, label: "a", note: "n", tag: null }
+    expect(P.roundTrip(d, l, t, FLAGS)).toEqual([d, [l, [t, FLAGS]]])
+    const ad = { _tag: "coupon", a0: "c", a1: 1n } as const
+    const at = A.Tree.build(2)
+    const al = { x: 1n, y: 2n, label: "a", note: "n" }
+    expect(A.roundTrip(ad, al, at, FLAGS)).toEqual([ad, [al, [at, FLAGS]]])
+    expect(A.Tree.build(1)).toEqual({
+      _tag: "node",
+      l: { _tag: "leaf" },
+      v: 1n,
+      r: { _tag: "leaf" },
+    })
+    expect(S.toJSON(P.Discount, d)).toEqual(S.toJSON(A.Discount, ad))
+    expect(S.toJSON(P.Labeled, l)).toEqual(S.toJSON(A.Labeled, al))
+  })
+
+  test("a field named as the tagKey and invalid settings stop the generation with 254", () => {
+    expect(readText("public-clash.status").trim()).toBe("254")
+    expect(readText("public-clash.stderr")).toContain(
+      "the constructor `LeanTsTest.Public.Discount.fixed` of `LeanTsTest.Public.Discount` has a field `amount`, which is the tagKey",
+    )
+    expect(readText("public-badkey.status").trim()).toBe("254")
+    expect(readText("public-badkey.stderr")).toContain(
+      'tagKey must be a JavaScript identifier (got "not-an-identifier")',
+    )
+    expect(readText("public-badopt.status").trim()).toBe("254")
+    expect(readText("public-badopt.stderr")).toContain(
+      'option must be "null" or "undefined" (got "none")',
+    )
+  })
+})
+
+describe("JSON and JSON Schema", () => {
+  test("toJSON, stringify and parse use the JSON form of Lean's ToJson", () => {
+    expect(S.toJSON(P.Discount, { ctor: "percent", p: 10n })).toEqual({ percent: { p: 10 } })
+    expect(S.toJSON(P.Discount, { ctor: "coupon", a0: "x", a1: 2n ** 70n })).toEqual({
+      coupon: ["x", "1180591620717411303424"],
+    })
+    expect(S.stringify(P.Discount, { ctor: "coupon", a0: "x", a1: 2n ** 70n })).toBe(
+      '{"coupon":["x",1180591620717411303424]}',
+    )
+    expect(S.parse(P.Discount, '{"coupon":["x",1180591620717411303424]}')).toEqual({
+      ctor: "coupon",
+      a0: "x",
+      a1: 2n ** 70n,
+    })
+    expect(S.toJSON(P.Labeled, { x: 1n, y: 2n, label: "a", note: null, tag: null })).toEqual({
+      x: 1,
+      y: 2,
+      label: "a",
+      tag: null,
+    })
+    expect(S.toJSON(P.Flags, FLAGS)).toMatchObject({ e: "3", g: "7" })
+    expect(S.fromJSON(P.Range, { lo: 1, hi: 2 })).toEqual({ lo: 1n, hi: 2n })
+    expect(() => S.fromJSON(P.Range, { lo: 2, hi: 1 })).toThrow(L.LeanValidationError)
+    expect(S.toJSON(S.Nat, 5n)).toBe(5)
+  })
+
+  test("jsonSchema describes the JSON form for every target", () => {
+    const tree = P.Tree["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+    expect(tree).toMatchObject({
+      $ref: "#/$defs/Tree",
+      $defs: { Tree: { oneOf: [{ const: "leaf" }, {}] } },
+    })
+    expect(P.Range["~standard"].jsonSchema.output({ target: "draft-2020-12" })).toEqual({
+      $schema: "https://json-schema.org/draft/2020-12/schema",
+      type: "object",
+      properties: { lo: { type: "integer", minimum: 0 }, hi: { type: "integer", minimum: 0 } },
+      required: ["lo", "hi"],
+      additionalProperties: false,
+    })
+    expect(P.Discount["~standard"].jsonSchema.input({ target: "draft-07" })).toMatchObject({
+      oneOf: [
+        { const: "none" },
+        {
+          properties: {
+            percent: { properties: { p: { type: "integer", minimum: 0, maximum: 100 } } },
+          },
+        },
+        {},
+        {
+          properties: {
+            coupon: { type: "array", items: [{ type: "string" }, { type: "integer" }] },
+          },
+        },
+      ],
+    })
+    expect(P.Pos["~standard"].jsonSchema.input({ target: "openapi-3.0" })).toMatchObject({
+      properties: { n: { minimum: 0, exclusiveMinimum: true } },
+    })
+    expect(P.Labeled["~standard"].jsonSchema.input({ target: "openapi-3.0" })).toMatchObject({
+      properties: { tag: { type: "integer", nullable: true } },
+      required: ["x", "y", "label"],
+    })
+    expect(() => P.Range["~standard"].jsonSchema.input({ target: "draft-04" })).toThrow(TypeError)
   })
 })

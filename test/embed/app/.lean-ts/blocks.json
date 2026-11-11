@@ -1,27 +1,32 @@
 {
   "src/arith.ts:arith": {
-    "fnv": "66a8af43a5fea8c1",
+    "fnv": "e66fc7ce62051218",
     "output": "src/_lean/arith__arith.ts",
-    "sha256": "61fce93f27ce0c6306290c52a6568a97d38d2c07952e8141a5603824807093ea"
+    "sha256": "14685ab63ac428d43ce977b062681fbd52daa66c5ce27a9014e11ebb20ce00d9"
   },
   "src/geometry.ts:geometry": {
-    "fnv": "c0428e5e31b08b71",
+    "fnv": "05a3d2dc3e4337f4",
     "output": "src/_lean/geometry__geometry.ts",
-    "sha256": "d065f59cb9e84e0f84f029068d7beab92ea4e56ee6f953368ff0442e789f1c32"
+    "sha256": "a33601123b7d2dc93d0b1e91e1d037b3d19f7741e530c57029a465d00ff87772"
+  },
+  "src/pricing.ts:pricing": {
+    "fnv": "afa2ccfe3346f6a3",
+    "output": "src/_lean/pricing__pricing.ts",
+    "sha256": "165d790b3dcbc72484beb6d6d752c2078d712a6ffc2eda733870217ef2202780"
   },
   "src/report.ts:report": {
-    "fnv": "b6648157764c0ca9",
+    "fnv": "516780245e6daefc",
     "output": "src/_lean/report__report.ts",
-    "sha256": "9872fd043c14e30a237e3790a3a8d25103749e04866bfbe261c7a213c8c22b78"
+    "sha256": "c96bc0c6bb54f9f3bdc087640b1ad4bc49f1bcbe7243def71eb98a34dfb95bbf"
   },
   "src/text.ts:greeting": {
-    "fnv": "c0482484f3cd9a21",
+    "fnv": "5aaa62c00e2e3ff6",
     "output": "src/_lean/text__greeting.ts",
-    "sha256": "9c9da2ac7d5931bdadf485f236858c50e3a0381128c67e9d0adfaaf1dfd2d7df"
+    "sha256": "cfdae2161736f9dd193639f7b27f5a8f440cebf7942e6d5beabdb3057a0d0137"
   },
   "src/text.ts:words": {
-    "fnv": "dd29ef59e38d7f9d",
+    "fnv": "37e2e140c2164d78",
     "output": "src/_lean/text__words.ts",
-    "sha256": "88ec9b7df9703339deb9258ccf2d39f76eb62545edd58e907cab35b8a487b287"
+    "sha256": "ce1be8be72b4205ff19463c7ef4f4aad71f024dbb9ba71ab8d60f07bbae9728a"
   }
 }

@@ -9,12 +9,13 @@ import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 
 const show = (x) => String(x)
 
-// Copy the runtime and the generated vectors module into test-out/usize32/,
+// Copy the runtime (with the schema module it re-exports) and the generated vectors module into test-out/usize32/,
 // flipping the knob in the copy and pointing the module at the copied runtime.
 const root = new URL("../../", import.meta.url)
 const dir = new URL("test-out/usize32/", root)
 mkdirSync(dir, { recursive: true })
 cpSync(new URL("src/runtime/", root), new URL("runtime/", dir), { recursive: true })
+cpSync(new URL("src/schema/", root), new URL("schema/", dir), { recursive: true })
 const uintUrl = new URL("runtime/uint.ts", dir)
 const knob = "export const WORD_BITS: number = 64"
 const uint = readFileSync(uintUrl, "utf8")

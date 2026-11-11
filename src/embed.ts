@@ -1,8 +1,8 @@
 import type { StandardJSONSchemaV1, StandardSchemaV1 } from "@standard-schema/spec"
 import { canonicalJson, fnv1a64, type Json, toJson } from "./key.ts"
-import { type BlockEntry, blockRegistry } from "./runtime/block.ts"
+import { type BlockEntry, blockRegistry, type BlockSettings } from "./runtime/block.ts"
 
-export const GENERATOR_VERSION: string = "3"
+export const GENERATOR_VERSION: string = "4"
 
 export type LeanModel = StandardSchemaV1 & StandardJSONSchemaV1
 
@@ -164,6 +164,39 @@ function autoSync(proc: NodeJS.Process, name: string, entries: readonly BlockEnt
   return true
 }
 
+const packageSettingsCache = new Map<string, Readonly<Record<string, unknown>>>()
+
+function packageSettings(
+  proc: NodeJS.Process,
+  entry: BlockEntry,
+): Readonly<Record<string, unknown>> {
+  const root = packageRoot(proc, [entry])
+  const cached = packageSettingsCache.get(root)
+  if (cached !== undefined) return cached
+  const file = proc.getBuiltinModule("node:path").join(root, "package.json")
+  const pkg: unknown = JSON.parse(proc.getBuiltinModule("node:fs").readFileSync(file, "utf8"))
+  const field: unknown = isRecord(pkg) ? pkg["lean-ts"] : undefined
+  const settings = isRecord(field) ? field : {}
+  packageSettingsCache.set(root, settings)
+  return settings
+}
+
+function settingString(v: unknown): string | undefined {
+  return typeof v === "string" ? v : undefined
+}
+
+function currentSettings(
+  proc: NodeJS.Process,
+  entry: BlockEntry,
+  output: OutputOptions,
+): BlockSettings {
+  const pkg = packageSettings(proc, entry)
+  return {
+    tagKey: output.tagKey ?? settingString(pkg["tagKey"]) ?? "ctor",
+    option: output.option ?? settingString(pkg["option"]) ?? "null",
+  }
+}
+
 export function lean(name: string, source: string, options?: LeanBlockOptions): LeanBlock {
   const registry = blockRegistry()
   const models = options?.models ?? {}
@@ -171,16 +204,25 @@ export function lean(name: string, source: string, options?: LeanBlockOptions): 
     registry.recording.push({ name, source, options })
     return { name, key: "", models }
   }
-  const fnv = blockFnv(blockInputs(name, source, options))
+  const inputs = blockInputs(name, source, options)
+  const fnv = blockFnv(inputs)
   for (const [k, m] of Object.entries(models)) registry.models.set(`${fnv}:${k}`, m)
   const entries = registry.blocks.get(name) ?? []
-  if (entries.some((e) => e.fnv === fnv)) return { name, key: fnv, models }
+  const same = entries.filter((e) => e.fnv === fnv)
   const proc = nodeProcess()
+  const fresh = same.filter((e) => {
+    if (proc === undefined) return true
+    const s = currentSettings(proc, e, inputs.output)
+    return s.tagKey === e.settings.tagKey && s.option === e.settings.option
+  })
+  if (fresh.length !== 0) return { name, key: fnv, models }
   if (proc !== undefined && autoSync(proc, name, entries)) return { name, key: fnv, models }
   const where =
     entries.length === 0
       ? "its generated module was not imported"
-      : "it has changed since `lean-ts sync` generated it"
+      : same.length !== 0
+        ? "the lean-ts settings of its package.json changed since `lean-ts sync` generated it"
+        : "it has changed since `lean-ts sync` generated it"
   throw new LeanBlockStale(
     `the Lean block ${JSON.stringify(name)} is stale (${where}); run \`lean-ts sync\` (or set LEAN_TS_AUTO_SYNC=1)`,
   )

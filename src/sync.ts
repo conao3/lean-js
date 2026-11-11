@@ -20,23 +20,30 @@ import {
   modelSchema,
 } from "./embed.ts"
 import { canonicalJson, type Json } from "./key.ts"
+import { modelsLean } from "./models.ts"
 import { blockRegistry, type RecordedBlock } from "./runtime/block.ts"
 import { posixRelative, type ScannedBlock, scanFile, SyncError, tsFiles } from "./scan.ts"
 
 export { SyncError }
 
 const LAKEFILE = `name = "lean-ts-workspace"
-defaultTargets = ["LeanTsEmbed"]
+defaultTargets = ["LeanTsModels", "LeanTsEmbed"]
+
+[[lean_lib]]
+name = "LeanTsModels"
 
 [[lean_lib]]
 name = "LeanTsEmbed"
 `
 
+const DEFAULT_SETTINGS: Readonly<Record<string, string>> = { tagKey: "ctor", option: "null" }
+
 const TAG_KEY = /^[A-Za-z_$][A-Za-z0-9_$]*$/u
 
 const BLOCK_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/u
 
-const LAKE_MESSAGE = /^(error|warning): (?:\.\/)*(LeanTsEmbed\/[^:]+\.lean):(\d+):(\d+): (.*)$/u
+const LAKE_MESSAGE =
+  /^(error|warning): (?:\.\/)*(LeanTs(?:Embed|Models)\/[^:]+\.lean):(\d+):(\d+): (.*)$/u
 
 export interface Block extends ScannedBlock {
   readonly leanModule: readonly string[]
@@ -236,7 +243,11 @@ export async function readPackage(dir: string, writePlaceholders: boolean): Prom
         252,
       )
     leanModules.set(ln, b)
-    const settings = { ...config, ...checkSettings(b.output, `${locate(b)} (output)`) }
+    const settings = {
+      ...DEFAULT_SETTINGS,
+      ...config,
+      ...checkSettings(b.output, `${locate(b)} (output)`),
+    }
     pre.push({
       b,
       leanModule,
@@ -288,14 +299,21 @@ function resolveUse(pkg: Package, b: Block, use: string): Block {
   return found
 }
 
+function modelsModule(b: Block): string[] {
+  return ["LeanTsModels", ...moduleParts(b.module)]
+}
+
 function blockLean(pkg: Package, b: Block): { head: string; text: string } {
   const used = b.uses.map((u) => resolveUse(pkg, b, u))
-  const imports = [...new Set([...b.imports, ...used.map((u) => leanName(u.leanModule))])]
+  const models = b.modelNames.length === 0 ? [] : [leanName(modelsModule(b))]
+  const imports = [
+    ...new Set([...b.imports, ...models, ...used.map((u) => leanName(u.leanModule))]),
+  ]
   const ns = leanName(b.leanModule)
   const head =
     imports.map((i) => `import ${i}\n`).join("") +
     `\nnamespace ${ns}\n` +
-    used.map((u) => `open ${leanName(u.leanModule)}\n`).join("") +
+    [...models, ...used.map((u) => leanName(u.leanModule))].map((o) => `open ${o}\n`).join("") +
     "\n"
   return { head, text: `${head}${b.source}\n\nend ${ns}\n` }
 }
@@ -369,6 +387,28 @@ function removeStale(dir: string, keep: ReadonlySet<string>): void {
   }
 }
 
+function packageModels(pkg: Package): Map<string[], string> {
+  const perModule = new Map<string, { parts: string[]; models: Map<string, Json>; b: Block }>()
+  for (const b of pkg.blocks) {
+    if (b.modelNames.length === 0) continue
+    const entry = perModule.get(b.module) ?? { parts: modelsModule(b), models: new Map(), b }
+    perModule.set(b.module, entry)
+    for (const [name, schema] of Object.entries(b.inputs.models)) {
+      const prev = entry.models.get(name)
+      if (prev !== undefined && canonicalJson(prev) !== canonicalJson(schema))
+        throw new SyncError(
+          `${locate(b)}: the model ${name} has another JSON Schema in the block ${entry.b.name} of the same module`,
+          252,
+        )
+      entry.models.set(name, schema)
+    }
+  }
+  const out = new Map<string[], string>()
+  for (const [module, e] of perModule)
+    out.set(e.parts, modelsLean(module, e.parts.slice(1), e.models).lean)
+  return out
+}
+
 export function blocksFile(root: string): string {
   return join(root, ".lean-ts", "blocks.json")
 }
@@ -389,8 +429,19 @@ export async function syncPackage(
   const pkg = await readPackage(dir, true)
   const ws = join(pkg.root, ".lean-ts", "workspace")
   rmSync(join(ws, "LeanTsEmbed"), { recursive: true, force: true })
+  rmSync(join(ws, "LeanTsModels"), { recursive: true, force: true })
   mkdirSync(ws, { recursive: true })
   writeFileSync(join(ws, "lakefile.toml"), LAKEFILE)
+  const models = packageModels(pkg)
+  for (const [module, m] of models) {
+    const rel = `${module.join("/")}.lean`
+    mkdirSync(dirname(join(ws, rel)), { recursive: true })
+    writeFileSync(join(ws, rel), m)
+  }
+  writeFileSync(
+    join(ws, "LeanTsModels.lean"),
+    [...models.keys()].map((m) => `import ${leanName(m)}\n`).join("") || "\n",
+  )
   writeFileSync(
     join(ws, "LeanTsEmbed.lean"),
     pkg.blocks.map((b) => `import ${leanName(b.leanModule)}\n`).join("") || "\n",
@@ -419,10 +470,14 @@ export async function syncPackage(
       const used = resolveUse(pkg, b, u)
       return { namespace: used.leanModule.join("."), module: specifier(b.outFile, used.outFile) }
     }),
-    model_modules: b.modelNames.map((m) => ({
-      namespace: ["LeanTsModels", ...moduleParts(b.module)].join("."),
-      key: `${b.fnv}:${m}`,
+    model_modules: b.models.map((m) => ({
+      namespace: [...modelsModule(b), m.name].join("."),
+      key: `${b.fnv}:${m.name}`,
+      module: m.from.startsWith("/") ? specifier(b.outFile, m.from) : m.from,
+      export: m.exportName,
     })),
+    tag_key: b.settings["tagKey"],
+    option: b.settings["option"],
     block: { name: b.name, module: b.module, fnv: b.fnv },
   }))
   writeFileSync(join(ws, "batch.json"), JSON.stringify(jobs, null, 2) + "\n")
