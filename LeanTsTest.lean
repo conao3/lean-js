@@ -2,6 +2,7 @@ import LeanTsTest.Fuzz
 import LeanTsTest.HigherOrder
 import LeanTsTest.Init
 import LeanTsTest.Io
+import LeanTsTest.Json
 import LeanTsTest.Public
 import LeanTsTest.Stress
 import LeanTsTest.Stress2

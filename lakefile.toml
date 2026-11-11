@@ -59,3 +59,7 @@ root = "LeanTsTest.FuzzMain"
 [[lean_exe]]
 name = "oracle-verify"
 root = "LeanTsTest.VerifyMain"
+
+[[lean_exe]]
+name = "oracle-json"
+root = "LeanTsTest.JsonMain"
