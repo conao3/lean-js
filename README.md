@@ -26,8 +26,8 @@ Lean code compiled by the C backend.
   `index.ts` (re-exports; installs the Node platform when `process.getBuiltinModule`
   exists, otherwise OS operations return `IO.Error.unsupportedOperation`).
 - `LeanTsTest/` — the diff-test programs (`Vectors`, `HigherOrder`, `Io`, `Init`,
-  `Stress`..`Stress4`, `Verify`, `Fuzz`), the public functions (`Public`) and their native oracles (`*Main.lean`,
-  executables `oracle-*`).
+  `Stress`..`Stress4`, `Verify`, `Fuzz`) and their native oracles (`*Main.lean`,
+  executables `oracle-*`), and `Public` (called through the public functions).
 - `test/difftest/` — node harnesses for the function-level diff, fuzz, deep TCO and
   the 32-bit profile; `test/*.test.ts` — Vitest tests of the runtime and of the
   public functions (`test/public.test.ts`).
