@@ -28,6 +28,20 @@ def tryCatchIO : IO String := do
   catch e =>
     pure s!"caught: {e.toString}"
 
+def ioErrorKind : IO.Error → String
+  | .alreadyExists .. => "alreadyExists"
+  | .noFileOrDirectory .. => "noFileOrDirectory"
+  | .inappropriateType .. => "inappropriateType"
+  | .userError .. => "userError"
+  | _ => "other"
+
+def openError (path : String) (mode : IO.FS.Mode) : IO String := do
+  try
+    let _ ← IO.FS.Handle.mk path mode
+    pure "opened"
+  catch e =>
+    pure s!"{ioErrorKind e}: {e}"
+
 def main : IO Unit := do
   IO.println "lean-ts IO demo"
   IO.println s!"fib 10 = {fib 10}"
@@ -52,6 +66,11 @@ def main : IO Unit := do
   IO.println s!"todo = {showList l3}"
   let caught ← tryCatchIO
   IO.println s!"trycatch = {caught}"
+  IO.println s!"open missing = {← openError "/nonexistent/lean-ts/missing.txt" .read}"
+  IO.println s!"create in missing = {← openError "/nonexistent/lean-ts/new.txt" .write}"
+  let h ← IO.FS.Handle.mk "test-out/io-exists.txt" .write
+  h.putStr "x"
+  IO.println s!"create existing = {← openError "test-out/io-exists.txt" .writeNew}"
   IO.eprintln "diagnostic to stderr"
 
 /-- Stdin-echo program: reads all lines from stdin (IO.getStdin / Stream.getLine)

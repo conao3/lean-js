@@ -265,6 +265,9 @@ describe("IO", () => {
     expect(user.code).toBe("userError")
     expect(user.message).toBe("nope")
     const missing = ioErrorOf(() => P.openMissing("/nonexistent/lean-ts/missing.txt"))
-    expect(missing.message).toContain("no such file or directory")
+    expect(missing.code).toBe("noFileOrDirectory")
+    expect(missing.message).toBe(
+      "no such file or directory (error code: 2)\n  file: /nonexistent/lean-ts/missing.txt",
+    )
   })
 })

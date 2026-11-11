@@ -140,24 +140,129 @@ export function lean_io_result_get_error(r: Obj): Obj {
 
 // IO.Error.userError msg. userError is the last ctor of the IO.Error inductive
 // (cidx 18); render via its message field.
+const IO_ERROR_ALREADY_EXISTS = 0
+const IO_ERROR_OTHER = 1
+const IO_ERROR_RESOURCE_BUSY = 2
+const IO_ERROR_RESOURCE_VANISHED = 3
 const IO_ERROR_UNSUPPORTED_OPERATION = 4
+const IO_ERROR_HARDWARE_FAULT = 5
+const IO_ERROR_UNSATISFIED_CONSTRAINTS = 6
+const IO_ERROR_ILLEGAL_OPERATION = 7
+const IO_ERROR_PROTOCOL = 8
+const IO_ERROR_TIME_EXPIRED = 9
+const IO_ERROR_INTERRUPTED = 10
+const IO_ERROR_NO_FILE_OR_DIRECTORY = 11
+const IO_ERROR_INVALID_ARGUMENT = 12
+const IO_ERROR_PERMISSION_DENIED = 13
+const IO_ERROR_RESOURCE_EXHAUSTED = 14
+const IO_ERROR_INAPPROPRIATE_TYPE = 15
+const IO_ERROR_NO_SUCH_THING = 16
 const IO_ERROR_USER = 18
 
 export function lean_mk_io_user_error(msg: Obj): Ctor {
   return lean_ctor(IO_ERROR_USER, 1, 0, 0, msg)
 }
 
-// IO.Error.unsupportedOperation (osCode : UInt32) (details : String): the
-// details string is the object field, the osCode the packed scalar.
-export function lean_mk_io_error_unsupported_operation(details: string): Ctor {
-  const e = lean_ctor(IO_ERROR_UNSUPPORTED_OPERATION, 1, 0, 4, details)
-  e.sdata?.setUint32(0, 0, true)
+// An IO.Error with an OS code: the filename (a `String` for interrupted and
+// noFileOrDirectory, an `Option String` for alreadyExists and invalidArgument
+// to noSuchThing) and the details string are the object fields, the osCode the
+// packed scalar.
+function mkIoError(tag: number, fname: string | null, code: number, details: string): Ctor {
+  const named =
+    tag === IO_ERROR_ALREADY_EXISTS ||
+    (tag >= IO_ERROR_INTERRUPTED && tag <= IO_ERROR_NO_SUCH_THING)
+  const plain = tag === IO_ERROR_INTERRUPTED || tag === IO_ERROR_NO_FILE_OR_DIRECTORY
+  const e = !named
+    ? lean_ctor(tag, 1, 0, 4, details)
+    : plain
+      ? lean_ctor(tag, 2, 0, 4, fname ?? "", details)
+      : lean_ctor(tag, 2, 0, 4, fname === null ? 0 : lean_ctor(1, 1, 0, 0, fname), details)
+  e.sdata?.setUint32(0, code, true)
   return e
 }
 
-function ioErrorOf(e: unknown): Ctor {
+export function lean_mk_io_error_unsupported_operation(details: string): Ctor {
+  return mkIoError(IO_ERROR_UNSUPPORTED_OPERATION, null, 0, details)
+}
+
+const UV_ERRORS: Readonly<Record<string, readonly [number, string]>> = {
+  E2BIG: [IO_ERROR_RESOURCE_EXHAUSTED, "argument list too long"],
+  EACCES: [IO_ERROR_PERMISSION_DENIED, "permission denied"],
+  EADDRINUSE: [IO_ERROR_RESOURCE_BUSY, "address already in use"],
+  EADDRNOTAVAIL: [IO_ERROR_UNSUPPORTED_OPERATION, "address not available"],
+  EAFNOSUPPORT: [IO_ERROR_UNSUPPORTED_OPERATION, "address family not supported"],
+  EAGAIN: [IO_ERROR_RESOURCE_EXHAUSTED, "resource temporarily unavailable"],
+  EBADF: [IO_ERROR_INVALID_ARGUMENT, "bad file descriptor"],
+  EBUSY: [IO_ERROR_RESOURCE_BUSY, "resource busy or locked"],
+  ECONNABORTED: [IO_ERROR_PERMISSION_DENIED, "software caused connection abort"],
+  ECONNREFUSED: [IO_ERROR_NO_SUCH_THING, "connection refused"],
+  ECONNRESET: [IO_ERROR_RESOURCE_VANISHED, "connection reset by peer"],
+  EDESTADDRREQ: [IO_ERROR_INVALID_ARGUMENT, "destination address required"],
+  EEXIST: [IO_ERROR_ALREADY_EXISTS, "file already exists"],
+  EFAULT: [IO_ERROR_OTHER, "bad address in system call argument"],
+  EFBIG: [IO_ERROR_PERMISSION_DENIED, "file too large"],
+  EHOSTUNREACH: [IO_ERROR_NO_SUCH_THING, "host is unreachable"],
+  EILSEQ: [IO_ERROR_INVALID_ARGUMENT, "illegal byte sequence"],
+  EINTR: [IO_ERROR_INTERRUPTED, "interrupted system call"],
+  EINVAL: [IO_ERROR_INVALID_ARGUMENT, "invalid argument"],
+  EIO: [IO_ERROR_HARDWARE_FAULT, "i/o error"],
+  EISCONN: [IO_ERROR_ALREADY_EXISTS, "socket is already connected"],
+  EISDIR: [IO_ERROR_INAPPROPRIATE_TYPE, "illegal operation on a directory"],
+  ELOOP: [IO_ERROR_INVALID_ARGUMENT, "too many symbolic links encountered"],
+  EMFILE: [IO_ERROR_RESOURCE_EXHAUSTED, "too many open files"],
+  EMLINK: [IO_ERROR_RESOURCE_EXHAUSTED, "too many links"],
+  EMSGSIZE: [IO_ERROR_RESOURCE_EXHAUSTED, "message too long"],
+  ENAMETOOLONG: [IO_ERROR_INVALID_ARGUMENT, "name too long"],
+  ENETDOWN: [IO_ERROR_RESOURCE_VANISHED, "network is down"],
+  ENETUNREACH: [IO_ERROR_NO_SUCH_THING, "network is unreachable"],
+  ENFILE: [IO_ERROR_RESOURCE_EXHAUSTED, "file table overflow"],
+  ENOBUFS: [IO_ERROR_RESOURCE_EXHAUSTED, "no buffer space available"],
+  ENODEV: [IO_ERROR_UNSUPPORTED_OPERATION, "no such device"],
+  ENOENT: [IO_ERROR_NO_FILE_OR_DIRECTORY, "no such file or directory"],
+  ENOMEM: [IO_ERROR_RESOURCE_EXHAUSTED, "not enough memory"],
+  ENOPROTOOPT: [IO_ERROR_UNSUPPORTED_OPERATION, "protocol not available"],
+  ENOSPC: [IO_ERROR_RESOURCE_EXHAUSTED, "no space left on device"],
+  ENOSYS: [IO_ERROR_UNSUPPORTED_OPERATION, "function not implemented"],
+  ENOTCONN: [IO_ERROR_INVALID_ARGUMENT, "socket is not connected"],
+  ENOTDIR: [IO_ERROR_INAPPROPRIATE_TYPE, "not a directory"],
+  ENOTEMPTY: [IO_ERROR_UNSATISFIED_CONSTRAINTS, "directory not empty"],
+  ENOTSOCK: [IO_ERROR_INVALID_ARGUMENT, "socket operation on non-socket"],
+  ENOTTY: [IO_ERROR_ILLEGAL_OPERATION, "inappropriate ioctl for device"],
+  ENXIO: [IO_ERROR_NO_SUCH_THING, "no such device or address"],
+  EOPNOTSUPP: [IO_ERROR_UNSUPPORTED_OPERATION, "operation not supported on socket"],
+  EPERM: [IO_ERROR_PERMISSION_DENIED, "operation not permitted"],
+  EPIPE: [IO_ERROR_RESOURCE_VANISHED, "broken pipe"],
+  EPROTO: [IO_ERROR_PROTOCOL, "protocol error"],
+  EPROTONOSUPPORT: [IO_ERROR_PROTOCOL, "protocol not supported"],
+  EPROTOTYPE: [IO_ERROR_PROTOCOL, "protocol wrong type for socket"],
+  ERANGE: [IO_ERROR_UNSUPPORTED_OPERATION, "result too large"],
+  EROFS: [IO_ERROR_PERMISSION_DENIED, "read-only file system"],
+  ESPIPE: [IO_ERROR_UNSUPPORTED_OPERATION, "invalid seek"],
+  ESRCH: [IO_ERROR_NO_SUCH_THING, "no such process"],
+  ETIMEDOUT: [IO_ERROR_TIME_EXPIRED, "connection timed out"],
+  ETXTBSY: [IO_ERROR_RESOURCE_BUSY, "text file is busy"],
+  EXDEV: [IO_ERROR_UNSUPPORTED_OPERATION, "cross-device link not permitted"],
+  ENODATA: [IO_ERROR_NO_SUCH_THING, "no data available"],
+}
+
+function systemError(e: unknown): { readonly code: string; readonly errno: number } | null {
+  if (!(e instanceof Error)) return null
+  const code: unknown = Reflect.get(e, "code")
+  const errno: unknown = Reflect.get(e, "errno")
+  return typeof code === "string" && typeof errno === "number" ? { code, errno } : null
+}
+
+function ioErrorOf(e: unknown, fname: string | null): Ctor {
   if (e instanceof Error && e.name === "UnsupportedOperation")
     return lean_mk_io_error_unsupported_operation(e.message)
+  const sys = systemError(e)
+  if (sys !== null) {
+    const [tag, details] = UV_ERRORS[sys.code] ?? [
+      IO_ERROR_OTHER,
+      `Unknown system error ${sys.errno}`,
+    ]
+    return mkIoError(tag, fname, -sys.errno, details)
+  }
   return lean_mk_io_user_error(String(e instanceof Error ? e.message : e))
 }
 
@@ -170,96 +275,99 @@ function ioErrorOf(e: unknown): Ctor {
 //   14 resourceExhausted 15 inappropriateType 16 noSuchThing
 //   17 unexpectedEof (nullary) 18 userError.
 // fopenErrorToString / otherErrorToString decapitalize the first char of the
-// gist (and of `details` when present); osCode is a UInt32 (so -2 -> 4294967294).
-function text(x: Obj): string {
-  return typeof x === "string"
-    ? x
-    : typeof x === "number" || typeof x === "bigint"
-      ? x.toString()
-      : ""
-}
-
-function decap(s: Obj): string {
-  const t = text(s)
+// gist (and of `details` when present). The osCode is the packed UInt32 scalar;
+// the details string is the last object field.
+function decap(t: string): string {
   return t.length === 0 ? t : t.charAt(0).toLowerCase() + t.slice(1)
 }
 
-function ef(e: Obj, i: number): Obj {
-  return typeof e === "object" && e !== null && "fields" in e ? e.fields[i] : undefined
+function osCode(e: Obj): number {
+  const data = asCtor(e).sdata
+  if (data === null) throw new TypeError("lean-ts runtime: IO.Error without an osCode")
+  return data.getUint32(0, true)
+}
+
+function detailsOf(e: Obj): string {
+  const fields = asCtor(e).fields
+  return asString(fields[fields.length - 1])
 }
 
 // `Option String` field: none == 0 (number), some == {tag:1,fields:[s]}.
-function optFn(o: Obj): Obj {
-  return typeof o === "object" && o !== null && "fields" in o ? o.fields[0] : null
+function optFn(e: Obj): string | null {
+  const o = asCtor(e).fields[0]
+  return lean_tag(o) === 0 ? null : asString(asCtor(o).fields[0])
 }
 
-function ioDetails(code: Obj, details: Obj): string {
-  return (
-    " (error code: " +
-    String(Number(code) >>> 0) +
-    (details != null ? ", " + decap(details) : "") +
-    ")"
-  )
+function ioDetails(code: number, d: string | null): string {
+  return " (error code: " + String(code) + (d !== null ? ", " + decap(d) : "") + ")"
 }
 
-function ioFopen(gist: Obj, fn: Obj, code: Obj, details: Obj): string {
-  return decap(gist) + ioDetails(code, details) + "\n  file: " + text(fn)
+function ioFopen(gist: string, fn: string, code: number, d: string | null): string {
+  return decap(gist) + ioDetails(code, d) + "\n  file: " + fn
 }
 
-function ioOther(gist: Obj, code: Obj, details: Obj): string {
-  return decap(gist) + ioDetails(code, details)
+function ioOther(gist: string, code: number, d: string | null): string {
+  return decap(gist) + ioDetails(code, d)
 }
 
 function withFile(gist: string, e: Obj): string {
-  const fn = optFn(ef(e, 0))
-  return fn != null ? ioFopen(gist, fn, ef(e, 1), ef(e, 2)) : ioOther(gist, ef(e, 1), ef(e, 2))
+  const fn = optFn(e)
+  return fn !== null
+    ? ioFopen(gist, fn, osCode(e), detailsOf(e))
+    : ioOther(gist, osCode(e), detailsOf(e))
 }
 
 export function lean_io_error_to_string(e: Obj): string {
   switch (lean_tag(e)) {
-    case 0:
+    case IO_ERROR_ALREADY_EXISTS:
       return withFile("already exists", e)
-    case 1:
-      return ioOther(ef(e, 1), ef(e, 0), null)
-    case 2:
-      return ioOther("resource busy", ef(e, 0), ef(e, 1))
-    case 3:
-      return ioOther("resource vanished", ef(e, 0), ef(e, 1))
-    case 4:
-      return ioOther("unsupported operation", asCtor(e).sdata?.getUint32(0, true) ?? 0, ef(e, 0))
-    case 5:
-      return ioOther("hardware fault", ef(e, 0), null)
-    case 6:
-      return ioOther("directory not empty", ef(e, 0), null)
-    case 7:
-      return ioOther("illegal operation", ef(e, 0), ef(e, 1))
-    case 8:
-      return ioOther("protocol error", ef(e, 0), ef(e, 1))
-    case 9:
-      return ioOther("time expired", ef(e, 0), ef(e, 1))
-    case 10:
-      return ioFopen("interrupted system call", ef(e, 0), ef(e, 1), ef(e, 2))
-    case 11:
-      return ioFopen("no such file or directory", ef(e, 0), ef(e, 1), null)
-    case 12:
+    case IO_ERROR_OTHER:
+      return ioOther(detailsOf(e), osCode(e), null)
+    case IO_ERROR_RESOURCE_BUSY:
+      return ioOther("resource busy", osCode(e), detailsOf(e))
+    case IO_ERROR_RESOURCE_VANISHED:
+      return ioOther("resource vanished", osCode(e), detailsOf(e))
+    case IO_ERROR_UNSUPPORTED_OPERATION:
+      return ioOther("unsupported operation", osCode(e), detailsOf(e))
+    case IO_ERROR_HARDWARE_FAULT:
+      return ioOther("hardware fault", osCode(e), null)
+    case IO_ERROR_UNSATISFIED_CONSTRAINTS:
+      return ioOther("directory not empty", osCode(e), null)
+    case IO_ERROR_ILLEGAL_OPERATION:
+      return ioOther("illegal operation", osCode(e), detailsOf(e))
+    case IO_ERROR_PROTOCOL:
+      return ioOther("protocol error", osCode(e), detailsOf(e))
+    case IO_ERROR_TIME_EXPIRED:
+      return ioOther("time expired", osCode(e), detailsOf(e))
+    case IO_ERROR_INTERRUPTED:
+      return ioFopen(
+        "interrupted system call",
+        asString(asCtor(e).fields[0]),
+        osCode(e),
+        detailsOf(e),
+      )
+    case IO_ERROR_NO_FILE_OR_DIRECTORY:
+      return ioFopen("no such file or directory", asString(asCtor(e).fields[0]), osCode(e), null)
+    case IO_ERROR_INVALID_ARGUMENT:
       return withFile("invalid argument", e)
-    case 13: {
-      const fn = optFn(ef(e, 0))
-      const d = ef(e, 2)
-      return fn != null ? ioFopen(d, fn, ef(e, 1), null) : ioOther(d, ef(e, 1), null)
+    case IO_ERROR_PERMISSION_DENIED: {
+      const fn = optFn(e)
+      return fn !== null
+        ? ioFopen(detailsOf(e), fn, osCode(e), null)
+        : ioOther(detailsOf(e), osCode(e), null)
     }
-    case 14:
+    case IO_ERROR_RESOURCE_EXHAUSTED:
       return withFile("resource exhausted", e)
-    case 15:
+    case IO_ERROR_INAPPROPRIATE_TYPE:
       return withFile("inappropriate type", e)
-    case 16:
+    case IO_ERROR_NO_SUCH_THING:
       return withFile("no such thing", e)
     case 17:
       return "end of file"
-    case 18:
-      return text(ef(e, 0))
+    case IO_ERROR_USER:
+      return asString(asCtor(e).fields[0])
     default:
-      return text(e)
+      throw new TypeError(`lean-ts runtime: IO.Error has no constructor ${lean_tag(e)}`)
   }
 }
 
@@ -306,11 +414,11 @@ function readBytes(fd: number, n: number): Uint8Array {
   return buf.slice(0, got)
 }
 
-function ioAction(act: () => Obj): Ctor {
+function ioAction(act: () => Obj, fname: string | null = null): Ctor {
   try {
     return lean_io_result_mk_ok(act())
   } catch (e) {
-    return lean_io_result_mk_error(ioErrorOf(e))
+    return lean_io_result_mk_error(ioErrorOf(e, fname))
   }
 }
 
@@ -431,7 +539,8 @@ export function lean_io_force_exit(code: number): never {
 const MODE_FLAG = ["r", "w", "wx", "r+", "a"]
 
 export function lean_io_prim_handle_mk(path: Obj, mode: number): Obj {
-  return ioAction(() => ({ fd: platform.openFile(asString(path), MODE_FLAG[mode] ?? "r") }))
+  const p = asString(path)
+  return ioAction(() => ({ fd: platform.openFile(p, MODE_FLAG[mode] ?? "r") }), p)
 }
 
 export function lean_io_prim_handle_put_str(h: Obj, s: Obj): Obj {
