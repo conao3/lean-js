@@ -115,7 +115,7 @@ def Desc.resultType : Desc → String
   | .unit => "void"
   | d => d.outType
 
-partial def descOf (t : Lean.Expr) : MetaM Desc := do
+partial def descOf (foreign : Array (Name × String)) (t : Lean.Expr) : MetaM Desc := do
   let t ← whnfR (← instantiateMVars t)
   let t := t.consumeMData
   if t.isForall then throwError "function type `{t}`"
@@ -141,16 +141,18 @@ partial def descOf (t : Lean.Expr) : MetaM Desc := do
   | ``Float, #[] => return .float
   | ``Float32, #[] => return .float32
   | ``Unit, #[] | ``PUnit, #[] => return .unit
-  | ``List, #[a] => return .list (← descOf a)
-  | ``Array, #[a] => return .array (← descOf a)
+  | ``List, #[a] => return .list (← descOf foreign a)
+  | ``Array, #[a] => return .array (← descOf foreign a)
   | ``Option, #[a] =>
-    match ← descOf a with
+    match ← descOf foreign a with
     | .option _ => throwError "nested `Option` `{t}` (`none` and `some none` are both `null`)"
     | d => return .option d
-  | ``Prod, #[a, b] => return .prod (← descOf a) (← descOf b)
-  | ``Except, #[e, a] => return .except (← descOf e) (← descOf a)
+  | ``Prod, #[a, b] => return .prod (← descOf foreign a) (← descOf foreign b)
+  | ``Except, #[e, a] => return .except (← descOf foreign e) (← descOf foreign a)
   | _, _ =>
     if t.hasFVar then throwError "type `{t}` of a type parameter"
+    if let some (_, m) := foreign.find? (·.1.isPrefixOf c) then
+      throwError "unsupported type `{t}` (defined by `{m}`)"
     throwError "unsupported type `{t}`"
 
 inductive ParamKind where
@@ -164,7 +166,7 @@ structure PublicSig where
   io : Bool
   type : String
 
-def publicSig (name : Name) (ps : Array Param) : MetaM PublicSig := do
+def publicSig (foreign : Array (Name × String)) (name : Name) (ps : Array Param) : MetaM PublicSig := do
   let some ci := (← getEnv).find? name | throwError "unknown constant {name}"
   let type := toString (← ppExpr ci.type)
   forallBoundedTelescope ci.type ps.size fun xs body => do
@@ -184,7 +186,7 @@ def publicSig (name : Name) (ps : Array Param) : MetaM PublicSig := do
       if ← isProp ldecl.type then throwError "takes a proof argument `{ldecl.userName}`"
       if (← whnf ldecl.type).isSort then throwError "polymorphic (takes the type `{ldecl.userName}`)"
       if ldecl.binderInfo.isInstImplicit then throwError "takes an instance argument `{ldecl.type}`"
-      let d ← descOf ldecl.type
+      let d ← descOf foreign ldecl.type
       let base := if ldecl.userName.hasMacroScopes then s!"arg{i}"
         else lowerCamel (componentString ldecl.userName.eraseMacroScopes)
       let base := if base == "_" then s!"arg{i}" else base
@@ -194,7 +196,7 @@ def publicSig (name : Name) (ps : Array Param) : MetaM PublicSig := do
         nm := s!"{base}{k}"; k := k + 1
       used := used.insert nm
       params := params.push (.value nm d)
-    let result ← if io then descOf body.getAppArgs[2]! else descOf body
+    let result ← if io then descOf foreign body.getAppArgs[2]! else descOf foreign body
     return { params, result, io, type }
 
 end LeanTs

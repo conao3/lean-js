@@ -38,7 +38,7 @@ def Claims.claim (c : Claims) (path : Array String) : Except String Claims := do
     if c.fns.contains p then throw s!"the TypeScript name `{p}` is a function and a namespace"
   return { fns := c.fns.insert full, namespaces := (prefixes path).foldl (·.insert ·) c.namespaces }
 
-def collectPublics (roots : Array Name) (strip : Name) : MetaM (Array PublicFn × Array Skipped) := do
+def collectPublics (foreign : Array (Name × String)) (roots : Array Name) (strip : Name) : MetaM (Array PublicFn × Array Skipped) := do
   let env ← getEnv
   let mut publics := #[]
   let mut skipped := #[]
@@ -47,7 +47,7 @@ def collectPublics (roots : Array Name) (strip : Name) : MetaM (Array PublicFn �
     let some decl := IR.findEnvDecl env r
       | skipped := skipped.push { name := r, reason := "no IR" }; continue
     let path := tsPath strip r
-    let sig ← try pure (Except.ok (← publicSig r decl.params))
+    let sig ← try pure (Except.ok (← publicSig foreign r decl.params))
       catch e => pure (.error (← e.toMessageData.toString))
     match sig with
     | .error e => skipped := skipped.push { name := r, reason := e }
