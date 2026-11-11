@@ -72,21 +72,21 @@ export function double(n: bigint | number): bigint {
 
 ### Values at the boundary
 
-| Lean | TypeScript |
-|---|---|
-| `Nat`, `Int` | `bigint` (arguments also take a safe-integer `number`) |
-| `UInt8`..`UInt32`, `Int8`..`Int32` | `number` |
-| `UInt64`, `USize`, `Int64`, `ISize` | `bigint` |
-| `Bool` | `boolean` |
-| `Char` | `string` of one code point |
-| `String` | `string` |
-| `Float`, `Float32` | `number` |
-| `Unit` | `void` / `undefined` |
-| `Option α` | `α \| null` (`Option (Option α)` is not public) |
-| `List α`, `Array α` | `readonly α[]` (arguments), `α[]` (results) |
-| `α × β` | `readonly [α, β]` |
-| `Except ε α` | `{ ok: true; value: α } \| { ok: false; error: ε }` |
-| `IO α` | `α`; an `IO.Error` is thrown as `LeanIOError` (`code` is the constructor name) |
+| Lean                                | TypeScript                                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------------ |
+| `Nat`, `Int`                        | `bigint` (arguments also take a safe-integer `number`)                         |
+| `UInt8`..`UInt32`, `Int8`..`Int32`  | `number`                                                                       |
+| `UInt64`, `USize`, `Int64`, `ISize` | `bigint`                                                                       |
+| `Bool`                              | `boolean`                                                                      |
+| `Char`                              | `string` of one code point                                                     |
+| `String`                            | `string`                                                                       |
+| `Float`, `Float32`                  | `number`                                                                       |
+| `Unit`                              | `void` / `undefined`                                                           |
+| `Option α`                          | `α \| null` (`Option (Option α)` is not public)                                |
+| `List α`, `Array α`                 | `readonly α[]` (arguments), `α[]` (results)                                    |
+| `α × β`                             | `readonly [α, β]`                                                              |
+| `Except ε α`                        | `{ ok: true; value: α } \| { ok: false; error: ε }`                            |
+| `IO α`                              | `α`; an `IO.Error` is thrown as `LeanIOError` (`code` is the constructor name) |
 
 Arguments are checked while they are converted: a value that does not fit throws
 `LeanValidationError`, whose `issues` (`{ message, path }`) name every place that
