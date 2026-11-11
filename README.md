@@ -158,12 +158,15 @@ The JS engine has a tracing GC, so all Lean reference-counting nodes are no-ops:
 import { lean } from "lean-ts"
 import * as arith from "./_lean/arith.ts"
 
-export const arithBlock = lean("arith", String.raw`
+export const arithBlock = lean(
+  "arith",
+  String.raw`
 def double (n : Nat) : Nat := n + n
 
 theorem double_eq (n : Nat) : double n = 2 * n := by
   unfold double; omega
-`)
+`,
+)
 
 arith.double(21n) // 42n
 ```
