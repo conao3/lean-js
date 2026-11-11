@@ -22,7 +22,7 @@ scene() {
 
 expect_rows() {
   local got="$1" want="$2" what="$3"
-  if ! diff <(printf '%s\n' "$want") <(printf '%s\n' "$got" | grep -v '^fresh ' | sed -E 's/ +/ /'); then
+  if ! diff <(printf '%s\n' "$want") <(printf '%s\n' "$got" | grep -v '^fresh ' | grep ' src/calc.ts:' | sed -E 's/ +/ /'); then
     fail "$what: unexpected obligation states"
   fi
 }
@@ -41,6 +41,23 @@ rm -rf "$out/base/node_modules/lean-ts" "$out/base/src/_lean" "$out/base/.lean-t
 ln -sfn ../../../.. "$out/base/node_modules/lean-ts"
 rows="$(cd "$out/base" && "${lts[@]}" check --package . --lean-typescript "$cli")"
 expect_rows "$rows" "$base_rows" "check"
+more_rows="missing src/more.ts:manhattan refines
+proved src/more.ts:area refines
+proved src/more.ts:code refines
+proved src/more.ts:shift refines
+missing src/more.ts:evens refines
+proved src/more.ts:label refines
+missing src/more.ts:countDown refines
+missing src/more.ts:safeDiv refines
+missing src/more.ts:sumSquares refines
+missing src/more.ts:firstPositive refines
+proved src/more.ts:describe refines
+missing src/more.ts:nonNeg refines
+proved src/more.ts:swap refines
+missing src/more.ts:tag refines"
+diff <(printf '%s\n' "$more_rows") <(printf '%s\n' "$rows" | grep ' src/more.ts:' | sed -E 's/ +/ /') || fail "check: unexpected states of more.ts"
+got="$(cd "$out/base" && node --input-type=module -e 'const s = await import("./src/_lean/more.ts"); console.log(String(s.area({ ctor: "rect", w: 3n, h: 4n })), String(s.code("blue")), s.swap([1n, 2n]).map(String).join(","))')"
+[[ "$got" == '12 3 2,1' ]] || fail "the specs of more.ts through the TypeScript functions printed: $got"
 [[ -f "$out/base/lean-ts.lock" ]] || fail "check did not write lean-ts.lock"
 grep -q '"spec_hash"' "$out/base/lean-ts.lock" || fail "the lock has no spec_hash"
 

@@ -3,5 +3,10 @@
     "fnv": "9886c87b2337a5ee",
     "output": "src/_lean/calc__spec.ts",
     "sha256": "7159061e9f70cdce6c55f1f8ca469957d006b1a09c8c25267acb5681769b7a33"
+  },
+  "src/more.ts:more": {
+    "fnv": "2c4f38cf401aeaad",
+    "output": "src/_lean/more__more.ts",
+    "sha256": "cb7f538da93b866dad47807b0b9a75f7c8b7fe8c81f725ebcb3f07bd260f6be9"
   }
 }

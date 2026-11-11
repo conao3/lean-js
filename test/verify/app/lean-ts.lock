@@ -57,5 +57,146 @@
     "obligations": {
       "refines": "axioms"
     }
+  },
+  "src/more.ts:area": {
+    "spec_hash": "d16e2202f1aaf5906a1c3f25aa07e6345f4fc5a74723d4b7b8669c843c25c7f2",
+    "lean": "LeanTsModel.more.area",
+    "obligations": {
+      "refines": "proved"
+    },
+    "csimp": {
+      "spec": "LeanTsEmbed.more.more.area",
+      "module": "LeanTsEmbed.«more».«more»",
+      "modes": [
+        "_"
+      ]
+    }
+  },
+  "src/more.ts:code": {
+    "spec_hash": "d5ebdfea4b2454dcdaef69de88ea52dfb9b5f5e7f9acdf46f040888f32674035",
+    "lean": "LeanTsModel.more.code",
+    "obligations": {
+      "refines": "proved"
+    },
+    "csimp": {
+      "spec": "LeanTsEmbed.more.more.code",
+      "module": "LeanTsEmbed.«more».«more»",
+      "modes": [
+        "_"
+      ]
+    }
+  },
+  "src/more.ts:countDown": {
+    "spec_hash": "c12104469e11a1ca4e3c47b964d7c1d24370f56433ce0598e2884fcc1e2f6223",
+    "lean": "LeanTsModel.more.countDown",
+    "obligations": {
+      "refines": "missing"
+    }
+  },
+  "src/more.ts:describe": {
+    "spec_hash": "2b3f3dc7312ea5354fece341084b037cfe7dd9893b2d420946f3b2ba93fbc0b0",
+    "lean": "LeanTsModel.more.describe",
+    "obligations": {
+      "refines": "proved"
+    },
+    "csimp": {
+      "spec": "LeanTsEmbed.more.more.describe",
+      "module": "LeanTsEmbed.«more».«more»",
+      "modes": [
+        "n"
+      ]
+    }
+  },
+  "src/more.ts:evens": {
+    "spec_hash": "9ccf5c0b47472c369544440a0a699d4e1264e4045d0bdca21a834b6a3325573d",
+    "lean": "LeanTsModel.more.evens",
+    "obligations": {
+      "refines": "missing"
+    }
+  },
+  "src/more.ts:firstPositive": {
+    "spec_hash": "4b97bde9b4d5ca068d7062ef600b99361fb7718883b484f8a69d85cd8721ced5",
+    "lean": "LeanTsModel.more.firstPositive",
+    "obligations": {
+      "refines": "missing"
+    }
+  },
+  "src/more.ts:label": {
+    "spec_hash": "e724d26147555ff928fac56419605cb0f8663a7c548000b0786b32ff5326edd7",
+    "lean": "LeanTsModel.more.label",
+    "obligations": {
+      "refines": "proved"
+    },
+    "csimp": {
+      "spec": "LeanTsEmbed.more.more.label",
+      "module": "LeanTsEmbed.«more».«more»",
+      "modes": [
+        "n"
+      ]
+    }
+  },
+  "src/more.ts:manhattan": {
+    "spec_hash": "23bf02c3ac98621d8b1fd5732b8e4c9cd401fbde1ef5899aaa341a0547924848",
+    "lean": "LeanTsModel.more.manhattan",
+    "obligations": {
+      "refines": "missing"
+    }
+  },
+  "src/more.ts:nonNeg": {
+    "spec_hash": "b4695b64f1808a9bfb38cd5407263e063d0c50855d88242ffe3c94e8f4f06d2c",
+    "lean": "LeanTsModel.more.nonNeg",
+    "obligations": {
+      "refines": "missing"
+    }
+  },
+  "src/more.ts:safeDiv": {
+    "spec_hash": "794925aac4e0e5fea8aaef4e7711858ecbc9a4b941472f7827a5a90e4c32fdac",
+    "lean": "LeanTsModel.more.safeDiv",
+    "obligations": {
+      "refines": "missing"
+    }
+  },
+  "src/more.ts:shift": {
+    "spec_hash": "147d3e1d36d6a397ff1dfcfdfc3b822698a744b40658fa3af35db1511d792655",
+    "lean": "LeanTsModel.more.shift",
+    "obligations": {
+      "refines": "proved"
+    },
+    "csimp": {
+      "spec": "LeanTsEmbed.more.more.shift",
+      "module": "LeanTsEmbed.«more».«more»",
+      "modes": [
+        "_",
+        "_"
+      ]
+    }
+  },
+  "src/more.ts:sumSquares": {
+    "spec_hash": "bcff7532bd252fcddf0181321e87035a692427b9b9ce59e3ee03bb6686304109",
+    "lean": "LeanTsModel.more.sumSquares",
+    "obligations": {
+      "refines": "missing"
+    }
+  },
+  "src/more.ts:swap": {
+    "spec_hash": "51c0009b7c6a9388e34458b56a2565d097ee78a373a968fa7467e94ca7c6843e",
+    "lean": "LeanTsModel.more.swap",
+    "obligations": {
+      "refines": "proved"
+    },
+    "csimp": {
+      "spec": "LeanTsEmbed.more.more.swap",
+      "module": "LeanTsEmbed.«more».«more»",
+      "modes": [
+        "n"
+      ]
+    }
+  },
+  "src/more.ts:tag": {
+    "spec_hash": "e81007a620187be3e2b418d1ad65c743216f97b517adb5af2dfb3ee4b31dcefe",
+    "lean": "LeanTsModel.more.tag",
+    "obligations": {
+      "refines": "missing"
+    }
   }
 }

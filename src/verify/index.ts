@@ -257,6 +257,7 @@ export async function checkModule(
   options: CheckOptions = {},
 ): Promise<void> {
   const values = new Set(Object.values(module))
-  for (const entry of modelRegistry().values())
-    if (values.has(entry.fn)) await checkModel(entry.fn, options)
+  const entries = [...modelRegistry().values()].filter((e) => values.has(e.fn))
+  if (entries.length === 0) throw new TypeError("lean-ts: the module has no model(...) functions")
+  for (const entry of entries) await checkModel(entry.fn, options)
 }

@@ -560,7 +560,18 @@ export class Translator {
         return this.fail(fn, c.start, "break inside a case is only allowed at its end")
       const inner = new Map(scope)
       let pat: string
-      if (c.test === null) {
+      const rest = tagged?.t.variants.filter((v) => !seen.has(v.name)) ?? []
+      const only = rest[0]
+      if (c.test === null && tagged !== undefined && rest.length === 1 && only !== undefined) {
+        hasDefault = true
+        const names = only.fields.map((f) => `${tagged.name}_${f.key}`)
+        pat = `.${ident(only.name)}${names.map((n) => ` ${ident(n)}`).join("")}`
+        inner.set(tagged.name, {
+          t: { ...tagged.t, variants: [only] },
+          mutable: false,
+          local: false,
+        })
+      } else if (c.test === null) {
         hasDefault = true
         pat = "_"
       } else if (c.test.type !== "Literal" || typeof c.test.value !== "string")
