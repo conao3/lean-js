@@ -5,6 +5,7 @@ import LeanTsTest.Io
 import LeanTsTest.Json
 import LeanTsTest.Public
 import LeanTsTest.Stress
+import LeanTsTest.TsModel
 import LeanTsTest.Stress2
 import LeanTsTest.Stress3
 import LeanTsTest.Stress4

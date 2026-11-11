@@ -15,7 +15,7 @@ const config: ViteUserConfig = defineConfig({
   },
   test: {
     include: ["test/**/*.test.ts"],
-    exclude: ["test/embed/**", "test/verify/**", "node_modules/**"],
+    exclude: ["test/embed/**", "test/verify/app/**", "node_modules/**"],
   },
   pack: [
     {

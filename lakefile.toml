@@ -10,6 +10,10 @@ root = "Main"
 supportInterpreter = true
 
 [[lean_lib]]
+name = "LeanTsLib"
+srcDir = "src/lean"
+
+[[lean_lib]]
 name = "LeanTsTest"
 
 [[lean_exe]]
