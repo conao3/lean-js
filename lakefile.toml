@@ -1,20 +1,20 @@
-name = "lean-js"
-defaultTargets = ["lean-js"]
+name = "lean-ts"
+defaultTargets = ["lean-typescript"]
 
 [[require]]
 name = "lean_todo"
 path = "../lean-todo-app/backend"
 
 [[lean_lib]]
-name = "LeanJs"
+name = "LeanTs"
 
 [[lean_exe]]
-name = "lean-js"
+name = "lean-typescript"
 root = "Main"
 supportInterpreter = true
 
 # Native C-backend oracle programs. `lake build` routes each `root` through
-# leanc, emitting .lake/build/bin/<name>, so the diff-test compares lean-js TS
+# leanc, emitting .lake/build/bin/<name>, so the diff-test compares lean-ts TS
 # against the real backend's compiled semantics (TCO, bignum, libm) instead of
 # the `lean --run` interpreter, which overflows the same way naive JS does.
 [[lean_exe]]

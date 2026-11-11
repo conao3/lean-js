@@ -2,7 +2,7 @@
 divergence-prone numeric / string / container paths. Each returns a canonical
 String so the native oracle and node only have to agree on text. -/
 
-namespace LeanJs.Fuzz
+namespace LeanTs.Fuzz
 
 def fNat (n : Nat) : String :=
   s!"{n + n}|{n * n}|{n % 1000}|{Nat.log2 n}|{n / 7}|{n <<< 1}"
@@ -43,4 +43,4 @@ def unescape (s : String) : String :=
 def parseNats (parts : List String) : List Nat :=
   (parts.filter (· ≠ "")).map String.toNat!
 
-end LeanJs.Fuzz
+end LeanTs.Fuzz

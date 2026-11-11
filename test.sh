@@ -7,7 +7,7 @@
 # Usage: nix develop . --command bash -c "./test.sh"
 set -euo pipefail
 lake build
-lake exe lean-js out.ts prelude.ts out-io.mjs
+lake exe lean-typescript out.ts prelude.ts out-io.mjs
 # Compile every oracle program natively once; subsequent runs are lake-cached.
 lake build oracle-fns oracle-io oracle-stdin oracle-err oracle-panic oracle-init oracle-stress oracle-stress2 oracle-stress3 oracle-stress4 oracle-verify
 ORACLE=.lake/build/bin

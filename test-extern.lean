@@ -1,9 +1,9 @@
-import LeanJs.EmitJS
-open Lean Lean.IR LeanJs
+import LeanTs.EmitTs
+open Lean Lean.IR LeanTs
 
 /-! # Fail-loud link-check test (negative test)
 
-Asserts that the lean-js emitter REJECTS an unmapped extern at extraction time —
+Asserts that the lean-ts emitter REJECTS an unmapped extern at extraction time —
 the analogue of a C linker failing to resolve a symbol — instead of silently
 emitting a dangling `funRef` call that ReferenceErrors at runtime under node.
 

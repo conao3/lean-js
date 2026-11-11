@@ -8,7 +8,7 @@ set -euo pipefail
 SEED="${1:-1}"
 N="${2:-2000}"
 lake build oracle-fuzz
-lake exe lean-js out.ts prelude.ts out-io.mjs >/dev/null
+lake exe lean-typescript out.ts prelude.ts out-io.mjs >/dev/null
 ORACLE=.lake/build/bin
 
 IN=$(mktemp)

@@ -1,10 +1,10 @@
 import LeanTodo.Basic
 
-/-! IO demo program extracted by the lean-js CLI to prove end-to-end effectful
+/-! IO demo program extracted by the lean-ts CLI to prove end-to-end effectful
 programs run under node and match Lean. Kept in a library module so its IR is
 persisted and visible to `findEnvDecl` on re-import. -/
 
-namespace LeanJs.DemoIO
+namespace LeanTs.DemoIO
 
 open LeanTodo
 
@@ -29,7 +29,7 @@ def tryCatchIO : IO String := do
     pure s!"caught: {e.toString}"
 
 def main : IO Unit := do
-  IO.println "lean-js IO demo"
+  IO.println "lean-ts IO demo"
   IO.println s!"fib 10 = {fib 10}"
   IO.println s!"2 + 3 = {2 + 3}"
   -- Large Nat printed via the COMPILED path (Nat.reprFast). 10^18 sits in the
@@ -74,7 +74,7 @@ def stdinEcho : IO Unit := do
     "uncaught exception: ..." to stderr and exits 1. -/
 def errMain : IO Unit := do
   IO.println "before error"
-  throw (IO.userError "boom from lean-js")
+  throw (IO.userError "boom from lean-ts")
 
 /-- A function with a `panic!` reached on one branch. `panic!` returns the
     `Inhabited` default and the program CONTINUES (it does not abort), so callers
@@ -97,4 +97,4 @@ def panicMain : IO Unit := do
   IO.println s!"a[oob]! = {oob}"
   IO.println "after panic"
 
-end LeanJs.DemoIO
+end LeanTs.DemoIO

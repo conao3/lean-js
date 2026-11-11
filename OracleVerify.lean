@@ -1,3 +1,3 @@
-import LeanJs.DemoVerify
+import LeanTs.DemoVerify
 
-def main : IO Unit := LeanJs.DemoVerify.verifyMain
+def main : IO Unit := LeanTs.DemoVerify.verifyMain

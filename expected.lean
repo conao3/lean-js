@@ -1,12 +1,12 @@
 import LeanTodo.Basic
-import LeanJs.Demo
-import LeanJs.DemoHO
+import LeanTs.Demo
+import LeanTs.DemoHO
 import Std.Data.HashMap
 
 set_option maxRecDepth 4000
 
 open LeanTodo
-open LeanJs.DemoHO
+open LeanTs.DemoHO
 
 def double (n : Nat) : Nat := n + n
 
@@ -252,7 +252,7 @@ def main : IO Unit := do
   IO.println s!"hmDemo = {hmDemo}"
   -- Closure-boundary tail calls (DemoHO.cpsCount via runStep/cpsLoop applies its
   -- step closure in tail position; cpsSum applies a continuation in tail
-  -- position). At this N both the native C backend and lean-js agree; the deep
+  -- position). At this N both the native C backend and lean-ts agree; the deep
   -- N=1e6 no-overflow check is node-side in test-tco.mjs (the C backend overflows
   -- there because it does not trampoline closure-boundary tail calls).
   IO.println s!"cpsCount = {cpsCount 10000}"
@@ -262,34 +262,34 @@ def main : IO Unit := do
   IO.println s!"chainHead 10 = {chainHead 10}"
   IO.println s!"pingN 5 0 = {pingN 5 0}"
   -- Float/Float32 transcendentals via toString (6-digit, absorbs <=1-ULP noise).
-  IO.println s!"ftan = {floatStr (LeanJs.Demo.ftan 1.0)}"
-  IO.println s!"fasin = {floatStr (LeanJs.Demo.fasin 0.5)}"
-  IO.println s!"facos = {floatStr (LeanJs.Demo.facos 0.5)}"
-  IO.println s!"fatan = {floatStr (LeanJs.Demo.fatan 2.0)}"
-  IO.println s!"fatan2 = {floatStr (LeanJs.Demo.fatan2 1.0 2.0)}"
-  IO.println s!"fsinh = {floatStr (LeanJs.Demo.fsinh 1.0)}"
-  IO.println s!"fcosh = {floatStr (LeanJs.Demo.fcosh 1.0)}"
-  IO.println s!"ftanh = {floatStr (LeanJs.Demo.ftanh 1.0)}"
-  IO.println s!"fexp2 = {floatStr (LeanJs.Demo.fexp2 10.0)}"
-  IO.println s!"flog2 = {floatStr (LeanJs.Demo.flog2 1024.0)}"
-  IO.println s!"flog10 = {floatStr (LeanJs.Demo.flog10 1000.0)}"
-  IO.println s!"fcbrt = {floatStr (LeanJs.Demo.fcbrt 27.0)}"
+  IO.println s!"ftan = {floatStr (LeanTs.Demo.ftan 1.0)}"
+  IO.println s!"fasin = {floatStr (LeanTs.Demo.fasin 0.5)}"
+  IO.println s!"facos = {floatStr (LeanTs.Demo.facos 0.5)}"
+  IO.println s!"fatan = {floatStr (LeanTs.Demo.fatan 2.0)}"
+  IO.println s!"fatan2 = {floatStr (LeanTs.Demo.fatan2 1.0 2.0)}"
+  IO.println s!"fsinh = {floatStr (LeanTs.Demo.fsinh 1.0)}"
+  IO.println s!"fcosh = {floatStr (LeanTs.Demo.fcosh 1.0)}"
+  IO.println s!"ftanh = {floatStr (LeanTs.Demo.ftanh 1.0)}"
+  IO.println s!"fexp2 = {floatStr (LeanTs.Demo.fexp2 10.0)}"
+  IO.println s!"flog2 = {floatStr (LeanTs.Demo.flog2 1024.0)}"
+  IO.println s!"flog10 = {floatStr (LeanTs.Demo.flog10 1000.0)}"
+  IO.println s!"fcbrt = {floatStr (LeanTs.Demo.fcbrt 27.0)}"
   -- frExp / ofBits / toBits are EXACT (integer / round-trip).
-  IO.println s!"ftoBits = {LeanJs.Demo.ftoBits 1.0}"
-  IO.println s!"fofBits = {floatStr (LeanJs.Demo.fofBits 4607182418800017408)}"
-  IO.println s!"ffrExpM = {floatStr (LeanJs.Demo.ffrExpM 12.0)}"
-  IO.println s!"ffrExpE = {LeanJs.Demo.ffrExpE 12.0}"
-  IO.println s!"f32tan = {float32Str (LeanJs.Demo.f32tan 1.0)}"
-  IO.println s!"f32exp = {float32Str (LeanJs.Demo.f32exp 2.0)}"
-  IO.println s!"f32log = {float32Str (LeanJs.Demo.f32log 10.0)}"
-  IO.println s!"f32cbrt = {float32Str (LeanJs.Demo.f32cbrt 27.0)}"
-  IO.println s!"f32toBits = {LeanJs.Demo.f32toBits 1.0}"
+  IO.println s!"ftoBits = {LeanTs.Demo.ftoBits 1.0}"
+  IO.println s!"fofBits = {floatStr (LeanTs.Demo.fofBits 4607182418800017408)}"
+  IO.println s!"ffrExpM = {floatStr (LeanTs.Demo.ffrExpM 12.0)}"
+  IO.println s!"ffrExpE = {LeanTs.Demo.ffrExpE 12.0}"
+  IO.println s!"f32tan = {float32Str (LeanTs.Demo.f32tan 1.0)}"
+  IO.println s!"f32exp = {float32Str (LeanTs.Demo.f32exp 2.0)}"
+  IO.println s!"f32log = {float32Str (LeanTs.Demo.f32log 10.0)}"
+  IO.println s!"f32cbrt = {float32Str (LeanTs.Demo.f32cbrt 27.0)}"
+  IO.println s!"f32toBits = {LeanTs.Demo.f32toBits 1.0}"
   -- USize / platform word width on the host (64-bit) profile. The 32-bit profile
   -- (WORD_BITS=32) is asserted node-side in test-usize32.mjs.
-  IO.println s!"nbits = {LeanJs.Demo.nbits}"
-  IO.println s!"uszOfU64 = {LeanJs.Demo.uszToNat (LeanJs.Demo.uszOfU64 4294967296)}"
-  IO.println s!"uszAddWrap = {LeanJs.Demo.uszToNat (LeanJs.Demo.uszAdd 0xFFFFFFFFFFFFFFFF 1)}"
-  IO.println s!"uszCompl = {LeanJs.Demo.uszToNat (LeanJs.Demo.uszCompl 0)}"
+  IO.println s!"nbits = {LeanTs.Demo.nbits}"
+  IO.println s!"uszOfU64 = {LeanTs.Demo.uszToNat (LeanTs.Demo.uszOfU64 4294967296)}"
+  IO.println s!"uszAddWrap = {LeanTs.Demo.uszToNat (LeanTs.Demo.uszAdd 0xFFFFFFFFFFFFFFFF 1)}"
+  IO.println s!"uszCompl = {LeanTs.Demo.uszToNat (LeanTs.Demo.uszCompl 0)}"
   -- TodoList sequence: add, add, add, toggle, remove
   let l0 := TodoList.empty
   let l1 := l0.add "buy milk"

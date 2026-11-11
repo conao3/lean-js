@@ -1,4 +1,4 @@
-// ===================== lean-js runtime prelude =====================
+// ===================== lean-ts runtime prelude =====================
 // Representation choices:
 //   Nat  -> bigint (>= 0n)        Int   -> bigint
 //   UInt8/16/32 -> number         UInt64/USize -> bigint
@@ -231,7 +231,7 @@ const _mkUIntBig = (bits) => {
 };
 // USize / pointer width. The C runtime's size_t == sizeof(void*) (8 on 64-bit,
 // 4 on 32-bit), and usize ctor slots / the packed-usize accessor width are
-// derived from it. lean-js targets a 64-bit-like host (BigInt for 64-bit), so
+// derived from it. lean-ts targets a 64-bit-like host (BigInt for 64-bit), so
 // WORD_BITS defaults to 64; route every usize-width decision through this single
 // constant so a 32-bit profile is a one-line change.
 const WORD_BITS = 64;

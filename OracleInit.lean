@@ -1,3 +1,3 @@
-import LeanJs.DemoInit
+import LeanTs.DemoInit
 
-def main : IO Unit := LeanJs.DemoInit.main
+def main : IO Unit := LeanTs.DemoInit.main

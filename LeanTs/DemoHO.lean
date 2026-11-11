@@ -1,13 +1,13 @@
 import Std.Data.HashMap
 
 /-! Higher-order / closure / typeclass / exception coverage targets for the
-lean-js CLI. Kept in a library module so their IR is persisted in the `.olean`
+lean-ts CLI. Kept in a library module so their IR is persisted in the `.olean`
 and visible to `Lean.IR.findEnvDecl` on re-import. These exercise emitter paths
 that the first-order Demo functions never reach: `pap`/`ap`/closure capture
 (`lean_apply`), monomorphized higher-order `List`/`Array` combinators, Monad
 dictionary passing, the `Except` error channel, and `Std.HashMap`. -/
 
-namespace LeanJs.DemoHO
+namespace LeanTs.DemoHO
 
 -- C1 higher-order + lambdas: forces a `pap` closure constant + `ap`/lean_apply.
 def applyTwice (f : Nat → Nat) (x : Nat) : Nat := f (f x)
@@ -76,4 +76,4 @@ def hmDemo : Nat :=
   let m : Std.HashMap Nat Nat := (Std.HashMap.emptyWithCapacity.insert 1 10).insert 2 20
   (m.getD 1 0) + (m.getD 2 0) + m.size
 
-end LeanJs.DemoHO
+end LeanTs.DemoHO

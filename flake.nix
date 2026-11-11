@@ -1,5 +1,5 @@
 {
-  description = "lean-js: a Lean IR -> TypeScript backend mirroring EmitC";
+  description = "lean-ts: a Lean IR -> TypeScript backend mirroring EmitC";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -21,7 +21,7 @@
           ];
 
           shellHook = ''
-            echo "lean-js dev shell"
+            echo "lean-ts dev shell"
             echo "  lean : $(lean --version 2>/dev/null | head -1)"
             echo "  lake : $(lake --version 2>/dev/null | head -1)"
             echo "  node : $(node --version 2>/dev/null)"

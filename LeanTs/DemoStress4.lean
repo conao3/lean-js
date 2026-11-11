@@ -3,7 +3,7 @@ suite did not reach -- FloatArray (packed doubles) and the debug-trace helpers.
 Each program prints deterministic output (FloatArray via Float.toString = C %f,
 6 fixed digits; dbgTrace writes to stderr then returns the forced thunk). -/
 
-namespace LeanJs.DemoStress4
+namespace LeanTs.DemoStress4
 
 /-! FloatArray: push / get! / set! / get / uget / size / toList. The `*!`
 accessors exercise the OOB conventions (get! -> 0.0, set! -> unchanged). -/
@@ -43,4 +43,4 @@ def dbgProg : IO Unit := do
 def stress4Main : IO Unit := do
   faProg; dbgProg
 
-end LeanJs.DemoStress4
+end LeanTs.DemoStress4

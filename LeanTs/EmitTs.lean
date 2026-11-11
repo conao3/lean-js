@@ -1,6 +1,6 @@
 import Lean.Compiler.IR
 
-/-! # lean-js: a Lean IR -> TypeScript backend (PoC), mirroring EmitC.
+/-! # lean-ts: a Lean IR -> TypeScript backend (PoC), mirroring EmitC.
 
 We obtain IR `Decl`s via `Lean.IR.findEnvDecl`, then walk `FnBody`/`Expr`
 and emit TypeScript. Reference-counting nodes (inc/dec/del/reset/reuse) are
@@ -8,7 +8,7 @@ omitted because the JS engine has a tracing GC. -/
 
 open Lean Lean.IR
 
-namespace LeanJs
+namespace LeanTs
 
 /-- Emission state: a buffer of output lines and an indent level. -/
 structure EmitState where
@@ -1331,4 +1331,4 @@ def renderProgramChecked (env : Environment) (mainName : Name) : Except String S
   let (_, st) := act.run { externMap, arityMap, initGlobals, cores := emittedCores }
   return .ok st.out
 
-end LeanJs
+end LeanTs

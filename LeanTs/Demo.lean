@@ -1,8 +1,8 @@
-/-! Demo target functions extracted by the lean-js CLI. Kept in a library
+/-! Demo target functions extracted by the lean-ts CLI. Kept in a library
 module (not the executable root) so their IR is persisted in the `.olean` and
 visible to `Lean.IR.findEnvDecl` when the CLI re-imports the modules. -/
 
-namespace LeanJs.Demo
+namespace LeanTs.Demo
 
 def double (n : Nat) : Nat := n + n
 
@@ -208,4 +208,4 @@ def uszAdd (a b : USize) : USize := a + b
 def uszCompl (a : USize) : USize := ~~~a
 def uszToNat (a : USize) : Nat := a.toNat
 
-end LeanJs.Demo
+end LeanTs.Demo

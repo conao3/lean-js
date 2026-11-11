@@ -1,3 +1,3 @@
-import LeanJs.DemoIO
+import LeanTs.DemoIO
 
-def main : IO Unit := LeanJs.DemoIO.panicMain
+def main : IO Unit := LeanTs.DemoIO.panicMain

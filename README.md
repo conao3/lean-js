@@ -1,4 +1,4 @@
-# lean-js (proof of concept)
+# lean-ts (proof of concept)
 
 A Lean-to-TypeScript backend that mirrors Lean's C backend (`Lean.Compiler.IR.EmitC`),
 driven by `Lean.Compiler.IR`. From the IR `Decl` of a Lean function it transitively
@@ -7,10 +7,10 @@ then diff-tests it against Lean's own execution.
 
 ## Layout
 
-- `LeanJs/EmitJS.lean` — the emitter library (`lean_lib LeanJs`): IR walk, transitive
+- `LeanTs/EmitTs.lean` — the emitter library (`lean_lib LeanTs`): IR walk, transitive
   decl collection, self-tail-call loop lowering, extern mapping.
-- `LeanJs/Demo.lean`   — demo target functions (double / mkShifted / sumTo / fact).
-- `Main.lean`          — thin CLI (`lean_exe lean-js`): imports targets, collects from
+- `LeanTs/Demo.lean`   — demo target functions (double / mkShifted / sumTo / fact).
+- `Main.lean`          — thin CLI (`lean_exe lean-typescript`): imports targets, collects from
   root names, writes `prelude.ts` + generated code to `out.ts`.
 - `prelude.ts`         — hand-written runtime (Nat/Int/String/Array/List/Bool/Char).
 - `expected.lean`      — Lean reference execution.
@@ -20,7 +20,7 @@ then diff-tests it against Lean's own execution.
 
 1. Target functions are defined in library modules so their IR is persisted in the
    `.olean` and visible to `Lean.IR.findEnvDecl`.
-2. From a set of root names, `LeanJs.collectTransitive` does a worklist DFS over
+2. From a set of root names, `LeanTs.collectTransitive` does a worklist DFS over
    `findEnvDecl`, walking `fap`/`pap` callees; `.fdecl` are emitted as TS functions,
    `.extern` map to the prelude, `none` (e.g. `Nat.rec`) is the boundary. Output is
    ordered callee-before-caller.
@@ -119,11 +119,11 @@ below is enforced by `test.sh` diffing node output against that native binary.
   semantics (print to stderr, return the `Inhabited` default, continue), `dbgTrace`/
   `dbgTraceIfShared`/`dbgSleep`.
 
-### Where lean-js is *more* robust than the C backend
+### Where lean-ts is *more* robust than the C backend
 
 - **Closure-boundary TCO.** The native C backend does not TCO tail calls that cross a
   closure application (CPS/continuation loops), so programs like `cpsCount`/`cpsSum`
-  abort with `Stack overflow detected` around N≈1e5. lean-js lowers tail `.ap` to an
+  abort with `Stack overflow detected` around N≈1e5. lean-ts lowers tail `.ap` to an
   apply-thunk and runs them in constant JS stack. The diff-tests therefore check value
   equality at a native-safe N, and the no-overflow property at N=1e6 on the node side only.
 
@@ -163,8 +163,8 @@ trade an honest hard error for a silent divergence:
 
 ## Remaining honest gaps vs EmitC
 
-- The closure-boundary TCO divergence above is the one place lean-js and native cannot
-  agree at large N (lean-js is the more robust side); value equality holds at native-safe N.
+- The closure-boundary TCO divergence above is the one place lean-ts and native cannot
+  agree at large N (lean-ts is the more robust side); value equality holds at native-safe N.
 - `Float32` transcendentals use double-precision `Math.*` narrowed via `Math.fround`,
   whose rounding path differs from single-precision libm (`sinf`), so they can differ by
   >1 ULP at f32; the `%f` 6-digit `toString` comparison absorbs this but direct bit

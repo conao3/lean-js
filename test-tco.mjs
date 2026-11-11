@@ -14,8 +14,8 @@ const src = readFileSync(new URL('./out.ts', import.meta.url), 'utf8');
 // (cs0 and viaA/viaB are inlined away by the Lean compiler, so they have no
 // surviving call site; the survivors are the four below.)
 const wantCores = [
-  'LeanJs_Demo_cs1__tc', 'LeanJs_Demo_cs2__tc',
-  'LeanJs_Demo_cs3__tc', 'LeanJs_Demo_chainHead__tc',
+  'LeanTs_Demo_cs1__tc', 'LeanTs_Demo_cs2__tc',
+  'LeanTs_Demo_cs3__tc', 'LeanTs_Demo_chainHead__tc',
 ];
 let structOk = true;
 for (const c of wantCores) {
@@ -37,8 +37,8 @@ const wantApplyThunk = src.includes('__tc: 2');
 console.log(`apply-thunk emitted (tail .ap) ${wantApplyThunk ? 'PASS' : 'FAIL (no __tc:2; tail .ap not trampolined)'}`);
 if (!wantApplyThunk) { console.error('tail-ap trampoline check FAILED'); process.exit(1); }
 
-const fn = new Function(src + `\nreturn { LeanJs_Demo_parityEven, LeanJs_Demo_parityOdd, LeanJs_Demo_cycle3, LeanJs_Demo_pingN, LeanJs_Demo_chainHead, LeanJs_DemoHO_cpsCount, LeanJs_DemoHO_cpsSum };`);
-const { LeanJs_Demo_parityEven: parityEven, LeanJs_Demo_parityOdd: parityOdd, LeanJs_Demo_cycle3: cycle3, LeanJs_Demo_pingN: pingN, LeanJs_Demo_chainHead: chainHead, LeanJs_DemoHO_cpsCount: cpsCount, LeanJs_DemoHO_cpsSum: cpsSum } = fn();
+const fn = new Function(src + `\nreturn { LeanTs_Demo_parityEven, LeanTs_Demo_parityOdd, LeanTs_Demo_cycle3, LeanTs_Demo_pingN, LeanTs_Demo_chainHead, LeanTs_DemoHO_cpsCount, LeanTs_DemoHO_cpsSum };`);
+const { LeanTs_Demo_parityEven: parityEven, LeanTs_Demo_parityOdd: parityOdd, LeanTs_Demo_cycle3: cycle3, LeanTs_Demo_pingN: pingN, LeanTs_Demo_chainHead: chainHead, LeanTs_DemoHO_cpsCount: cpsCount, LeanTs_DemoHO_cpsSum: cpsSum } = fn();
 
 const N = 1000000n;
 const checks = [

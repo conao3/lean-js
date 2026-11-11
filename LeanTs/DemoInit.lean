@@ -1,11 +1,11 @@
-/-! `@[init]` action + `initialize` value-global coverage for the lean-js CLI.
+/-! `@[init]` action + `initialize` value-global coverage for the lean-ts CLI.
 Kept in a library module so the init metadata (`getInitFnNameFor?` /
 `isIOUnitInitFn`) and the IR persist in the `.olean` and are visible on
 re-import. The module-init chain must run both before `main`: the `@[init]`
 banners for effect (in reverse-decl order) and the `initialize` ref bound once at
 startup, then read/mutated by `main`. -/
 
-namespace LeanJs.DemoInit
+namespace LeanTs.DemoInit
 
 /-- An `@[init]` action: runs before `main`, for effect only.
     `getInitFnNameFor? = none`, `isIOUnitInitFn = true`. -/
@@ -25,4 +25,4 @@ def main : IO Unit := do
   let v1 ← gcounter.get
   IO.println s!"gcounter after set = {v1}"
 
-end LeanJs.DemoInit
+end LeanTs.DemoInit

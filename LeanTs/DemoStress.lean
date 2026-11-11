@@ -1,11 +1,11 @@
 import Std.Data.HashMap
 import Std.Data.TreeMap
 
-/-! Candidate stress programs for lean-js extraction + native diff-test.
+/-! Candidate stress programs for lean-ts extraction + native diff-test.
 Each `*Prog : IO Unit` prints deterministic results. Definitions are written
 non-exponentially so the native C-backend oracle runs fast. -/
 
-namespace LeanJs.DemoStress
+namespace LeanTs.DemoStress
 
 /-! ===========================================================================
     P1. Recursive-descent parser / tokenizer over String.
@@ -281,4 +281,4 @@ def comboProg : IO Unit := do
 def stressMain : IO Unit := do
   parserProg; dsProg; strProg; numProg; monadProg; comboProg
 
-end LeanJs.DemoStress
+end LeanTs.DemoStress

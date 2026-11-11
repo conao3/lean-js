@@ -1,3 +1,3 @@
-import LeanJs.DemoStress2
+import LeanTs.DemoStress2
 
-def main : IO Unit := LeanJs.DemoStress2.stress2Main
+def main : IO Unit := LeanTs.DemoStress2.stress2Main
