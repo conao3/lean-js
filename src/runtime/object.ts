@@ -9,6 +9,8 @@
 // `switch`, so decEq/decLt/decLe and other Bool-returning externs return the
 // number 0 or 1 (NOT a JS boolean: `switch (true)` would not hit `case 1`).
 
+import { WORD_BITS } from "./uint.ts"
+
 export type Fn = (...args: never[]) => unknown
 
 export interface Ctor {
@@ -224,6 +226,18 @@ export function lean_ctor_set_f64(x: Obj, o: number, v: number): void {
 
 export function lean_ctor_set_f32(x: Obj, o: number, v: number): void {
   sdata(x).setFloat32(o, Math.fround(v), true)
+}
+
+// Packed USize scalar: width follows WORD_BITS (the pointer width), not a literal
+// 64 — a 32-bit profile reads/writes 4 bytes. (In practice usize fields use the
+// word-indexed uproj/uset path, not sproj/sset, so this is a defensive fallback.)
+export function lean_ctor_get_usize(x: Obj, o: number): bigint {
+  return WORD_BITS === 64 ? sdata(x).getBigUint64(o, true) : BigInt(sdata(x).getUint32(o, true))
+}
+
+export function lean_ctor_set_usize(x: Obj, o: number, v: bigint): void {
+  if (WORD_BITS === 64) sdata(x).setBigUint64(o, BigInt.asUintN(64, v), true)
+  else sdata(x).setUint32(o, Number(BigInt.asUintN(32, v)), true)
 }
 
 // ---- trampoline driver for mutual / cross-function tail calls ----
