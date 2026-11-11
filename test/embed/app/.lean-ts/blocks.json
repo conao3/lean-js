@@ -1,0 +1,27 @@
+{
+  "src/arith.ts:arith": {
+    "fnv": "66a8af43a5fea8c1",
+    "output": "src/_lean/arith__arith.ts",
+    "sha256": "61fce93f27ce0c6306290c52a6568a97d38d2c07952e8141a5603824807093ea"
+  },
+  "src/geometry.ts:geometry": {
+    "fnv": "c0428e5e31b08b71",
+    "output": "src/_lean/geometry__geometry.ts",
+    "sha256": "d065f59cb9e84e0f84f029068d7beab92ea4e56ee6f953368ff0442e789f1c32"
+  },
+  "src/report.ts:report": {
+    "fnv": "b6648157764c0ca9",
+    "output": "src/_lean/report__report.ts",
+    "sha256": "9872fd043c14e30a237e3790a3a8d25103749e04866bfbe261c7a213c8c22b78"
+  },
+  "src/text.ts:greeting": {
+    "fnv": "c0482484f3cd9a21",
+    "output": "src/_lean/text__greeting.ts",
+    "sha256": "9c9da2ac7d5931bdadf485f236858c50e3a0381128c67e9d0adfaaf1dfd2d7df"
+  },
+  "src/text.ts:words": {
+    "fnv": "dd29ef59e38d7f9d",
+    "output": "src/_lean/text__words.ts",
+    "sha256": "88ec9b7df9703339deb9258ccf2d39f76eb62545edd58e907cab35b8a487b287"
+  }
+}

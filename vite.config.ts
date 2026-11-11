@@ -6,7 +6,7 @@ const config: ViteUserConfig = defineConfig({
     singleQuote: false,
     trailingComma: "all",
     sortPackageJson: false,
-    ignorePatterns: ["lake-manifest.json"],
+    ignorePatterns: ["lake-manifest.json", "**/_lean/**", "**/.lean-ts/**"],
   },
   lint: {
     categories: { correctness: "error", suspicious: "warn" },
@@ -15,16 +15,20 @@ const config: ViteUserConfig = defineConfig({
   },
   test: {
     include: ["test/**/*.test.ts"],
+    exclude: ["test/embed/**", "node_modules/**"],
   },
   pack: [
     {
       entry: {
+        index: "src/index.ts",
         runtime: "src/runtime/index.ts",
         "runtime/node": "src/runtime/node.ts",
+        cli: "src/cli.ts",
       },
       platform: "neutral",
       format: "esm",
       dts: true,
+      deps: { neverBundle: [/^node:/u] },
     },
   ],
   run: {

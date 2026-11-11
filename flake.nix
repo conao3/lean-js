@@ -100,7 +100,11 @@
                 "*.yaml"
                 "*.yml"
               ];
-              excludes = [ "lake-manifest.json" ];
+              excludes = [
+                "lake-manifest.json"
+                "**/_lean/**"
+                "**/.lean-ts/**"
+              ];
             };
           };
 
