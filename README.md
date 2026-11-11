@@ -13,28 +13,37 @@ Lean code compiled by the C backend. Lean blocks written in a TypeScript module 
 - `LeanTs/EmitTs.lean` — the emitter: IR walk, transitive decl collection, extern
   mapping, trampoline TCO, typed TypeScript output.
 - `LeanTs/Marshal.lean` — the TypeScript types and descriptors of the Lean types at the
-  boundary and the signatures of the public functions; `LeanTs/Generate.lean` — the
+  boundary (structures, inductive types and subtypes with their constructor layouts and
+  the deciders compiled from their proof fields) and the signatures of the public
+  functions; `LeanTs/Generate.lean` — the type aliases, descriptors and schemas, the
   public functions, namespace objects and the skipped roots.
 - `LeanTs/RuntimeExterns.lean` — the runtime functions the generated code may call
   (generated from `src/runtime` by `make gen-externs`).
 - `Main.lean` — the CLI `lean-typescript`.
 - `src/index.ts`, `src/embed.ts` — `lean(...)`, `LeanBlockStale` and the block keys;
   `src/scan.ts`, `src/sync.ts`, `src/cli.ts` — the CLI `lean-ts` (`sync`, `status`,
-  `generate`); `src/runtime/block.ts` — the registry the generated modules register in.
+  `generate`); `src/runtime/block.ts` — the registry the generated modules register in;
+  `src/models.ts` — the Lean structures of the user's models (`lean(..., { models })`).
+- `src/schema/` — `lean-ts/schema`: `LeanSchema` (Standard Schema and Standard JSON
+  Schema), the scalar schemas, `toJSON`, `fromJSON`, `stringify`, `parse` and the JSON
+  Schema of a descriptor (`desc.ts`).
 - `src/runtime/` — the runtime (npm package `lean-ts`, export `./runtime`):
   `object.ts` (the `Obj` type, constructors, closures, `lean_apply`,
   `lean_trampoline`), `nat.ts`/`int.ts`/`uint.ts`/`float.ts` (numeric tower),
   `string.ts`, `array.ts` (Array, ByteArray, FloatArray), `io.ts` (`IO.Error`,
   streams, panic, init chain, `main`), `marshal.ts` (the boundary: `TypeDesc`,
-  `toLean`, `toTs`, `LeanValidationError`, `LeanIOError`), `node.ts` (the Node platform),
+  `toLean`, `toTs`, the validation of `validate`, `LeanValidationError`, `LeanIOError`), `node.ts` (the Node platform),
   `index.ts` (re-exports; installs the Node platform when `process.getBuiltinModule`
   exists, otherwise OS operations return `IO.Error.unsupportedOperation`).
 - `LeanTsTest/` — the diff-test programs (`Vectors`, `HigherOrder`, `Io`, `Init`,
   `Stress`..`Stress4`, `Verify`, `Fuzz`) and their native oracles (`*Main.lean`,
-  executables `oracle-*`), and `Public` (called through the public functions).
+  executables `oracle-*`), `Public` (called through the public functions) and `Json`
+  (values with `deriving ToJson, FromJson`; `oracle-json` prints their JSON).
 - `test/difftest/` — node harnesses for the function-level diff, fuzz, deep TCO and
   the 32-bit profile; `test/*.test.ts` — Vitest tests of the runtime and of the
-  public functions (`test/public.test.ts`); `test/embed.test.ts` — `lean-ts sync`,
+  public functions and schemas with both generation settings (`test/public.test.ts`),
+  the JSON against Lean's `ToJson` (`test/json.test.ts`), Standard Schema with Hono and
+  zod (`test/standard.test.ts`); `test/embed.test.ts` — `lean-ts sync`,
   `status` and `generate` on the fixtures `test/embed/app/` (with its committed
   `src/_lean/` and `.lean-ts/blocks.json`) and `test/project/`.
 
@@ -44,7 +53,8 @@ Lean code compiled by the C backend. Lean blocks written in a TypeScript module 
 lean-typescript module generate --module-name Foo.Bar [--roots <Name> ...] [--main <Name>]
   [--namespace <Name>] [--import <Name> ...] [--search-path <dir> ...] [--output-file <path>]
   [--runtime-path <specifier>] [--type-module <Name>=<specifier> ...] [--model-module <Name>=<key> ...]
-  [--batch <file>] [--internal-only] [--output json|text]
+  [--tag-key <key>] [--option null|undefined] [--batch <file>] [--internal-only]
+  [--output json|text]
 lean-typescript project generate --lake-dir <dir> --output-dir <dir> [--modules <Name> ...]
 lean-typescript help | --version | --generator-version
 ```
@@ -55,15 +65,18 @@ calls are not exported. `--internal-only` exports the internal functions instead
 (the diff-test calls them with runtime values). `--main` also emits the module's
 `@[init]` chain and a call running the given function as `main`. A root whose type
 cannot cross the boundary (type parameters, instance or proof arguments, function
-values, structures and inductive types) is listed in the summary's `skipped` with
-the reason. Exit codes: 0 success, 252 invalid parameters, 254 input that cannot be
-converted (an extern the runtime does not provide, a name without IR), 255 other
-errors. `--batch` runs a JSON array of jobs against one environment (`lean-ts sync`
+values, nested `Option`, types without a Lean form such as a proposition without
+`Decidable`) is listed in the summary's `skipped` with the reason. The structures and
+inductive types of the module (and those the public functions use) are exported as
+types and schemas (summary `types`). Exit codes: 0 success, 252 invalid parameters,
+254 input that cannot be converted (an extern the runtime does not provide, a name
+without IR, a constructor field named as the `--tag-key`, an invalid `--tag-key` or
+`--option`), 255 other errors. `--batch` runs a JSON array of jobs against one environment (`lean-ts sync`
 uses it); `project generate` builds a lake project and writes `<A>/<B>.ts` per module
 `A.B`.
 
 ```ts
-// Generated by lean-typescript (generator 3) from LeanTsTest.Public. Do not edit.
+// Generated by lean-typescript (generator 4) from LeanTsTest.Public. Do not edit.
 import * as L from "lean-ts/runtime"
 import type { Obj } from "lean-ts/runtime"
 
@@ -92,11 +105,16 @@ export function double(n: bigint | number): bigint {
 | `String`                            | `string`                                                                       |
 | `Float`, `Float32`                  | `number`                                                                       |
 | `Unit`                              | `void` / `undefined`                                                           |
-| `Option α`                          | `α \| null` (`Option (Option α)` is not public)                                |
+| `Option α`                          | `α \| null`, or `α \| undefined` with `--option undefined`                     |
 | `List α`, `Array α`                 | `readonly α[]` (arguments), `α[]` (results)                                    |
 | `α × β`                             | `readonly [α, β]`                                                              |
 | `Except ε α`                        | `{ ok: true; value: α } \| { ok: false; error: ε }`                            |
 | `IO α`                              | `α`; an `IO.Error` is thrown as `LeanIOError` (`code` is the constructor name) |
+| `Fin n`                             | `number` (`bigint` when `n > 2^32`)                                            |
+| structures                          | plain objects (`{ readonly lo: bigint; readonly hi: bigint }`)                 |
+| enumerations                        | string literal unions (`"red" \| "green"`)                                     |
+| other inductive types               | unions on the `--tag-key` (`{ ctor: "percent"; p: bigint } \| ...`)            |
+| `{x : α // p x}`                    | `α`, checked by `p`                                                            |
 
 Arguments are checked while they are converted: a value that does not fit throws
 `LeanValidationError`, whose `issues` (`{ message, path }`) name every place that
@@ -104,6 +122,62 @@ does not fit. A definition without arguments becomes a function evaluated on the
 first call. Names are the Lean names under `--namespace` (default: the module) in
 lowerCamelCase (`?` → `Q`, `!` → `Bang`, `'` → `Prime`); a name with more components
 is a member of a namespace object (`Calc.add` is `export const Calc = { add }`).
+
+### Structures, inductive types and Standard Schema
+
+```lean
+structure Range where
+  lo : Nat
+  hi : Nat
+  ok : lo ≤ hi
+
+inductive Discount where
+  | none
+  | percent (p : Nat) (h : p ≤ 100)
+  | fixed (amount : Nat)
+```
+
+```ts
+export type Range = { readonly lo: bigint; readonly hi: bigint }
+export type RangeInput = {
+  readonly lo: bigint | number | string
+  readonly hi: bigint | number | string
+}
+export const Range: L.LeanSchema<RangeInput, Range> = L.schema<RangeInput, Range>($tRange)
+
+Range["~standard"].validate({ lo: 3, hi: 1 }) // { issues: [{ message: "Range.ok: lo ≤ hi", path: [] }] }
+Discount["~standard"].validate({ percent: { p: 10 } }) // { value: { ctor: "percent", p: 10n } }
+```
+
+- Every type is a `LeanSchema<Input, Output>`: a `StandardSchemaV1` and
+  `StandardJSONSchemaV1` (`@standard-schema/spec` 1.1.0, vendor `lean-ts`) with the
+  descriptor in `desc`. Hono's `sValidator("json", Range)`, tRPC, TanStack Form and
+  zod's `z.custom` take it as it is. `Input` is the JSON of Lean's
+  `deriving ToJson`: a structure is an object (the fields of a parent flat, an `x?`
+  field omitted when `none`), a constructor without arguments is `"none"`, named
+  arguments are `{ "percent": { "p": 10 } }`, one unnamed argument `{ "tag": v }`, several
+  `{ "pair": [a, b] }`, `UInt64`/`USize` are strings. `validate` takes the JSON and the
+  TypeScript form and returns the TypeScript form; it is synchronous.
+- A proof field (`ok : lo ≤ hi`) or the property of a subtype is checked by the
+  decision procedure Lean compiles from the proposition (`LeanTsGen.Range.mk.ok_decide`),
+  both in `validate` and in the arguments of the public functions, so the values that
+  reach Lean satisfy the propositions. A comparison with a constant is also in the
+  JSON Schema (`maximum`, `exclusiveMinimum`, `maxLength`, `maxItems`, ...).
+- `jsonSchema.input` and `.output` take `draft-2020-12`, `draft-07` and `openapi-3.0`;
+  recursive types use `$defs`/`definitions`.
+- `lean-ts/schema` has the scalar schemas (`Nat`, `Int`, `UInt8`.., `String`, `Float`,
+  ...), `toJSON` (safe integers as numbers, the others as strings), `fromJSON`,
+  `stringify` (`bigint` as JSON numbers) and `parse` (integer literals read without
+  loss through the `JSON.parse` reviver's source text).
+- A structure with type parameters is a type per instance (`Pair Nat Bool` is
+  `PairNatBool`). A namespace of functions named as a type is merged into its schema
+  (`Point.sum` is a member of the schema `Point`).
+- The generation settings change the TypeScript form only:
+
+  | setting  | values                    | default  | effect                                                                       |
+  | -------- | ------------------------- | -------- | ---------------------------------------------------------------------------- |
+  | `tagKey` | a JavaScript identifier   | `"ctor"` | the discriminant of the inductive types (`{ kind: "percent"; p: bigint }`)   |
+  | `option` | `"null"` or `"undefined"` | `"null"` | `Option α` is `α \| null`, or `α \| undefined` and an optional field `x?: α` |
 
 ## How it works
 
@@ -184,10 +258,32 @@ lean-ts generate --lake-dir <dir> --output-dir <dir> [--modules <Name> ...]
   and generates `_lean/<module>__<name>.ts` next to the module (and `_lean/<module>.ts`
   when the module has one block) and `.lean-ts/blocks.json`. A Lean error is reported
   at the line of the TypeScript file with exit code 254.
-- `uses: ["./geometry.ts:geometry"]` imports and opens another block of the package.
-- A generated module registers its block when imported; `lean(...)` throws
-  `LeanBlockStale` when no registered module was generated from the same name, source,
-  options, model JSON Schemas and generator version. With `LEAN_TS_AUTO_SYNC=1` it runs
+- `uses: ["./geometry.ts:geometry"]` imports and opens another block of the package;
+  the generated module imports the types and schemas of that block's module.
+- `models: { LineItem }` takes the user's Standard JSON Schema values (zod, valibot,
+  arktype): `sync` imports the module, reads `~standard.jsonSchema.output({ target:
+  "draft-2020-12" })` and writes a Lean structure `LeanTsModels.<module>.LineItem`
+  (opened in the block). `integer` is `Nat` when its minimum is at least 0 and `Int`
+  otherwise, `number` `Float`, `array` `List`, a property that is not required an
+  `x? : Option α` field, a string `enum` an inductive type in `LeanTsEnums.<module>`, an
+  object equal to another model that model; `minimum`, `maximum`, the exclusive
+  bounds, `minLength`, `maxLength`, `minItems` and `maxItems` become proof fields
+  (`qty_ge : 1 ≤ qty`) the Lean proofs can assume, and `pattern`, `format`,
+  `multipleOf` are listed in the structure's docstring as not assumed. Other JSON
+  Schema stops `sync` with 254 and the model and property. A model must be an
+  exported variable, a named import or a property of a namespace import: the
+  functions take and return `StandardSchemaV1.InferOutput<typeof LineItem>` (a
+  type-only import), run the model's `~standard.validate` on the arguments and return
+  plain objects.
+- `output: { tagKey, option }` of a block and the `"lean-ts"` field of `package.json`
+  (`{ "lean-ts": { "tagKey": "kind", "option": "undefined" } }`, overridden by the
+  block) are the generation settings; a block and the blocks it uses must have the
+  same settings.
+- A generated module registers its block and its settings when imported;
+  `lean(...)` throws `LeanBlockStale` when no registered module was generated from the
+  same name, source, options, model JSON Schemas and generator version, or (in Node,
+  where it reads the `package.json` above the generated module) with the current
+  settings. With `LEAN_TS_AUTO_SYNC=1` it runs
   `lean-ts sync` instead, and the regenerated module is used from the next start.
 - `lean-ts status` compares the keys (which also cover the module path and the
   `"lean-ts"` field of `package.json`) with `.lean-ts/blocks.json` without Lean and
@@ -203,7 +299,9 @@ nix develop -c make check
 
 `make check` runs `treefmt --ci`, `./test-diff.sh` (generates the `LeanTsTest`
 modules into `test-out/` and diffs them against the native oracles), `./test-public.sh`
-(generates `test-out/public.ts` and runs `test/public.test.ts`), `./fuzz.sh`,
+(generates `test-out/public.ts` with the default settings, `test-out/public-alt.ts`
+with `--tag-key _tag --option undefined` and `test-out/json.ts`, and runs
+`test/public.test.ts` and `test/json.test.ts` against `oracle-json`), `./fuzz.sh`,
 the type check of every generated module (`vp lint test-out/**/*.ts`), `lean-ts
 status` of the embedding fixture, and `vp run check` (`vp check && vp test`, which
 includes `test/embed.test.ts`). `test-diff.sh` covers: 135 function-level
