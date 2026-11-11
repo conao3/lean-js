@@ -2,8 +2,9 @@
 import * as L from "lean-ts/runtime"
 import type { Obj } from "lean-ts/runtime"
 import type { LineItem as $m0 } from "../pricing.ts"
+import type { Order as $m1 } from "../pricing.ts"
 
-L.registerBlock({ name: "pricing", module: "src/pricing.ts", fnv: "afa2ccfe3346f6a3", settings: { tagKey: "kind", option: "undefined" }, url: import.meta.url })
+L.registerBlock({ name: "pricing", module: "src/pricing.ts", fnv: "ac6b8ce82cff529b", settings: { tagKey: "kind", option: "undefined" }, url: import.meta.url })
 
 function l_LeanTsEmbed_pricing_pricing_total__tc(x_1: Obj, x_2: Obj): Obj | L.Bounce {
   switch (L.lean_tag(x_2)) {
@@ -191,6 +192,14 @@ function l_LeanTsEmbed_pricing_pricing_subtotal(x_1: Obj): Obj {
   return L.lean_trampoline(l_LeanTsEmbed_pricing_pricing_subtotal__tc(x_1))
 }
 
+function l_LeanTsEmbed_pricing_pricing_orderTotal(x_1: Obj): Obj {
+  const x_2: Obj = L.lean_ctor_get(x_1, 1)
+  const x_3: Obj = L.lean_ctor_get(x_2, 1)
+  const x_4: Obj = L.lean_ctor_get(x_2, 4)
+  const x_5: Obj = L.lean_nat_mul(x_3, x_4)
+  return x_5
+}
+
 function l_LeanTsGen_Discount_percent_h_decide(x_1: Obj): number {
   const x_2: Obj = 100n
   const x_3: number = L.lean_nat_dec_le(x_1, x_2)
@@ -323,14 +332,16 @@ const $v5 = (a0: Obj, a1: Obj, a2: Obj, a3: Obj, a4: Obj, a5: Obj): boolean => l
 const $tDiscount: L.TypeDesc<Discount> = L.typeDesc({ kind: "inductive", name: "Discount", tagKey: "kind", variants: [{ name: "none", cidx: 0, size: 0, usize: 0, ssize: 0, positional: false, fields: [], invariants: [] }, { name: "percent", cidx: 1, size: 1, usize: 0, ssize: 0, positional: false, fields: [{ key: "p", desc: L.natDesc, slot: "obj", at: 0, omitNone: false, flat: false, bounds: { maximum: 100 } }], invariants: [{ field: "h", prop: "p ≤ 100", args: [0], decide: $v0 }] }, { name: "fixed", cidx: 2, size: 1, usize: 0, ssize: 0, positional: false, fields: [{ key: "amount", desc: L.natDesc, slot: "obj", at: 0, omitNone: false, flat: false, bounds: {} }], invariants: [] }] })
 const $tLeanTsEnums_Pricing_LineItem_kind: L.TypeDesc<LeanTsEnums_Pricing_LineItem_kind> = L.typeDesc({ kind: "enum", name: "LeanTsEnums_Pricing_LineItem_kind", ctors: ["book", "food"] })
 const $tLeanTsModels_Pricing_LineItem: L.TypeDesc = L.typeDesc({ kind: "struct", name: "LeanTsModels_Pricing_LineItem", trivial: null, variant: { name: "mk", cidx: 0, size: 5, usize: 0, ssize: 1, positional: false, fields: [{ key: "kind", desc: L.refDesc(() => $tLeanTsEnums_Pricing_LineItem_kind), slot: "u8", at: 0, omitNone: false, flat: false, bounds: {} }, { key: "note", desc: L.optionDesc(L.stringDesc, "undefined"), slot: "obj", at: 0, omitNone: true, flat: false, bounds: {} }, { key: "qty", desc: L.natDesc, slot: "obj", at: 1, omitNone: false, flat: false, bounds: { minimum: 1, maximum: 9007199254740991 } }, { key: "sku", desc: L.stringDesc, slot: "obj", at: 2, omitNone: false, flat: false, bounds: { minLength: 1 } }, { key: "tags", desc: L.listDesc(L.stringDesc), slot: "obj", at: 3, omitNone: false, flat: false, bounds: { maxItems: 3 } }, { key: "unitPrice", desc: L.natDesc, slot: "obj", at: 4, omitNone: false, flat: false, bounds: { maximum: 9007199254740991 } }], invariants: [{ field: "qty_ge", prop: "1 ≤ qty", args: [0, 1, 2], decide: $v1 }, { field: "qty_le", prop: "qty ≤ 9007199254740991", args: [0, 1, 2], decide: $v2 }, { field: "sku_min_length", prop: "1 ≤ sku.length", args: [0, 1, 2, 3], decide: $v3 }, { field: "tags_max_items", prop: "tags.length ≤ 3", args: [0, 1, 2, 3, 4], decide: $v4 }, { field: "unitPrice_le", prop: "unitPrice ≤ 9007199254740991", args: [0, 1, 2, 3, 4, 5], decide: $v5 }] } })
+const $tLeanTsModels_Pricing_Order: L.TypeDesc = L.typeDesc({ kind: "struct", name: "LeanTsModels_Pricing_Order", trivial: null, variant: { name: "mk", cidx: 0, size: 2, usize: 0, ssize: 0, positional: false, fields: [{ key: "buyer", desc: L.stringDesc, slot: "obj", at: 0, omitNone: false, flat: false, bounds: {} }, { key: "item", desc: L.modelDesc<L.InferOutput<typeof $m0>>("ac6b8ce82cff529b:LineItem", "LeanTsModels_Pricing_LineItem", L.refDesc(() => $tLeanTsModels_Pricing_LineItem)), slot: "obj", at: 1, omitNone: false, flat: false, bounds: {} }], invariants: [] } })
 
 export const Discount: L.LeanSchema<DiscountInput, Discount> = L.schema<DiscountInput, Discount>($tDiscount)
 export const LeanTsEnums_Pricing_LineItem_kind: L.LeanSchema<LeanTsEnums_Pricing_LineItem_kindInput, LeanTsEnums_Pricing_LineItem_kind> = L.schema<LeanTsEnums_Pricing_LineItem_kindInput, LeanTsEnums_Pricing_LineItem_kind>($tLeanTsEnums_Pricing_LineItem_kind)
 
-const $d0: L.TypeDesc<L.InferOutput<typeof $m0>[]> = L.listDesc(L.modelDesc<L.InferOutput<typeof $m0>>("afa2ccfe3346f6a3:LineItem", "LeanTsModels_Pricing_LineItem", $tLeanTsModels_Pricing_LineItem))
+const $d0: L.TypeDesc<L.InferOutput<typeof $m0>[]> = L.listDesc(L.modelDesc<L.InferOutput<typeof $m0>>("ac6b8ce82cff529b:LineItem", "LeanTsModels_Pricing_LineItem", $tLeanTsModels_Pricing_LineItem))
 const $d1: L.TypeDesc<Discount> = $tDiscount
 const $d2: L.TypeDesc<bigint> = L.natDesc
-const $d3: L.TypeDesc<L.InferOutput<typeof $m0> | undefined> = L.optionDesc(L.modelDesc<L.InferOutput<typeof $m0>>("afa2ccfe3346f6a3:LineItem", "LeanTsModels_Pricing_LineItem", $tLeanTsModels_Pricing_LineItem), "undefined")
+const $d3: L.TypeDesc<L.InferOutput<typeof $m0> | undefined> = L.optionDesc(L.modelDesc<L.InferOutput<typeof $m0>>("ac6b8ce82cff529b:LineItem", "LeanTsModels_Pricing_LineItem", $tLeanTsModels_Pricing_LineItem), "undefined")
+const $d4: L.TypeDesc<L.InferOutput<typeof $m1>> = L.modelDesc<L.InferOutput<typeof $m1>>("ac6b8ce82cff529b:Order", "LeanTsModels_Pricing_Order", $tLeanTsModels_Pricing_Order)
 
 /** Lean `LeanTsEmbed.pricing.pricing.total : List LeanTsModels.pricing.LineItem → LeanTsEmbed.pricing.pricing.Discount → Nat`. */
 export function total(items: readonly L.InferOutput<typeof $m0>[], d: Discount): bigint {
@@ -345,5 +356,10 @@ export function cheapest(items: readonly L.InferOutput<typeof $m0>[]): L.InferOu
 /** Lean `LeanTsEmbed.pricing.pricing.subtotal : List LeanTsModels.pricing.LineItem → Nat`. */
 export function subtotal(items: readonly L.InferOutput<typeof $m0>[]): bigint {
   return L.toTs($d2, l_LeanTsEmbed_pricing_pricing_subtotal(L.toLean($d0, items, "items")))
+}
+
+/** Lean `LeanTsEmbed.pricing.pricing.orderTotal : LeanTsModels.pricing.Order → Nat`. */
+export function orderTotal(o: L.InferOutput<typeof $m1>): bigint {
+  return L.toTs($d2, l_LeanTsEmbed_pricing_pricing_orderTotal(L.toLean($d4, o, "o")))
 }
 

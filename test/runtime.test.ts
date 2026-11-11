@@ -43,3 +43,42 @@ describe("platform", () => {
     )
   })
 })
+
+describe("models", () => {
+  test("a model whose validate returns a Promise is a TypeError", () => {
+    const struct = L.typeDesc({
+      kind: "struct",
+      name: "M",
+      trivial: 0,
+      variant: {
+        name: "mk",
+        cidx: 0,
+        size: 1,
+        usize: 0,
+        ssize: 0,
+        positional: false,
+        fields: [
+          {
+            key: "n",
+            desc: L.natDesc,
+            slot: "obj",
+            at: 0,
+            omitNone: false,
+            flat: false,
+            bounds: {},
+          },
+        ],
+        invariants: [],
+      },
+    })
+    L.blockRegistry().models.set("test:Async", {
+      "~standard": { version: 1, vendor: "test", validate: async (value: unknown) => ({ value }) },
+    })
+    expect(() => L.toLean(L.modelDesc("test:Async", "Async", struct), { n: 1 }, "m")).toThrow(
+      "the model's ~standard.validate returned a Promise",
+    )
+    expect(() => L.toLean(L.modelDesc("test:Missing", "Missing", struct), { n: 1 }, "m")).toThrow(
+      "the model Missing (test:Missing) is not registered",
+    )
+  })
+})

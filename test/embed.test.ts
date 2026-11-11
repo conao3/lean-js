@@ -162,11 +162,14 @@ describe("lean-ts sync", () => {
   })
 
   test("a model becomes a Lean structure whose constraints are proof fields", () => {
-    expect(
-      readFileSync(join(app, ".lean-ts/workspace/LeanTsModels/pricing.lean"), "utf8"),
-    ).toContain(
+    const models = readFileSync(join(app, ".lean-ts/workspace/LeanTsModels/pricing.lean"), "utf8")
+    expect(models).toContain(
       "structure LineItem where\n  kind : LeanTsEnums.«pricing».LineItem_kind\n  note? : Option String\n  qty : Nat\n  qty_ge : 1 ≤ qty\n",
     )
+    expect(models).toContain(
+      '/-- The model LineItem of src/pricing.ts. Not assumed in Lean: sku pattern "^[A-Z0-9-]+$". -/',
+    )
+    expect(models).toContain("structure Order where\n  buyer : String\n  item : LineItem\n")
     expect(
       readFileSync(join(app, ".lean-ts/workspace/LeanTsEmbed/pricing/pricing.lean"), "utf8"),
     ).toContain(
@@ -194,7 +197,7 @@ describe("lean-ts sync", () => {
       const named = copyProject(FIXTURE, "inline-model")
       edit(
         join(named, "src/pricing.ts"),
-        "{ models: { LineItem },",
+        "{ models: { LineItem, Order },",
         "{ models: { LineItem: z.object({}) },",
       )
       const inline = sync(named)

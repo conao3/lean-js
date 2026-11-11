@@ -110,6 +110,21 @@ type Big = bigint | number | string
 
 export type Nat = bigint
 export type Int = bigint
+export type UInt8 = number
+export type UInt16 = number
+export type UInt32 = number
+export type UInt64 = bigint
+export type USize = bigint
+export type Int8 = number
+export type Int16 = number
+export type Int32 = number
+export type Int64 = bigint
+export type ISize = bigint
+export type Bool = boolean
+export type Char = string
+export type Float = number
+export type Float32 = number
+export type Unit = undefined
 
 export const Nat: LeanSchema<Big, bigint> = scalar(natDesc)
 export const Int: LeanSchema<Big, bigint> = scalar(intDesc)

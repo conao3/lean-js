@@ -10,9 +10,9 @@
     "sha256": "a33601123b7d2dc93d0b1e91e1d037b3d19f7741e530c57029a465d00ff87772"
   },
   "src/pricing.ts:pricing": {
-    "fnv": "afa2ccfe3346f6a3",
+    "fnv": "ac6b8ce82cff529b",
     "output": "src/_lean/pricing__pricing.ts",
-    "sha256": "165d790b3dcbc72484beb6d6d752c2078d712a6ffc2eda733870217ef2202780"
+    "sha256": "8db185c3b24f25f12669caa27705ca3886629dafb17bc205d7b04eaa5f3631c3"
   },
   "src/report.ts:report": {
     "fnv": "516780245e6daefc",

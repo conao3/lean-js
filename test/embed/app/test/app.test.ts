@@ -28,12 +28,14 @@ await test("a template literal block and a block with imports", () => {
 })
 
 await test("a block using the user's zod model", () => {
-  const book = { sku: "a", qty: 2, unitPrice: 300, tags: [], kind: "book" as const }
-  const food = { sku: "b", qty: 1, unitPrice: 100, note: "x", tags: ["t"], kind: "food" as const }
+  const book = { sku: "A", qty: 2, unitPrice: 300, tags: [], kind: "book" as const }
+  const food = { sku: "B", qty: 1, unitPrice: 100, note: "x", tags: ["t"], kind: "food" as const }
   const items = [book, food]
   assert.equal(total(items, { kind: "percent", p: 10n }), 630n)
   assert.deepEqual(pricing.cheapest(items), food)
   assert.equal(pricing.cheapest([]), undefined)
+  assert.equal(pricing.orderTotal({ buyer: "x", item: book }), 600n)
+  assert.throws(() => total([{ ...book, sku: "a" }], { kind: "none" }), /items\.0\.sku/u)
   assert.throws(() => total([{ ...book, qty: 0 }], { kind: "none" }), /items\.0\.qty/u)
   assert.throws(() => total(items, { kind: "percent", p: 101n }), /Discount\.percent\.h: p ≤ 100/u)
   assert.deepEqual(pricing.Discount["~standard"].validate({ fixed: { amount: 5 } }), {

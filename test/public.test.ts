@@ -38,6 +38,8 @@ describe("exports", () => {
       "Flags",
       "Labeled",
       "Names",
+      "PairBoolNat",
+      "PairNatBool",
       "Point",
       "Pos",
       "Range",
@@ -81,6 +83,7 @@ describe("exports", () => {
       "squares",
       "sumList",
       "swap",
+      "swapPair",
       "toSmall",
       "unit",
       "width",
@@ -122,7 +125,7 @@ describe("summary", () => {
         { lean: "LeanTsTest.Public.Small", typescript: "Small" },
       ]),
     )
-    expect(Reflect.get(Object(summary), "types")).toHaveLength(10)
+    expect(Reflect.get(Object(summary), "types")).toHaveLength(12)
   })
 })
 
@@ -424,6 +427,13 @@ describe("structures, inductive types and subtypes", () => {
     expect(issuesOf(() => P.Names.count({ xs: ["a", "b", "c", "d"] }))).toEqual([
       { message: "Names.short: xs.length ≤ 3", path: ["n"] },
     ])
+  })
+
+  test("a polymorphic structure is a type per instance", () => {
+    expect(P.swapPair({ fst: 1n, snd: true })).toEqual({ fst: true, snd: 1n })
+    expect(validate(P.PairNatBool, { fst: 2, snd: false })).toEqual({
+      value: { fst: 2n, snd: false },
+    })
   })
 
   test("a namespace of functions is merged into the schema of the same name", () => {

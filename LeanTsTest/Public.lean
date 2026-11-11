@@ -191,6 +191,12 @@ structure Names where
 
 def Names.count (n : Names) : Nat := n.xs.length
 
+structure Pair (α β : Type) where
+  fst : α
+  snd : β
+
+def swapPair (p : Pair Nat Bool) : Pair Bool Nat := ⟨p.snd, p.fst⟩
+
 def roundTrip (d : Discount) (l : Labeled) (t : Tree) (f : Flags) : Discount × Labeled × Tree × Flags :=
   (d, l, t, f)
 
