@@ -198,5 +198,33 @@
     "obligations": {
       "refines": "missing"
     }
+  },
+  "src/orders.ts:hasNote": {
+    "spec_hash": "b38ed7634227551685a74d3f0d2a6acaac80656c6ab7c7df7270e290be42c8ed",
+    "lean": "LeanTsModel.orders.hasNote",
+    "obligations": {
+      "refines": "missing"
+    }
+  },
+  "src/orders.ts:lineTotal": {
+    "spec_hash": "d2b0df76a9416b26df51778ce66f8c6b590c087ec29b626c09501618f00f097f",
+    "lean": "LeanTsModel.orders.lineTotal",
+    "obligations": {
+      "refines": "proved"
+    },
+    "csimp": {
+      "spec": "LeanTsEmbed.orders.orders.lineTotal",
+      "module": "LeanTsEmbed.«orders».«orders»",
+      "modes": [
+        "n"
+      ]
+    }
+  },
+  "src/orders.ts:quantity": {
+    "spec_hash": "e62286eca300e6decc7a49133c8f4838355767d39734daaa2820f0488dc8d508",
+    "lean": "LeanTsModel.orders.quantity",
+    "obligations": {
+      "positive": "proved"
+    }
   }
 }

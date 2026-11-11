@@ -79,6 +79,7 @@ export interface TypeResolver {
     qualifier: string | undefined,
     at: number,
   ) => TsType | undefined
+  readonly model: (name: string, at: number) => TsType | undefined
 }
 
 export class Fn {
@@ -173,6 +174,13 @@ export function tsType(t: TSType, src: Located, types: TypeResolver): TsType {
     case "TSTypeReference": {
       const n = t.typeName
       const args = t.typeArguments?.params ?? []
+      const query = args[0]
+      if (
+        args.length === 1 &&
+        query?.type === "TSTypeQuery" &&
+        query.exprName.type === "Identifier"
+      )
+        return types.model(query.exprName.name, t.start) ?? bad()
       if (n.type === "Identifier") {
         const arg = args[0]
         if (
@@ -878,6 +886,16 @@ export class Translator {
           if (v === undefined || v.t.k !== "opt")
             return this.fail(fn, e.start, `${nc.name} is not optional`)
           return { c: `${ident(nc.name)}.${nc.isNull ? "isNone" : "isSome"}`, t: BOOL }
+        }
+        if ((e.operator === "===" || e.operator === "!==") && (isNil(e.left) || isNil(e.right))) {
+          const o = this.expr(fn, isNil(e.right) ? e.left : e.right, scope)
+          if (o.t.k !== "opt")
+            return this.fail(
+              fn,
+              e.start,
+              "only optional values are compared with null or undefined",
+            )
+          return { c: `${o.c}.${e.operator === "===" ? "isNone" : "isSome"}`, t: BOOL }
         }
         const a = this.expr(fn, e.left, scope, want !== undefined && isInt(want) ? want : undefined)
         return this.binary(fn, e.operator, a, e.right, scope, e.start)

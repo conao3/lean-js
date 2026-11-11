@@ -2,10 +2,11 @@ import { dirname } from "node:path"
 import { pathToFileURL } from "node:url"
 import type * as FastCheck from "fast-check"
 import { leanNameOf } from "../runtime/block.ts"
-import type { TypeDesc } from "../runtime/marshal.ts"
+import { standardValidate, type TypeDesc } from "../runtime/marshal.ts"
+import { modelSchema } from "../embed.ts"
 import { arbitrary, type FC } from "../schema/arbitrary.ts"
-import { readSource } from "./check.ts"
-import { BIG, Fn, type TsType, type TypeResolver } from "./translate.ts"
+import { modelStruct, readSource } from "./check.ts"
+import { astHash, BIG, Fn, type TsType, type TypeResolver } from "./translate.ts"
 
 export type Spec = (...args: never[]) => unknown
 
@@ -123,7 +124,12 @@ async function loadFastCheck(): Promise<FC> {
   }
 }
 
-async function paramTypes(entry: ModelEntry): Promise<{ fn: Fn; descs: Map<string, TypeDesc> }> {
+interface Tables {
+  readonly descs: Map<string, TypeDesc>
+  readonly models: Map<string, unknown>
+}
+
+async function paramTypes(entry: ModelEntry): Promise<{ fn: Fn; tables: Tables }> {
   const file = entry.file
   if (file === undefined)
     throw new TypeError(`lean-ts: the source file of the model call of ${entry.name} is unknown`)
@@ -139,6 +145,10 @@ async function paramTypes(entry: ModelEntry): Promise<{ fn: Fn; descs: Map<strin
         await import(pathToFileURL(i.from.endsWith(".ts") ? i.from : `${i.from}.ts`).href),
       )
   const descs = new Map<string, TypeDesc>()
+  const models = new Map<string, unknown>()
+  const own: unknown = astHash(node.params).includes("TSTypeQuery")
+    ? await import(pathToFileURL(file).href)
+    : undefined
   const types: TypeResolver = {
     reference(name, qualifier, at) {
       const i = src.imports.get(qualifier ?? name)
@@ -160,15 +170,27 @@ async function paramTypes(entry: ModelEntry): Promise<{ fn: Fn; descs: Map<strin
       descs.set(key, d)
       return { k: "struct", lean: key, ts: exportName, fields: [] }
     },
+    model(name, at) {
+      const i = src.imports.get(name)
+      const exportName = i === undefined ? name : i.exportName
+      if (exportName === null) return undefined
+      const m = i === undefined ? own : modules.get(i.from)
+      const v: unknown =
+        typeof m === "object" && m !== null ? Reflect.get(m, exportName) : undefined
+      if (typeof v !== "object" || v === null || !("~standard" in v)) return undefined
+      const key = `${i?.from ?? file}#${exportName}`
+      models.set(key, v)
+      return modelStruct(modelSchema(exportName, v), key, exportName, src.where(at))
+    },
   }
-  return { fn: new Fn(entry.name, node, src, types), descs }
+  return { fn: new Fn(entry.name, node, src, types), tables: { descs, models } }
 }
 
 function arbOf(
   fc: FC,
   t: TsType,
   nat: boolean,
-  descs: ReadonlyMap<string, TypeDesc>,
+  tables: Tables,
   options: CheckOptions,
 ): FastCheck.Arbitrary<unknown> {
   const lo = options.range?.min
@@ -189,15 +211,25 @@ function arbOf(
     case "str":
       return fc.string({ unit: "grapheme", maxLength: 12 })
     case "list":
-      return fc.array(arbOf(fc, t.item, false, descs, options), { maxLength: 10 })
+      return fc.array(arbOf(fc, t.item, false, tables, options), { maxLength: 10 })
     case "tuple":
-      return fc.tuple(...t.items.map((x) => arbOf(fc, x, false, descs, options)))
+      return fc.tuple(...t.items.map((x) => arbOf(fc, x, false, tables, options)))
     case "opt":
-      return fc.option(arbOf(fc, t.item, false, descs, options), {
+      return fc.option(arbOf(fc, t.item, false, tables, options), {
         nil: t.absent === "null" ? null : undefined,
       })
     default: {
-      const d = descs.get(t.lean)
+      const schema = tables.models.get(t.lean)
+      if (schema !== undefined && t.k === "struct") {
+        const parts = t.fields.map((f) =>
+          arbOf(fc, f.type, f.nat, tables, options).map((v): [string, unknown] => [f.key, v]),
+        )
+        return fc
+          .tuple(...parts)
+          .map((kv) => Object.fromEntries(kv.filter(([, v]) => v !== undefined)))
+          .filter((v) => standardValidate(schema, v).issues === null)
+      }
+      const d = tables.descs.get(t.lean)
       if (d === undefined) throw new TypeError(`lean-ts: no descriptor for ${t.ts}`)
       return arbitrary(d, fc)
     }
@@ -208,8 +240,8 @@ export async function checkModel(fn: Spec, options: CheckOptions = {}): Promise<
   const entry = modelRegistry().get(fn)
   if (entry === undefined) throw new TypeError(`lean-ts: ${fn.name} has no model(...) call`)
   const fc: FC = await loadFastCheck()
-  const { fn: sig, descs } = await paramTypes(entry)
-  const arbs = sig.params.map((p) => arbOf(fc, p.type, p.nat, descs, options))
+  const { fn: sig, tables } = await paramTypes(entry)
+  const arbs = sig.params.map((p) => arbOf(fc, p.type, p.nat, tables, options))
   const { refines, requires, ensures } = entry.options
   const name = entry.name
   if (refines !== undefined) checkSpec(name, "refines", refines)

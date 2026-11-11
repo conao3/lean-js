@@ -8,5 +8,10 @@
     "fnv": "2c4f38cf401aeaad",
     "output": "src/_lean/more__more.ts",
     "sha256": "cb7f538da93b866dad47807b0b9a75f7c8b7fe8c81f725ebcb3f07bd260f6be9"
+  },
+  "src/orders.ts:orders": {
+    "fnv": "2be728467cbdb55d",
+    "output": "src/_lean/orders__orders.ts",
+    "sha256": "cf06835e199774de9179555069b8f381262347071459573dd0c4e6722b714bb1"
   }
 }

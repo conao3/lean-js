@@ -18,6 +18,7 @@ scene() {
   cp -r "$from" "$out/$name"
   mkdir -p "$out/$name/node_modules"
   ln -sfn ../../../.. "$out/$name/node_modules/lean-ts"
+  ln -sfn ../../../../node_modules/zod "$out/$name/node_modules/zod"
 }
 
 expect_rows() {
@@ -56,6 +57,10 @@ missing src/more.ts:nonNeg refines
 proved src/more.ts:swap refines
 missing src/more.ts:tag refines"
 diff <(printf '%s\n' "$more_rows") <(printf '%s\n' "$rows" | grep ' src/more.ts:' | sed -E 's/ +/ /') || fail "check: unexpected states of more.ts"
+orders_rows="proved src/orders.ts:lineTotal refines
+proved src/orders.ts:quantity positive
+missing src/orders.ts:hasNote refines"
+diff <(printf '%s\n' "$orders_rows") <(printf '%s\n' "$rows" | grep ' src/orders.ts:' | sed -E 's/ +/ /') || fail "check: unexpected states of orders.ts (the zod constraint qty >= 1 is an assumption of quantity)"
 got="$(cd "$out/base" && node --input-type=module -e 'const s = await import("./src/_lean/more.ts"); console.log(String(s.area({ ctor: "rect", w: 3n, h: 4n })), String(s.code("blue")), s.swap([1n, 2n]).map(String).join(","))')"
 [[ "$got" == '12 3 2,1' ]] || fail "the specs of more.ts through the TypeScript functions printed: $got"
 [[ -f "$out/base/lean-ts.lock" ]] || fail "check did not write lean-ts.lock"

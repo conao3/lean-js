@@ -53,6 +53,7 @@ test-embed: build pack
 verify-links: install
 	mkdir -p test/verify/app/node_modules
 	ln -sfn ../../../.. test/verify/app/node_modules/lean-ts
+	ln -sfn ../../../../node_modules/zod test/verify/app/node_modules/zod
 
 verify-fixture: build pack verify-links
 	node src/cli.ts check --package test/verify/app --lean-typescript .lake/build/bin/lean-typescript

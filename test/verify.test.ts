@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vite-plus/test"
 import * as calc from "./verify/app/src/calc.ts"
 import * as more from "./verify/app/src/more.ts"
+import * as orders from "./verify/app/src/orders.ts"
 import * as spec from "./verify/app/src/_lean/calc.ts"
 import { checkModel, checkModule, model, PropertyFailure } from "../src/verify/index.ts"
 
@@ -36,6 +37,7 @@ describe("checkModel", () => {
   test("checkModule runs every model function of a module", async () => {
     await checkModule(calc, { range: { min: -300n, max: 300n }, numRuns: 30 })
     await checkModule(more, { range: { min: -300n, max: 300n }, numRuns: 100 })
+    await checkModule(orders, { range: { min: -2000n, max: 2000n }, numRuns: 100 })
   })
 
   test("a wrong implementation fails with a counterexample", async () => {

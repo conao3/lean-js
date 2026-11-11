@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import {
   cpSync,
@@ -9,7 +10,7 @@ import {
   writeFileSync,
 } from "node:fs"
 import { dirname, join, relative, resolve, sep } from "node:path"
-import { fileURLToPath, pathToFileURL } from "node:url"
+import { fileURLToPath } from "node:url"
 import {
   type ArrowFunctionExpression,
   type Expression,
@@ -18,7 +19,8 @@ import {
   type Program,
   Visitor,
 } from "oxc-parser"
-import { canonicalJson } from "../key.ts"
+import { canonicalJson, type Json } from "../key.ts"
+import { leanIdent as modelIdent } from "../models.ts"
 import { resolve as resolveDesc, type TypeDesc } from "../runtime/marshal.ts"
 import { posixRelative, SyncError, tsFiles } from "../scan.ts"
 import {
@@ -42,6 +44,7 @@ import {
   Fn,
   ident,
   leanType,
+  NUM,
   type Located,
   STR,
   Translator,
@@ -345,28 +348,68 @@ function qualified(m: ModelCall): string {
 
 type Descs = Map<string, Map<string, TypeDesc>>
 
-async function loadDescs(pkg: Package, sources: readonly Source[]): Promise<Descs> {
+const DESCS_CHILD = `
+import { pathToFileURL } from "node:url"
+const ser = (d0, stack) => {
+  let d = d0
+  while (d.kind === "ref") d = d.get()
+  if ((d.kind === "struct" || d.kind === "inductive") && stack.includes(d.name)) return { kind: "recursive", name: d.name }
+  const st = d.kind === "struct" || d.kind === "inductive" ? [...stack, d.name] : stack
+  const v = (x) => ({ name: x.name, fields: x.fields.map((f) => ({ key: f.key, omitNone: f.omitNone, flat: f.flat, desc: ser(f.desc, st) })) })
+  switch (d.kind) {
+    case "list": case "array": case "option": return { ...d, item: ser(d.item, st) }
+    case "prod": return { kind: "prod", fst: ser(d.fst, st), snd: ser(d.snd, st) }
+    case "except": return { kind: "except", error: ser(d.error, st), value: ser(d.value, st) }
+    case "struct": return { kind: "struct", name: d.name, trivial: d.trivial, variant: v(d.variant) }
+    case "inductive": return { kind: "inductive", name: d.name, tagKey: d.tagKey, variants: d.variants.map(v) }
+    case "subtype": return { kind: "subtype", name: d.name, base: ser(d.base, st) }
+    case "model": return { kind: "model", name: d.name, key: d.key }
+    case "fin": return { kind: "fin", bound: String(d.bound) }
+    default: return { kind: d.kind, ...(d.bits === undefined ? {} : { bits: d.bits }), ...(d.name === undefined ? {} : { name: d.name }), ...(d.ctors === undefined ? {} : { ctors: d.ctors }) }
+  }
+}
+const [first, ...files] = JSON.parse(process.argv[1])
+for (const f of first) await import(pathToFileURL(f).href)
+const out = {}
+for (const f of files) {
+  const m = await import(pathToFileURL(f).href)
+  out[f] = {}
+  for (const [k, x] of Object.entries(m)) {
+    const d = (typeof x === "object" && x !== null) || typeof x === "function" ? x.desc : undefined
+    if (typeof d === "object" && d !== null && typeof d.kind === "string") out[f][k] = ser(d, [])
+  }
+}
+process.stdout.write(JSON.stringify(out))
+`
+
+function loadDescs(pkg: Package, sources: readonly Source[]): Descs {
+  const users = sources.filter((s) => s.models.length !== 0)
+  const files = new Set<string>()
+  for (const s of users)
+    for (const i of s.imports.values())
+      if (blockOf(pkg, i.from) !== undefined)
+        files.add(i.from.endsWith(".ts") ? i.from : `${i.from}.ts`)
   const out: Descs = new Map()
-  for (const s of sources) {
-    if (s.models.length === 0) continue
-    await import(pathToFileURL(s.file).href)
-    for (const i of s.imports.values()) {
-      const b = blockOf(pkg, i.from)
-      if (b === undefined) continue
-      const f = i.from.endsWith(".ts") ? i.from : `${i.from}.ts`
-      if (out.has(f)) continue
-      const mod: unknown = await import(pathToFileURL(f).href)
-      const descs = new Map<string, TypeDesc>()
-      if (isRecord(mod))
-        for (const [k, v] of Object.entries(mod)) {
-          const d: unknown =
-            (typeof v === "object" && v !== null) || typeof v === "function"
-              ? Reflect.get(v, "desc")
-              : undefined
-          if (isDesc(d)) descs.set(k, d)
-        }
-      out.set(f, descs)
-    }
+  if (files.size === 0) return out
+  const r = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      DESCS_CHILD,
+      JSON.stringify([users.map((s) => s.file), ...files]),
+    ],
+    { encoding: "utf8", maxBuffer: 1 << 28 },
+  )
+  if (r.status !== 0)
+    throw new SyncError(`reading the types of the generated modules: ${r.stderr}`, 254)
+  const parsed: unknown = JSON.parse(r.stdout)
+  if (!isRecord(parsed))
+    throw new SyncError("reading the types of the generated modules returned no object", 255)
+  for (const [f, ds] of Object.entries(parsed)) {
+    const m = new Map<string, TypeDesc>()
+    if (isRecord(ds)) for (const [k, d] of Object.entries(ds)) if (isDesc(d)) m.set(k, d)
+    out.set(f, m)
   }
   return out
 }
@@ -441,6 +484,61 @@ function descType(d: TypeDesc, names: ReadonlyMap<string, string>, seen: Set<str
   }
 }
 
+function nullableOf(
+  s: Readonly<Record<string, unknown>>,
+): Readonly<Record<string, unknown>> | undefined {
+  const any = s["anyOf"]
+  if (Array.isArray(any) && any.length === 2) {
+    const other = any.find((x: unknown) => !(isRecord(x) && x["type"] === "null"))
+    if (isRecord(other) && any.some((x: unknown) => isRecord(x) && x["type"] === "null"))
+      return other
+  }
+  const t = s["type"]
+  if (Array.isArray(t) && t.length === 2 && t.includes("null"))
+    return { ...s, type: t.find((x: unknown) => x !== "null") }
+  return undefined
+}
+
+function jsonType(s: unknown, where: string): { t: TsType; nat: boolean } {
+  if (!isRecord(s)) throw new TranslateError(`${where}: a property schema is not an object`)
+  const min = s["minimum"]
+  const ex = s["exclusiveMinimum"]
+  const lo = typeof min === "number" ? min : typeof ex === "number" ? Math.floor(ex) + 1 : undefined
+  switch (s["type"]) {
+    case "integer":
+      return { t: NUM, nat: lo !== undefined && lo >= 0 }
+    case "string":
+      return { t: STR, nat: false }
+    case "boolean":
+      return { t: BOOL, nat: false }
+    case "array":
+      return { t: { k: "list", item: jsonType(s["items"], where).t }, nat: false }
+    default:
+      throw new TranslateError(
+        `${where}: the model property ${JSON.stringify(s)} is outside the subset lean-ts translates`,
+      )
+  }
+}
+
+export function modelStruct(json: Json, lean: string, ts: string, where: string): TsType {
+  if (!isRecord(json) || !isRecord(json["properties"]))
+    throw new TranslateError(`${where}: the model ${ts} is not an object schema`)
+  const req = json["required"]
+  const required = new Set(Array.isArray(req) ? req.filter((x) => typeof x === "string") : [])
+  const fields: FieldType[] = Object.entries(json["properties"]).map(([key, raw]) => {
+    if (!isRecord(raw))
+      throw new TranslateError(`${where}: the property ${key} of ${ts} is not an object`)
+    const inner = nullableOf(raw)
+    const { t, nat } = jsonType(inner ?? raw, where)
+    if (!required.has(key))
+      return { key, lean: `${key}?`, type: { k: "opt", item: t, absent: "undefined" }, nat: false }
+    if (inner !== undefined)
+      return { key, lean: key, type: { k: "opt", item: t, absent: "null" }, nat: false }
+    return { key, lean: key, type: t, nat }
+  })
+  return { k: "struct", lean, ts, fields }
+}
+
 export function typeResolver(
   pkg: Package,
   src: Source,
@@ -468,6 +566,21 @@ export function typeResolver(
         )
       const names = new Map(summary.types.map((t) => [t.typescript, t.lean]))
       return descType(d, names, new Set())
+    },
+    model(name, at) {
+      const i = src.imports.get(name)
+      const from = i === undefined ? src.file : i.from
+      const exportName = i === undefined ? name : i.exportName
+      for (const b of pkg.blocks)
+        for (const m of b.models)
+          if (m.from === from && m.exportName === exportName) {
+            const json = b.inputs.models[m.name]
+            if (json === undefined)
+              throw new TranslateError(`${src.where(at)}: no JSON Schema of the model ${m.name}`)
+            const lean = `${leanName(["LeanTsModels", ...moduleParts(b.module)])}.${modelIdent(m.name)}`
+            return modelStruct(json, lean, m.name, src.where(at))
+          }
+      return undefined
     },
   }
 }
@@ -616,7 +729,7 @@ export async function checkPackage(
   const before = canonicalJson(Object.fromEntries(csimpFiles(pkg)))
   const ws = join(pkg.root, ".lean-ts", "workspace")
   const sources = readSources(pkg.root).filter((s) => s.models.length !== 0)
-  const descs = await loadDescs(pkg, sources)
+  const descs = loadDescs(pkg, sources)
   rmSync(join(ws, "LeanTsLib"), { recursive: true, force: true })
   cpSync(join(libDir(), "LeanTsLib"), join(ws, "LeanTsLib"), { recursive: true })
   writeFileSync(join(ws, "LeanTsLib.lean"), "import LeanTsLib.Ts\n")
