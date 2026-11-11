@@ -1183,10 +1183,11 @@ structure Rendered where
   externs : Array String
 
 /-- Render the functions reachable from `roots` (and, for a program, from `main`
-    and its module's init decls) as a module body. The roots are exported. Fails
+    and its module's init decls) as a module body. The roots are exported when `exportRoots`. Fails
     with every unresolved name: an extern with no C symbol and no arm, or a call
     to a function with neither IR nor a runtime function. -/
-def renderModule (env : Environment) (roots : Array Name) (main? : Option Name) : Except String Rendered := Id.run do
+def renderModule (env : Environment) (roots : Array Name) (main? : Option Name) (exportRoots : Bool := true) :
+    Except String Rendered := Id.run do
   let (initRoots, initGlobals, initNames) := match main? with
     | some m => collectInitDecls env m
     | none => (#[], {}, #[])
@@ -1233,10 +1234,11 @@ def renderModule (env : Environment) (roots : Array Name) (main? : Option Name) 
   if !errors.isEmpty then
     return .error ("unresolved names:\n" ++ "\n".intercalate (errors.toList.map ("  " ++ ·)))
   -- Keep the pieces reachable from the roots, the program entry and init chain.
-  let exported : Std.HashSet String := roots.foldl (fun s r => s.insert (funRef r)) {}
+  let rootRefs : Std.HashSet String := roots.foldl (fun s r => s.insert (funRef r)) {}
+  let exported : Std.HashSet String := if exportRoots then rootRefs else {}
   let byName : Std.HashMap String Piece := pieces.foldl (fun m p => m.insert p.name p) {}
   let mut live : Std.HashSet String := {}
-  let mut stack : Array String := exported.toArray ++ entry.foldl (fun a p => a ++ p.refs.toArray) #[]
+  let mut stack : Array String := rootRefs.toArray ++ entry.foldl (fun a p => a ++ p.refs.toArray) #[]
   repeat
     match stack.back? with
     | none => break

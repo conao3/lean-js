@@ -77,13 +77,13 @@ node test/difftest/usize32.mjs
 # Extern link check: an extern the runtime does not provide is a hard error
 # (exit 254 naming the symbol), not a dangling call; a mapped root generates.
 link_ec=0
-"$ORACLE/lean-typescript" module generate --module-name Init --roots IO.getRandomBytes > /dev/null 2> test-out/link.err || link_ec=$?
+"$ORACLE/lean-typescript" module generate --module-name Init --roots IO.getRandomBytes --internal-only > /dev/null 2> test-out/link.err || link_ec=$?
 if [ "$link_ec" != 254 ] || ! grep -q lean_io_get_random_bytes test-out/link.err; then
   echo "extern link check: expected exit 254 naming lean_io_get_random_bytes, got $link_ec"
   cat test-out/link.err
   exit 1
 fi
-"$ORACLE/lean-typescript" module generate --module-name Init --roots String.splitOn > /dev/null 2>&1
+"$ORACLE/lean-typescript" module generate --module-name Init --roots String.splitOn --internal-only > /dev/null 2>&1
 echo "extern link check: unmapped extern rejected, mapped root generated"
 
 echo "DIFF-TEST PASS"

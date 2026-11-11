@@ -5,7 +5,7 @@ open Lean LeanTs
 def version : String := "0.1.0"
 
 /-- Version of the generated code. Raise it when the emitted code changes. -/
-def generatorVersion : String := "1"
+def generatorVersion : String := "2"
 
 def usage : String := "usage: lean-typescript [--version] [--generator-version] <command> <subcommand> [parameters]
 
@@ -17,12 +17,13 @@ lean-typescript module generate
   --roots <Name> ...          Functions to export (default: the module's public definitions)
   --main <Name>               Also emit the program entry running <Name> as `main`
                               (after the module's init decls)
+  --namespace <Name>          Namespace removed from the public TypeScript names (default: the module name)
   --import <Name> ...         More modules to import (their @[csimp] lemmas apply)
   --search-path <dir> ...     Extra .olean search directories
   --output-file <path>        Write the module here (default: standard output)
   --runtime-path <specifier>  Module the generated code imports the runtime from
                               (default: lean-ts/runtime)
-  --internal-only             Do not emit public functions and types
+  --internal-only             Export the internal functions instead of the public wrappers
   --output json|text          Format of the summary
 
 exit codes: 0 success, 252 invalid parameters, 254 input that cannot be converted, 255 other errors
@@ -36,6 +37,7 @@ structure Opts where
   outputFile : Option System.FilePath := none
   runtimePath : String := "lean-ts/runtime"
   internalOnly : Bool := false
+  namespace? : Option Name := none
   output : String := "json"
   imports : Array Name := #[]
 
@@ -45,6 +47,7 @@ partial def parseOpts (args : List String) (o : Opts) : Except String Opts :=
   match args with
   | [] => .ok o
   | "--module-name" :: v :: rest => parseOpts rest { o with moduleName := v.toName }
+  | "--namespace" :: v :: rest => parseOpts rest { o with namespace? := v.toName }
   | "--main" :: v :: rest => parseOpts rest { o with main? := v.toName }
   | "--output-file" :: v :: rest => parseOpts rest { o with outputFile := some v }
   | "--runtime-path" :: v :: rest => parseOpts rest { o with runtimePath := v }
@@ -95,7 +98,15 @@ def printSummary (o : Opts) (toStderr : Bool) (j : Json) : IO Unit := do
   if o.output == "json" then out j.compress
   else
     let get (k : String) := j.getObjValD k
-    out s!"{(get "module").getStr?.toOption.getD ""}: {get "functions"} functions, {(get "externs").getArr?.toOption.getD #[] |>.size} externs"
+    let size (k : String) := (get k).getArr?.toOption.getD #[] |>.size
+    out s!"{(get "module").getStr?.toOption.getD ""}: {get "functions"} functions, {size "externs"} externs, {size "public"} public"
+    for s in (get "skipped").getArr?.toOption.getD #[] do
+      IO.eprintln s!"lean-typescript: skipped {(s.getObjValD "name").getStr?.toOption.getD ""}: {(s.getObjValD "reason").getStr?.toOption.getD ""}"
+
+def collect (env : Environment) (roots : Array Name) (strip : Name) : IO (Array PublicFn × Array Skipped) := do
+  let ctx : Core.Context := { fileName := "<lean-typescript>", fileMap := default, maxHeartbeats := 0 }
+  let (r, _) ← ((collectPublics roots strip).run').toIO ctx { env }
+  return r
 
 def moduleGenerate (o : Opts) : IO UInt32 := do
   let some mod := o.moduleName | return ← fail 252 "--module-name is required"
@@ -104,20 +115,27 @@ def moduleGenerate (o : Opts) : IO UInt32 := do
     | .ok env => pure env
     | .error m => return ← fail 252 s!"module not found: {m}"
   let roots := if o.roots.isEmpty && o.main?.isNone then defaultRoots env mod else o.roots
-  match renderModule env roots o.main? with
+  let (publics, skipped) ← if o.internalOnly then pure (#[], #[])
+    else collect env roots (o.namespace?.getD mod)
+  let internalRoots := if o.internalOnly then roots else publics.map (·.lean)
+  match renderModule env internalRoots o.main? (exportRoots := o.internalOnly) with
   | .error e => fail 254 e
   | .ok r =>
     let missing := r.externs.filter (!runtimeExterns.contains ·)
     unless missing.isEmpty do
       return ← fail 254 s!"externs not in the runtime: {", ".intercalate missing.toList}"
-    let src := header o mod r.body ++ r.body
+    let body := if publics.isEmpty then r.body else r.body ++ "\n" ++ renderPublic publics
+    let src := header o mod body ++ body
     match o.outputFile with
     | none => IO.print src
     | some p =>
       if let some dir := p.parent then IO.FS.createDirAll dir
       IO.FS.writeFile p src
+    let publicJson := publics.map fun f => Json.mkObj [("lean", toString f.lean), ("typescript", f.dotted)]
+    let skippedJson := skipped.map fun s => Json.mkObj [("name", toString s.name), ("reason", s.reason)]
     printSummary o o.outputFile.isNone <| Json.mkObj [("module", toString mod), ("functions", r.functions),
-      ("externs", Json.arr (r.externs.map Json.str)), ("public", Json.arr #[]), ("skipped", Json.arr #[])]
+      ("externs", Json.arr (r.externs.map Json.str)), ("public", Json.arr publicJson),
+      ("skipped", Json.arr skippedJson)]
     return 0
 
 unsafe def main (args : List String) : IO UInt32 := do
