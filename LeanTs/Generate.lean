@@ -122,7 +122,7 @@ def emitPublicFn (s : Settings) (f : PublicFn) (tbl : DescTable) (lazyIdx : Nat)
   let ret := if f.sig.io then s!"L.ioResult({rn}, {call})" else s!"L.toTs({rn}, {call})"
   let exported := if f.path.size == 1 then "export " else ""
   let src := pre ++ docComment s!"Lean `{f.lean} : {f.sig.type}`." ++
-    s!"{exported}function {f.ident}({", ".intercalate sigParams.toList}): {f.sig.result.resultType s} \{\n  return {ret}\n}\n\n"
+    s!"{exported}function {f.ident}({", ".intercalate sigParams.toList}): {f.sig.result.resultType s} \{\n  return {ret}\n}\nL.leanName({f.ident}, {quoteString f.lean.toString})\n\n"
   return (src, tbl, lazyIdx)
 
 partial def nsObject (entries : List (List String × String)) (indent : Nat) : String × String :=

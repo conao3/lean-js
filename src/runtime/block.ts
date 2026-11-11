@@ -49,3 +49,13 @@ export function registerBlock(entry: BlockEntry): void {
   if (list === undefined) blocks.set(entry.name, [entry])
   else list.push(entry)
 }
+
+export function leanName<F extends object>(fn: F, name: string): F {
+  Object.defineProperty(fn, "__leanName", { value: name })
+  return fn
+}
+
+export function leanNameOf(fn: unknown): string | undefined {
+  const n: unknown = typeof fn === "function" ? Reflect.get(fn, "__leanName") : undefined
+  return typeof n === "string" ? n : undefined
+}
