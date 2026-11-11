@@ -385,3 +385,23 @@ export function lean_uint32_of_nat2(n: Obj): number {
 export function lean_system_platform_nbits(_unit?: Obj): bigint {
   return BigInt(WORD_BITS)
 }
+
+export function lean_uint32_of_nat_mk(n: Obj): number {
+  return lean_uint32_of_nat(n)
+}
+
+export function lean_uint8_to_uint64(a: number): bigint {
+  return BigInt(a)
+}
+
+export function lean_uint16_to_uint64(a: number): bigint {
+  return BigInt(a)
+}
+
+export function lean_uint32_to_uint64(a: number): bigint {
+  return BigInt(a)
+}
+
+export function lean_usize_to_uint64(a: bigint): bigint {
+  return a
+}

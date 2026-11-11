@@ -480,3 +480,19 @@ export function lean_isize_dec_lt(a: bigint, b: bigint): number {
 export function lean_isize_dec_le(a: bigint, b: bigint): number {
   return lean_bool(s64(a) <= s64(b))
 }
+
+export function lean_int8_to_int64(a: number): bigint {
+  return s8(a)
+}
+
+export function lean_int16_to_int64(a: number): bigint {
+  return s16(a)
+}
+
+export function lean_int32_to_int64(a: number): bigint {
+  return s32(a)
+}
+
+export function lean_isize_to_int64(a: bigint): bigint {
+  return s64(a)
+}
