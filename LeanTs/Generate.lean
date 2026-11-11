@@ -242,29 +242,38 @@ def typeLit (s : Settings) (deciders : Std.HashMap Name String) (td : TypeDef) :
   | .subtype base inv bs =>
     s!"\{ kind: \"subtype\", name: {name}, base: {base.code s true}, invariant: {invLit deciders inv}, bounds: {boundsLit bs} }"
 
-def emitDecider (env : Environment) (n : Name) (ident : String) : String :=
-  match IR.findEnvDecl env n with
-  | none => s!"const {ident} = (): boolean => false\n"
-  | some d =>
-    let ps := d.params.mapIdx fun i _ => s!"a{i}: Obj"
-    let args := d.params.mapIdx (fun i p => (p, s!"a{i}")) |>.filter (isLive ·.1) |>.map fun (p, a) => coerce p.ty a
-    s!"const {ident} = ({", ".intercalate ps.toList}): boolean => {funRef n}({", ".intercalate args.toList}) !== 0\n"
+def emitDecider (d : IR.Decl) (n : Name) (ident : String) : String :=
+  let ps := d.params.mapIdx fun i _ => s!"a{i}: Obj"
+  let args := d.params.mapIdx (fun i p => (p, s!"a{i}")) |>.filter (isLive ·.1) |>.map fun (p, a) => coerce p.ty a
+  s!"const {ident} = ({", ".intercalate ps.toList}): boolean => {funRef n}({", ".intercalate args.toList}) !== 0\n"
 
 structure PublicOut where
   imports : String
   body : String
   types : Array TypeDef
 
-def renderPublic (env : Environment) (s : Settings) (fns : Array PublicFn) (st : MarshalState) : PublicOut := Id.run do
+def invariantsOf (td : TypeDef) : Array InvInfo :=
+  match td.kind with
+  | .struct v _ => v.invariants
+  | .sum vs => vs.flatMap (·.invariants)
+  | .subtype _ inv _ => #[inv]
+  | .enum _ => #[]
+
+def renderPublic (env : Environment) (s : Settings) (fns : Array PublicFn) (st : MarshalState) :
+    Except String PublicOut := do
   let imports := String.join (st.foreignImports.toList.map fun (a, m) => s!"import * as {a} from {quoteString m}\n") ++
     String.join (st.modelImports.toList.map fun (a, m, e) => s!"import type \{ {e} as {a} } from {quoteString m}\n")
   let mut deciders : Std.HashMap Name String := {}
   let mut deciderSrc := ""
   for n in st.deciders do
     unless deciders.contains n do
+      let some d := IR.findEnvDecl env n | throw s!"{n}: the decider has no IR"
       let ident := s!"$v{deciders.size}"
       deciders := deciders.insert n ident
-      deciderSrc := deciderSrc ++ emitDecider env n ident
+      deciderSrc := deciderSrc ++ emitDecider d n ident
+  for td in st.types do
+    for inv in invariantsOf td do
+      unless deciders.contains inv.decider do throw s!"{inv.decider}: the decider of {td.lean} was not compiled"
   let mut aliases := ""
   let mut descs := ""
   let mut schemas : Std.HashSet String := {}

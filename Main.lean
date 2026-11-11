@@ -213,7 +213,9 @@ def runJob (env : Environment) (o : Opts) (job : Job) : IO (Json × UInt32) := d
     let missing := r.externs.filter (!runtimeExterns.contains ·)
     unless missing.isEmpty do
       return ← failed 254 s!"externs not in the runtime: {", ".intercalate missing.toList}"
-    let pub := renderPublic env job.settings col.publics col.state
+    let pub ← match renderPublic env job.settings col.publics col.state with
+      | .ok p => pure p
+      | .error e => return ← failed 254 e
     let body := if pub.body.isEmpty then r.body else r.body ++ "\n" ++ pub.body
     let reg := job.block?.map (registration · job.settings) |>.getD ""
     let src := header o job.module pub.imports (reg ++ body) ++ reg ++ body
