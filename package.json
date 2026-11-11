@@ -1,7 +1,7 @@
 {
   "name": "lean-ts",
   "version": "0.1.0",
-  "description": "Lean 4 IR -> TypeScript backend with a typed runtime",
+  "description": "Lean 4 IR -> TypeScript backend with a typed runtime and Lean blocks embedded in TypeScript",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -17,7 +17,14 @@
   "engines": {
     "node": ">=22.18.0"
   },
+  "bin": {
+    "lean-ts": "./dist/cli.js"
+  },
   "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
     "./runtime": {
       "types": "./dist/runtime.d.ts",
       "import": "./dist/runtime.js"
@@ -33,5 +40,9 @@
   "devDependencies": {
     "@types/node": "^26.6.6",
     "vite-plus": "1.5.0"
+  },
+  "dependencies": {
+    "@standard-schema/spec": "1.1.0",
+    "oxc-parser": "0.158.0"
   }
 }
