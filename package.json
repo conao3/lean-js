@@ -1,0 +1,37 @@
+{
+  "name": "lean-ts",
+  "version": "0.1.0",
+  "description": "Lean 4 IR -> TypeScript backend with a typed runtime",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/conao3/lean-ts.git"
+  },
+  "keywords": [
+    "lean4",
+    "typescript",
+    "compiler"
+  ],
+  "type": "module",
+  "packageManager": "pnpm@12.9.0",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "exports": {
+    "./runtime": {
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.js"
+    },
+    "./runtime/node": {
+      "types": "./dist/runtime/node.d.ts",
+      "import": "./dist/runtime/node.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "vite-plus": "1.5.0"
+  }
+}

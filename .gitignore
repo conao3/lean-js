@@ -1,4 +1,7 @@
 /.lake
 *.olean
-/out.ts
-/out-*.mjs
+/result
+/node_modules
+/dist
+/test-out
+/.claude-dev
