@@ -13,6 +13,7 @@ def usage : String := "usage: lean-typescript [--version] [--generator-version] 
 commands:
   module generate      Emit a TypeScript module for functions of a Lean module
   project generate     Build a lake project and emit a TypeScript module per Lean module
+  obligations check    Judge the proofs of obligations (used by `lean-ts check`)
 
 lean-typescript module generate
   --module-name <Name>        Lean module to import (required unless --batch)
@@ -46,6 +47,13 @@ lean-typescript project generate
   --modules <Name> ...        Modules to emit (default: every module the package builds)
   --runtime-path, --output    as above
 
+lean-typescript obligations check
+  --modules <Name> ...        Modules to import (required)
+  --obligations <file>        JSON array of {\"model\": <Lean name>, \"label\": <label>} (required)
+  --search-path <dir> ...     Extra .olean search directories
+  Prints a JSON array of {\"model\", \"label\", \"status\", \"axioms\"?, \"file\"?, \"line\"?}; the
+  status is proved, sorry, axioms, missing, mismatch or unextracted
+
 exit codes: 0 success, 252 invalid parameters, 254 input that cannot be converted, 255 other errors
 "
 
@@ -67,6 +75,7 @@ structure Opts where
   lakeDir : Option System.FilePath := none
   outputDir : Option System.FilePath := none
   modules : Array Name := #[]
+  obligations : Option System.FilePath := none
 
 def parseAssoc (s : String) : Except String (Name × String) :=
   match s.splitOn "=" with
@@ -89,6 +98,7 @@ partial def parseOpts (args : List String) (o : Opts) : Except String Opts :=
   | "--batch" :: v :: rest => parseOpts rest { o with batch := some v }
   | "--lake-dir" :: v :: rest => parseOpts rest { o with lakeDir := some v }
   | "--output-dir" :: v :: rest => parseOpts rest { o with outputDir := some v }
+  | "--obligations" :: v :: rest => parseOpts rest { o with obligations := some v }
   | "--output" :: v :: rest =>
     if v == "json" || v == "text" then parseOpts rest { o with output := v }
     else .error s!"--output must be json or text: {v}"
@@ -334,6 +344,20 @@ def projectGenerate (o : Opts) : IO UInt32 := do
   else for j in out do printSummary o false j
   return code
 
+def obligationsCheck (o : Opts) : IO UInt32 := do
+  let some file := o.obligations | return ← fail 252 "--obligations is required"
+  if o.modules.isEmpty then return ← fail 252 "--modules is required"
+  let obls ← match Json.parse (← IO.FS.readFile file) >>= parseObligations with
+    | .ok v => pure v
+    | .error e => return ← fail 252 s!"invalid --obligations file {file}: {e}"
+  match ← importAll o o.modules with
+  | .error m => fail 252 s!"no .olean for {m} in the search path"
+  | .ok env =>
+    let ctx : Core.Context := { fileName := "<lean-typescript>", fileMap := default, maxHeartbeats := 0 }
+    let (out, _) ← ((obls.mapM checkObligation).run').toIO ctx { env }
+    IO.println (Json.arr out).compress
+    return 0
+
 def withOpts (rest : List String) (k : Opts → IO UInt32) : IO UInt32 :=
   match parseOpts rest {} with
   | .error e => fail 252 e
@@ -350,4 +374,5 @@ unsafe def main (args : List String) : IO UInt32 := do
   | "module" :: "help" :: _ | "project" :: "help" :: _ => IO.print usage; return 0
   | "module" :: "generate" :: rest => withOpts rest moduleGenerate
   | "project" :: "generate" :: rest => withOpts rest projectGenerate
+  | "obligations" :: "check" :: rest => withOpts rest obligationsCheck
   | _ => fail 252 s!"unknown command (see `lean-typescript help`)"
