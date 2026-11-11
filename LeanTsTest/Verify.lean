@@ -6,7 +6,7 @@ import Std.Data.HashMap
 -- with Array (Array Int), Dijkstra-ish relaxation over a Std.HashMap-backed
 -- adjacency structure, and List/Option combinators. Written non-exponentially.
 
-namespace LeanTs.DemoVerify
+namespace LeanTsTest.Verify
 
 -- A small recursive JSON value + pretty printer.
 inductive JVal where
@@ -89,4 +89,4 @@ def verifyMain : IO Unit := do
   let keys := ["a", "b", "c", "d"]
   IO.println s!"dist = {keys.map (fun k => (k, dist.getD k 999))}"
 
-end LeanTs.DemoVerify
+end LeanTsTest.Verify

@@ -1,15 +1,14 @@
 import LeanTs.EmitTs
-import LeanTs.Demo
-import LeanTs.DemoHO
-import LeanTs.DemoIO
-import LeanTs.DemoInit
-import LeanTs.DemoStress
-import LeanTs.DemoStress2
-import LeanTs.DemoStress3
-import LeanTs.DemoStress4
-import LeanTs.DemoVerify
-import LeanTs.Fuzz
-import LeanTodo.Basic
+import LeanTsTest.Vectors
+import LeanTsTest.HigherOrder
+import LeanTsTest.Io
+import LeanTsTest.Init
+import LeanTsTest.Stress
+import LeanTsTest.Stress2
+import LeanTsTest.Stress3
+import LeanTsTest.Stress4
+import LeanTsTest.Verify
+import LeanTsTest.Fuzz
 
 open Lean Lean.IR
 
@@ -20,49 +19,49 @@ modules so their IR is persisted in the `.olean` and visible to
 `Lean.IR.findEnvDecl` when we re-import; we transitively collect dependencies
 and emit a self-contained TypeScript module (prelude + generated functions). -/
 
-/-- Root names to extract. LeanTodo functions exercise List, String, ctor/proj,
+/-- Root names to extract. TodoList functions exercise List, String, ctor/proj,
     Bool, and transitive helper-decl collection together. -/
 def rootNames : Array Name := #[
-  `LeanTs.Demo.double, `LeanTs.Demo.mkShifted, `LeanTs.Demo.sumTo, `LeanTs.Demo.fact,
-  `LeanTs.Demo.mkMixed, `LeanTs.Demo.mixedSum,
-  `LeanTs.Demo.u32wrap, `LeanTs.Demo.u8wrap,
-  `LeanTs.Demo.intEdiv, `LeanTs.Demo.intEmod, `LeanTs.Demo.intNeg,
-  `LeanTs.Demo.floatCalc,
-  `LeanTs.Demo.strLen, `LeanTs.Demo.strBytes, `LeanTs.Demo.strGet0,
-  `LeanTs.Demo.strGet1, `LeanTs.Demo.strExtract,
-  `LeanTs.Demo.arrSum, `LeanTs.Demo.arrMapSum, `LeanTs.Demo.arrRange,
-  `LeanTs.Demo.arrGetD, `LeanTs.Demo.arrAppend,
-  `LeanTs.Demo.listSum, `LeanTs.Demo.listLen, `LeanTs.Demo.listRev,
-  `LeanTs.Demo.listMapSum,
-  `LeanTs.Demo.parityEven, `LeanTs.Demo.parityOdd, `LeanTs.Demo.cycle3,
-  `LeanTs.Demo.i8wrap, `LeanTs.Demo.i8neg, `LeanTs.Demo.i8div, `LeanTs.Demo.i8mod,
-  `LeanTs.Demo.i8shr, `LeanTs.Demo.i16wrap, `LeanTs.Demo.i32wrap, `LeanTs.Demo.i64mul,
-  `LeanTs.Demo.i8toInt, `LeanTs.Demo.i32toInt,
-  `LeanTs.Demo.floatStr, `LeanTs.Demo.float32Str,
-  `LeanTs.Demo.mkSPack, `LeanTs.Demo.spackA, `LeanTs.Demo.spackB, `LeanTs.Demo.spackC,
-  `LeanTs.Demo.spackE, `LeanTs.Demo.spackF, `LeanTs.Demo.spackG, `LeanTs.Demo.spackSum,
-  `LeanTs.Demo.chainHead, `LeanTs.Demo.pingN,
-  `LeanTs.Demo.ftan, `LeanTs.Demo.fasin, `LeanTs.Demo.facos, `LeanTs.Demo.fatan,
-  `LeanTs.Demo.fatan2, `LeanTs.Demo.fsinh, `LeanTs.Demo.fcosh, `LeanTs.Demo.ftanh,
-  `LeanTs.Demo.fexp2, `LeanTs.Demo.flog2, `LeanTs.Demo.flog10, `LeanTs.Demo.fcbrt,
-  `LeanTs.Demo.ftoBits, `LeanTs.Demo.fofBits, `LeanTs.Demo.ffrExpM, `LeanTs.Demo.ffrExpE,
-  `LeanTs.Demo.f32tan, `LeanTs.Demo.f32exp, `LeanTs.Demo.f32log, `LeanTs.Demo.f32cbrt,
-  `LeanTs.Demo.f32toBits,
-  `LeanTs.Demo.nbits, `LeanTs.Demo.uszOfU64, `LeanTs.Demo.uszAdd,
-  `LeanTs.Demo.uszCompl, `LeanTs.Demo.uszToNat,
-  `LeanTs.DemoHO.hofApply,
-  `LeanTs.DemoHO.listMapLam, `LeanTs.DemoHO.listFilterLam, `LeanTs.DemoHO.listFoldlLam,
-  `LeanTs.DemoHO.arrMapLam,
-  `LeanTs.DemoHO.applyAdders, `LeanTs.DemoHO.currySplit,
-  `LeanTs.DemoHO.optSeq, `LeanTs.DemoHO.exSeq, `LeanTs.DemoHO.fmapList,
-  `LeanTs.DemoHO.safeDivStr, `LeanTs.DemoHO.hmDemo,
-  `LeanTs.DemoHO.cpsCount, `LeanTs.DemoHO.cpsSum,
-  `LeanTodo.TodoList.add,
-  `LeanTodo.TodoList.toggle,
-  `LeanTodo.TodoList.remove,
-  `LeanTodo.TodoList.step,
-  `LeanTs.Fuzz.fNat, `LeanTs.Fuzz.fInt, `LeanTs.Fuzz.fU32, `LeanTs.Fuzz.fU8,
-  `LeanTs.Fuzz.fStr, `LeanTs.Fuzz.fHash, `LeanTs.Fuzz.fListNat, `LeanTs.Fuzz.fArrNat
+  `LeanTsTest.Vectors.double, `LeanTsTest.Vectors.mkShifted, `LeanTsTest.Vectors.sumTo, `LeanTsTest.Vectors.fact,
+  `LeanTsTest.Vectors.mkMixed, `LeanTsTest.Vectors.mixedSum,
+  `LeanTsTest.Vectors.u32wrap, `LeanTsTest.Vectors.u8wrap,
+  `LeanTsTest.Vectors.intEdiv, `LeanTsTest.Vectors.intEmod, `LeanTsTest.Vectors.intNeg,
+  `LeanTsTest.Vectors.floatCalc,
+  `LeanTsTest.Vectors.strLen, `LeanTsTest.Vectors.strBytes, `LeanTsTest.Vectors.strGet0,
+  `LeanTsTest.Vectors.strGet1, `LeanTsTest.Vectors.strExtract,
+  `LeanTsTest.Vectors.arrSum, `LeanTsTest.Vectors.arrMapSum, `LeanTsTest.Vectors.arrRange,
+  `LeanTsTest.Vectors.arrGetD, `LeanTsTest.Vectors.arrAppend,
+  `LeanTsTest.Vectors.listSum, `LeanTsTest.Vectors.listLen, `LeanTsTest.Vectors.listRev,
+  `LeanTsTest.Vectors.listMapSum,
+  `LeanTsTest.Vectors.parityEven, `LeanTsTest.Vectors.parityOdd, `LeanTsTest.Vectors.cycle3,
+  `LeanTsTest.Vectors.i8wrap, `LeanTsTest.Vectors.i8neg, `LeanTsTest.Vectors.i8div, `LeanTsTest.Vectors.i8mod,
+  `LeanTsTest.Vectors.i8shr, `LeanTsTest.Vectors.i16wrap, `LeanTsTest.Vectors.i32wrap, `LeanTsTest.Vectors.i64mul,
+  `LeanTsTest.Vectors.i8toInt, `LeanTsTest.Vectors.i32toInt,
+  `LeanTsTest.Vectors.floatStr, `LeanTsTest.Vectors.float32Str,
+  `LeanTsTest.Vectors.mkSPack, `LeanTsTest.Vectors.spackA, `LeanTsTest.Vectors.spackB, `LeanTsTest.Vectors.spackC,
+  `LeanTsTest.Vectors.spackE, `LeanTsTest.Vectors.spackF, `LeanTsTest.Vectors.spackG, `LeanTsTest.Vectors.spackSum,
+  `LeanTsTest.Vectors.chainHead, `LeanTsTest.Vectors.pingN,
+  `LeanTsTest.Vectors.ftan, `LeanTsTest.Vectors.fasin, `LeanTsTest.Vectors.facos, `LeanTsTest.Vectors.fatan,
+  `LeanTsTest.Vectors.fatan2, `LeanTsTest.Vectors.fsinh, `LeanTsTest.Vectors.fcosh, `LeanTsTest.Vectors.ftanh,
+  `LeanTsTest.Vectors.fexp2, `LeanTsTest.Vectors.flog2, `LeanTsTest.Vectors.flog10, `LeanTsTest.Vectors.fcbrt,
+  `LeanTsTest.Vectors.ftoBits, `LeanTsTest.Vectors.fofBits, `LeanTsTest.Vectors.ffrExpM, `LeanTsTest.Vectors.ffrExpE,
+  `LeanTsTest.Vectors.f32tan, `LeanTsTest.Vectors.f32exp, `LeanTsTest.Vectors.f32log, `LeanTsTest.Vectors.f32cbrt,
+  `LeanTsTest.Vectors.f32toBits,
+  `LeanTsTest.Vectors.nbits, `LeanTsTest.Vectors.uszOfU64, `LeanTsTest.Vectors.uszAdd,
+  `LeanTsTest.Vectors.uszCompl, `LeanTsTest.Vectors.uszToNat,
+  `LeanTsTest.HigherOrder.hofApply,
+  `LeanTsTest.HigherOrder.listMapLam, `LeanTsTest.HigherOrder.listFilterLam, `LeanTsTest.HigherOrder.listFoldlLam,
+  `LeanTsTest.HigherOrder.arrMapLam,
+  `LeanTsTest.HigherOrder.applyAdders, `LeanTsTest.HigherOrder.currySplit,
+  `LeanTsTest.HigherOrder.optSeq, `LeanTsTest.HigherOrder.exSeq, `LeanTsTest.HigherOrder.fmapList,
+  `LeanTsTest.HigherOrder.safeDivStr, `LeanTsTest.HigherOrder.hmDemo,
+  `LeanTsTest.HigherOrder.cpsCount, `LeanTsTest.HigherOrder.cpsSum,
+  `LeanTsTest.Vectors.TodoList.add,
+  `LeanTsTest.Vectors.TodoList.toggle,
+  `LeanTsTest.Vectors.TodoList.remove,
+  `LeanTsTest.Vectors.TodoList.step,
+  `LeanTsTest.Fuzz.fNat, `LeanTsTest.Fuzz.fInt, `LeanTsTest.Fuzz.fU32, `LeanTsTest.Fuzz.fU8,
+  `LeanTsTest.Fuzz.fStr, `LeanTsTest.Fuzz.fHash, `LeanTsTest.Fuzz.fListNat, `LeanTsTest.Fuzz.fArrNat
 ]
 
 def main (args : List String) : IO Unit := do
@@ -71,13 +70,13 @@ def main (args : List String) : IO Unit := do
   let progPath := args.getD 2 "out-io.mjs"
   initSearchPath (← findSysroot)
   let env ← importModules
-    #[{ module := `LeanTs.Demo }, { module := `LeanTs.DemoHO },
-      { module := `LeanTs.DemoIO }, { module := `LeanTs.DemoInit },
-      { module := `LeanTs.DemoStress }, { module := `LeanTs.DemoStress2 },
-      { module := `LeanTs.DemoStress3 }, { module := `LeanTs.DemoStress4 },
-      { module := `LeanTs.DemoVerify },
-      { module := `LeanTs.Fuzz },
-      { module := `LeanTodo.Basic }] {}
+    #[{ module := `LeanTsTest.Vectors }, { module := `LeanTsTest.HigherOrder },
+      { module := `LeanTsTest.Io }, { module := `LeanTsTest.Init },
+      { module := `LeanTsTest.Stress }, { module := `LeanTsTest.Stress2 },
+      { module := `LeanTsTest.Stress3 }, { module := `LeanTsTest.Stress4 },
+      { module := `LeanTsTest.Verify },
+      { module := `LeanTsTest.Fuzz },
+      { module := `LeanTsTest.Vectors }] {}
   let prelude ← IO.FS.readFile preludePath
   let decls := LeanTs.collectTransitive env rootNames
   -- Fail loud (non-zero exit, no output written) if any reached extern has no
@@ -88,7 +87,7 @@ def main (args : List String) : IO Unit := do
   let ts := prelude ++ "\n// ================ GENERATED ================\n\n" ++ body
   IO.FS.writeFile outPath ts
   IO.println s!"wrote {decls.size} decls to {outPath}"
-  let progBody ← match LeanTs.renderProgramChecked env `LeanTs.DemoIO.main with
+  let progBody ← match LeanTs.renderProgramChecked env `LeanTsTest.Io.main with
     | .ok s => pure s
     | .error e => throw (IO.userError s!"lean-typescript: {e}")
   let prog := prelude ++ "\n// ================ GENERATED PROGRAM ================\n\n" ++ progBody
@@ -103,12 +102,12 @@ def main (args : List String) : IO Unit := do
         (prelude ++ "\n// ================ GENERATED PROGRAM ================\n\n" ++ body)
       IO.println s!"wrote runnable program to {path}"
     | .error e => throw (IO.userError s!"lean-typescript: {e}")
-  emitProg `LeanTs.DemoIO.stdinEcho "out-stdin.mjs"
-  emitProg `LeanTs.DemoIO.errMain "out-err.mjs"
-  emitProg `LeanTs.DemoIO.panicMain "out-panic.mjs"
-  emitProg `LeanTs.DemoInit.main "out-init.mjs"
-  emitProg `LeanTs.DemoStress.stressMain "out-stress.mjs"
-  emitProg `LeanTs.DemoStress2.stress2Main "out-stress2.mjs"
-  emitProg `LeanTs.DemoStress3.stress3Main "out-stress3.mjs"
-  emitProg `LeanTs.DemoStress4.stress4Main "out-stress4.mjs"
-  emitProg `LeanTs.DemoVerify.verifyMain "out-verify.mjs"
+  emitProg `LeanTsTest.Io.stdinEcho "out-stdin.mjs"
+  emitProg `LeanTsTest.Io.errMain "out-err.mjs"
+  emitProg `LeanTsTest.Io.panicMain "out-panic.mjs"
+  emitProg `LeanTsTest.Init.main "out-init.mjs"
+  emitProg `LeanTsTest.Stress.stressMain "out-stress.mjs"
+  emitProg `LeanTsTest.Stress2.stress2Main "out-stress2.mjs"
+  emitProg `LeanTsTest.Stress3.stress3Main "out-stress3.mjs"
+  emitProg `LeanTsTest.Stress4.stress4Main "out-stress4.mjs"
+  emitProg `LeanTsTest.Verify.verifyMain "out-verify.mjs"

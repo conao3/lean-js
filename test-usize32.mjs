@@ -15,16 +15,16 @@ if (!src64.includes('const WORD_BITS = 64;')) {
 const src32 = src64.replace('const WORD_BITS = 64;', 'const WORD_BITS = 32;');
 
 const load = (src) => {
-  const fn = new Function(src + `\nreturn { LeanTs_Demo_nbits, LeanTs_Demo_uszOfU64, LeanTs_Demo_uszAdd, LeanTs_Demo_uszCompl, LeanTs_Demo_uszToNat };`);
+  const fn = new Function(src + `\nreturn { LeanTsTest_Vectors_nbits, LeanTsTest_Vectors_uszOfU64, LeanTsTest_Vectors_uszAdd, LeanTsTest_Vectors_uszCompl, LeanTsTest_Vectors_uszToNat };`);
   return fn();
 };
 
 const m = load(src32);
-const nbits = m.LeanTs_Demo_nbits;
-const uszOfU64 = m.LeanTs_Demo_uszOfU64;
-const uszAdd = m.LeanTs_Demo_uszAdd;
-const uszCompl = m.LeanTs_Demo_uszCompl;
-const uszToNat = m.LeanTs_Demo_uszToNat;
+const nbits = m.LeanTsTest_Vectors_nbits;
+const uszOfU64 = m.LeanTsTest_Vectors_uszOfU64;
+const uszAdd = m.LeanTsTest_Vectors_uszAdd;
+const uszCompl = m.LeanTsTest_Vectors_uszCompl;
+const uszToNat = m.LeanTsTest_Vectors_uszToNat;
 
 const checks = [
   // getNumBits reports 32 under the 32-bit profile.

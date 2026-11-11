@@ -2,15 +2,15 @@ import { readFileSync } from 'node:fs';
 
 const src = readFileSync(new URL('./out.ts', import.meta.url), 'utf8');
 const exports = [
-  'LeanTs_Fuzz_fNat', 'LeanTs_Fuzz_fInt', 'LeanTs_Fuzz_fU32', 'LeanTs_Fuzz_fU8',
-  'LeanTs_Fuzz_fStr', 'LeanTs_Fuzz_fHash', 'LeanTs_Fuzz_fListNat', 'LeanTs_Fuzz_fArrNat',
+  'LeanTsTest_Fuzz_fNat', 'LeanTsTest_Fuzz_fInt', 'LeanTsTest_Fuzz_fU32', 'LeanTsTest_Fuzz_fU8',
+  'LeanTsTest_Fuzz_fStr', 'LeanTsTest_Fuzz_fHash', 'LeanTsTest_Fuzz_fListNat', 'LeanTsTest_Fuzz_fArrNat',
 ];
 const fn = new Function(src + `\nreturn { ${exports.join(', ')} };`);
 const m = fn();
 
 // List Nat: nil = scalar 0, cons = { tag:1, fields:[head, tail] } (head first).
 const mkList = (arr) => arr.reduceRight((tl, h) => ({ tag: 1, fields: [h, tl] }), 0);
-// Mirror LeanTs.Fuzz.unescape (replace order: \t, \n, then \\).
+// Mirror LeanTsTest.Fuzz.unescape (replace order: \t, \n, then \\).
 const unesc = (s) => s.replace(/\\t/g, '\t').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
 
 const lines = readFileSync(0, 'utf8').split('\n').filter((l) => l.length > 0);
@@ -18,14 +18,14 @@ const out = [];
 for (const line of lines) {
   const p = line.split('\t');
   switch (p[0]) {
-    case 'NAT': out.push(`NAT\t${m.LeanTs_Fuzz_fNat(BigInt(p[1]))}`); break;
-    case 'INT': out.push(`INT\t${m.LeanTs_Fuzz_fInt(BigInt(p[1]), BigInt(p[2]))}`); break;
-    case 'U32': out.push(`U32\t${m.LeanTs_Fuzz_fU32(Number(p[1]) >>> 0, Number(p[2]) >>> 0)}`); break;
-    case 'U8': out.push(`U8\t${m.LeanTs_Fuzz_fU8(Number(p[1]) & 255, Number(p[2]) & 255)}`); break;
-    case 'STR': out.push(`STR\t${m.LeanTs_Fuzz_fStr(unesc(p[1] ?? ''))}`); break;
-    case 'HASH': out.push(`HASH\t${m.LeanTs_Fuzz_fHash(unesc(p[1] ?? ''))}`); break;
-    case 'LNAT': out.push(`LNAT\t${m.LeanTs_Fuzz_fListNat(mkList(p.slice(1).filter((x) => x).map(BigInt)))}`); break;
-    case 'ANAT': out.push(`ANAT\t${m.LeanTs_Fuzz_fArrNat(p.slice(1).filter((x) => x).map(BigInt))}`); break;
+    case 'NAT': out.push(`NAT\t${m.LeanTsTest_Fuzz_fNat(BigInt(p[1]))}`); break;
+    case 'INT': out.push(`INT\t${m.LeanTsTest_Fuzz_fInt(BigInt(p[1]), BigInt(p[2]))}`); break;
+    case 'U32': out.push(`U32\t${m.LeanTsTest_Fuzz_fU32(Number(p[1]) >>> 0, Number(p[2]) >>> 0)}`); break;
+    case 'U8': out.push(`U8\t${m.LeanTsTest_Fuzz_fU8(Number(p[1]) & 255, Number(p[2]) & 255)}`); break;
+    case 'STR': out.push(`STR\t${m.LeanTsTest_Fuzz_fStr(unesc(p[1] ?? ''))}`); break;
+    case 'HASH': out.push(`HASH\t${m.LeanTsTest_Fuzz_fHash(unesc(p[1] ?? ''))}`); break;
+    case 'LNAT': out.push(`LNAT\t${m.LeanTsTest_Fuzz_fListNat(mkList(p.slice(1).filter((x) => x).map(BigInt)))}`); break;
+    case 'ANAT': out.push(`ANAT\t${m.LeanTsTest_Fuzz_fArrNat(p.slice(1).filter((x) => x).map(BigInt))}`); break;
     default: out.push(`ERR\t${line}`); break;
   }
 }

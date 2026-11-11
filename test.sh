@@ -9,12 +9,12 @@ set -euo pipefail
 lake build
 lake exe lean-typescript out.ts prelude.ts out-io.mjs
 # Compile every oracle program natively once; subsequent runs are lake-cached.
-lake build oracle-fns oracle-io oracle-stdin oracle-err oracle-panic oracle-init oracle-stress oracle-stress2 oracle-stress3 oracle-stress4 oracle-verify
+lake build oracle-vectors oracle-io oracle-stdin oracle-err oracle-panic oracle-init oracle-stress oracle-stress2 oracle-stress3 oracle-stress4 oracle-verify
 ORACLE=.lake/build/bin
 
 # Function-level value equivalence: the native oracle prints every function
 # result (same `main` as expected.lean), diffed against node test.mjs.
-"$ORACLE/oracle-fns" > /tmp/lean.out
+"$ORACLE/oracle-vectors" > /tmp/lean.out
 node test.mjs > /tmp/ts.out
 echo "=== ORACLE (native) ==="; cat /tmp/lean.out
 echo "=== TS (node) ===";      cat /tmp/ts.out

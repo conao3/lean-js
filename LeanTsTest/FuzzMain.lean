@@ -1,6 +1,6 @@
-import LeanTs.Fuzz
+import LeanTsTest.Fuzz
 
-open LeanTs.Fuzz
+open LeanTsTest.Fuzz
 
 partial def loop (h : IO.FS.Stream) : IO Unit := do
   let line ← h.getLine

@@ -7,7 +7,7 @@ that the first-order Demo functions never reach: `pap`/`ap`/closure capture
 (`lean_apply`), monomorphized higher-order `List`/`Array` combinators, Monad
 dictionary passing, the `Except` error channel, and `Std.HashMap`. -/
 
-namespace LeanTs.DemoHO
+namespace LeanTsTest.HigherOrder
 
 -- C1 higher-order + lambdas: forces a `pap` closure constant + `ap`/lean_apply.
 def applyTwice (f : Nat → Nat) (x : Nat) : Nat := f (f x)
@@ -76,4 +76,4 @@ def hmDemo : Nat :=
   let m : Std.HashMap Nat Nat := (Std.HashMap.emptyWithCapacity.insert 1 10).insert 2 20
   (m.getD 1 0) + (m.getD 2 0) + m.size
 
-end LeanTs.DemoHO
+end LeanTsTest.HigherOrder

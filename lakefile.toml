@@ -1,10 +1,6 @@
 name = "lean-ts"
 defaultTargets = ["lean-typescript"]
 
-[[require]]
-name = "lean_todo"
-path = "../lean-todo-app/backend"
-
 [[lean_lib]]
 name = "LeanTs"
 
@@ -13,54 +9,53 @@ name = "lean-typescript"
 root = "Main"
 supportInterpreter = true
 
-# Native C-backend oracle programs. `lake build` routes each `root` through
-# leanc, emitting .lake/build/bin/<name>, so the diff-test compares lean-ts TS
-# against the real backend's compiled semantics (TCO, bignum, libm) instead of
-# the `lean --run` interpreter, which overflows the same way naive JS does.
+[[lean_lib]]
+name = "LeanTsTest"
+
 [[lean_exe]]
-name = "oracle-fns"
-root = "expected"
+name = "oracle-vectors"
+root = "LeanTsTest.VectorsMain"
 
 [[lean_exe]]
 name = "oracle-io"
-root = "OracleIo"
+root = "LeanTsTest.IoMain"
 
 [[lean_exe]]
 name = "oracle-stdin"
-root = "OracleStdin"
+root = "LeanTsTest.StdinMain"
 
 [[lean_exe]]
 name = "oracle-err"
-root = "OracleErr"
+root = "LeanTsTest.ErrMain"
 
 [[lean_exe]]
 name = "oracle-panic"
-root = "OraclePanic"
+root = "LeanTsTest.PanicMain"
 
 [[lean_exe]]
 name = "oracle-init"
-root = "OracleInit"
+root = "LeanTsTest.InitMain"
 
 [[lean_exe]]
 name = "oracle-stress"
-root = "OracleStress"
+root = "LeanTsTest.StressMain"
 
 [[lean_exe]]
 name = "oracle-stress2"
-root = "OracleStress2"
-
-[[lean_exe]]
-name = "oracle-fuzz"
-root = "OracleFuzz"
+root = "LeanTsTest.Stress2Main"
 
 [[lean_exe]]
 name = "oracle-stress3"
-root = "OracleStress3"
+root = "LeanTsTest.Stress3Main"
 
 [[lean_exe]]
 name = "oracle-stress4"
-root = "OracleStress4"
+root = "LeanTsTest.Stress4Main"
+
+[[lean_exe]]
+name = "oracle-fuzz"
+root = "LeanTsTest.FuzzMain"
 
 [[lean_exe]]
 name = "oracle-verify"
-root = "OracleVerify"
+root = "LeanTsTest.VerifyMain"

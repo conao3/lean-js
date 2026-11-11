@@ -3,7 +3,7 @@ import Std.Data.HashMap
 /-! Coverage-breadth probes (round 7): exercise stdlib surface the existing
 suite does not reach. Each `*Prog : IO Unit` prints deterministic output. -/
 
-namespace LeanTs.DemoStress2
+namespace LeanTsTest.Stress2
 
 /-! ByteArray + UTF-8 round-trips. -/
 
@@ -46,4 +46,4 @@ def aidxProg : IO Unit := do
 def stress2Main : IO Unit := do
   baProg; gtsProg; aidxProg
 
-end LeanTs.DemoStress2
+end LeanTsTest.Stress2

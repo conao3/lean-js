@@ -5,7 +5,7 @@ import Std.Data.TreeMap
 Each `*Prog : IO Unit` prints deterministic results. Definitions are written
 non-exponentially so the native C-backend oracle runs fast. -/
 
-namespace LeanTs.DemoStress
+namespace LeanTsTest.Stress
 
 /-! ===========================================================================
     P1. Recursive-descent parser / tokenizer over String.
@@ -281,4 +281,4 @@ def comboProg : IO Unit := do
 def stressMain : IO Unit := do
   parserProg; dsProg; strProg; numProg; monadProg; comboProg
 
-end LeanTs.DemoStress
+end LeanTsTest.Stress

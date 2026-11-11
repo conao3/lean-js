@@ -4,7 +4,7 @@ import Std.Data.HashSet
 /-! Round-7 probes: HashMap/HashSet iteration order (bucket layout depends on
 the hash being bit-identical to the native runtime) and Nat/UInt hashing. -/
 
-namespace LeanTs.DemoStress3
+namespace LeanTsTest.Stress3
 
 def hmOrderProg : IO Unit := do
   let m : Std.HashMap String Nat :=
@@ -20,4 +20,4 @@ def hmOrderProg : IO Unit := do
 
 def stress3Main : IO Unit := hmOrderProg
 
-end LeanTs.DemoStress3
+end LeanTsTest.Stress3

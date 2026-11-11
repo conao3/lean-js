@@ -2,7 +2,7 @@
 module (not the executable root) so their IR is persisted in the `.olean` and
 visible to `Lean.IR.findEnvDecl` when the CLI re-imports the modules. -/
 
-namespace LeanTs.Demo
+namespace LeanTsTest.Vectors
 
 def double (n : Nat) : Nat := n + n
 
@@ -208,4 +208,42 @@ def uszAdd (a b : USize) : USize := a + b
 def uszCompl (a : USize) : USize := ~~~a
 def uszToNat (a : USize) : Nat := a.toNat
 
-end LeanTs.Demo
+structure Todo where
+  id : Nat
+  title : String
+  done : Bool
+deriving Repr, DecidableEq, Inhabited
+
+structure TodoList where
+  items : List Todo
+  nextId : Nat
+deriving Repr, Inhabited
+
+inductive Command where
+  | add (title : String)
+  | toggle (id : Nat)
+  | remove (id : Nat)
+deriving Repr
+
+namespace TodoList
+
+def empty : TodoList := { items := [], nextId := 0 }
+
+def add (l : TodoList) (title : String) : TodoList :=
+  { items := { id := l.nextId, title := title, done := false } :: l.items
+    nextId := l.nextId + 1 }
+
+def toggle (l : TodoList) (tid : Nat) : TodoList :=
+  { l with items := l.items.map fun t => if t.id == tid then { t with done := !t.done } else t }
+
+def remove (l : TodoList) (tid : Nat) : TodoList :=
+  { l with items := l.items.filter fun t => t.id != tid }
+
+def step (l : TodoList) : Command → TodoList
+  | .add title => l.add title
+  | .toggle tid => l.toggle tid
+  | .remove tid => l.remove tid
+
+end TodoList
+
+end LeanTsTest.Vectors

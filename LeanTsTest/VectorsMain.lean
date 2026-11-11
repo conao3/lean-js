@@ -1,12 +1,11 @@
-import LeanTodo.Basic
-import LeanTs.Demo
-import LeanTs.DemoHO
+import LeanTsTest.Vectors
+import LeanTsTest.HigherOrder
 import Std.Data.HashMap
 
 set_option maxRecDepth 4000
 
-open LeanTodo
-open LeanTs.DemoHO
+open LeanTsTest.Vectors (Todo TodoList Command)
+open LeanTsTest.HigherOrder
 
 def double (n : Nat) : Nat := n + n
 
@@ -262,34 +261,34 @@ def main : IO Unit := do
   IO.println s!"chainHead 10 = {chainHead 10}"
   IO.println s!"pingN 5 0 = {pingN 5 0}"
   -- Float/Float32 transcendentals via toString (6-digit, absorbs <=1-ULP noise).
-  IO.println s!"ftan = {floatStr (LeanTs.Demo.ftan 1.0)}"
-  IO.println s!"fasin = {floatStr (LeanTs.Demo.fasin 0.5)}"
-  IO.println s!"facos = {floatStr (LeanTs.Demo.facos 0.5)}"
-  IO.println s!"fatan = {floatStr (LeanTs.Demo.fatan 2.0)}"
-  IO.println s!"fatan2 = {floatStr (LeanTs.Demo.fatan2 1.0 2.0)}"
-  IO.println s!"fsinh = {floatStr (LeanTs.Demo.fsinh 1.0)}"
-  IO.println s!"fcosh = {floatStr (LeanTs.Demo.fcosh 1.0)}"
-  IO.println s!"ftanh = {floatStr (LeanTs.Demo.ftanh 1.0)}"
-  IO.println s!"fexp2 = {floatStr (LeanTs.Demo.fexp2 10.0)}"
-  IO.println s!"flog2 = {floatStr (LeanTs.Demo.flog2 1024.0)}"
-  IO.println s!"flog10 = {floatStr (LeanTs.Demo.flog10 1000.0)}"
-  IO.println s!"fcbrt = {floatStr (LeanTs.Demo.fcbrt 27.0)}"
+  IO.println s!"ftan = {floatStr (LeanTsTest.Vectors.ftan 1.0)}"
+  IO.println s!"fasin = {floatStr (LeanTsTest.Vectors.fasin 0.5)}"
+  IO.println s!"facos = {floatStr (LeanTsTest.Vectors.facos 0.5)}"
+  IO.println s!"fatan = {floatStr (LeanTsTest.Vectors.fatan 2.0)}"
+  IO.println s!"fatan2 = {floatStr (LeanTsTest.Vectors.fatan2 1.0 2.0)}"
+  IO.println s!"fsinh = {floatStr (LeanTsTest.Vectors.fsinh 1.0)}"
+  IO.println s!"fcosh = {floatStr (LeanTsTest.Vectors.fcosh 1.0)}"
+  IO.println s!"ftanh = {floatStr (LeanTsTest.Vectors.ftanh 1.0)}"
+  IO.println s!"fexp2 = {floatStr (LeanTsTest.Vectors.fexp2 10.0)}"
+  IO.println s!"flog2 = {floatStr (LeanTsTest.Vectors.flog2 1024.0)}"
+  IO.println s!"flog10 = {floatStr (LeanTsTest.Vectors.flog10 1000.0)}"
+  IO.println s!"fcbrt = {floatStr (LeanTsTest.Vectors.fcbrt 27.0)}"
   -- frExp / ofBits / toBits are EXACT (integer / round-trip).
-  IO.println s!"ftoBits = {LeanTs.Demo.ftoBits 1.0}"
-  IO.println s!"fofBits = {floatStr (LeanTs.Demo.fofBits 4607182418800017408)}"
-  IO.println s!"ffrExpM = {floatStr (LeanTs.Demo.ffrExpM 12.0)}"
-  IO.println s!"ffrExpE = {LeanTs.Demo.ffrExpE 12.0}"
-  IO.println s!"f32tan = {float32Str (LeanTs.Demo.f32tan 1.0)}"
-  IO.println s!"f32exp = {float32Str (LeanTs.Demo.f32exp 2.0)}"
-  IO.println s!"f32log = {float32Str (LeanTs.Demo.f32log 10.0)}"
-  IO.println s!"f32cbrt = {float32Str (LeanTs.Demo.f32cbrt 27.0)}"
-  IO.println s!"f32toBits = {LeanTs.Demo.f32toBits 1.0}"
+  IO.println s!"ftoBits = {LeanTsTest.Vectors.ftoBits 1.0}"
+  IO.println s!"fofBits = {floatStr (LeanTsTest.Vectors.fofBits 4607182418800017408)}"
+  IO.println s!"ffrExpM = {floatStr (LeanTsTest.Vectors.ffrExpM 12.0)}"
+  IO.println s!"ffrExpE = {LeanTsTest.Vectors.ffrExpE 12.0}"
+  IO.println s!"f32tan = {float32Str (LeanTsTest.Vectors.f32tan 1.0)}"
+  IO.println s!"f32exp = {float32Str (LeanTsTest.Vectors.f32exp 2.0)}"
+  IO.println s!"f32log = {float32Str (LeanTsTest.Vectors.f32log 10.0)}"
+  IO.println s!"f32cbrt = {float32Str (LeanTsTest.Vectors.f32cbrt 27.0)}"
+  IO.println s!"f32toBits = {LeanTsTest.Vectors.f32toBits 1.0}"
   -- USize / platform word width on the host (64-bit) profile. The 32-bit profile
   -- (WORD_BITS=32) is asserted node-side in test-usize32.mjs.
-  IO.println s!"nbits = {LeanTs.Demo.nbits}"
-  IO.println s!"uszOfU64 = {LeanTs.Demo.uszToNat (LeanTs.Demo.uszOfU64 4294967296)}"
-  IO.println s!"uszAddWrap = {LeanTs.Demo.uszToNat (LeanTs.Demo.uszAdd 0xFFFFFFFFFFFFFFFF 1)}"
-  IO.println s!"uszCompl = {LeanTs.Demo.uszToNat (LeanTs.Demo.uszCompl 0)}"
+  IO.println s!"nbits = {LeanTsTest.Vectors.nbits}"
+  IO.println s!"uszOfU64 = {LeanTsTest.Vectors.uszToNat (LeanTsTest.Vectors.uszOfU64 4294967296)}"
+  IO.println s!"uszAddWrap = {LeanTsTest.Vectors.uszToNat (LeanTsTest.Vectors.uszAdd 0xFFFFFFFFFFFFFFFF 1)}"
+  IO.println s!"uszCompl = {LeanTsTest.Vectors.uszToNat (LeanTsTest.Vectors.uszCompl 0)}"
   -- TodoList sequence: add, add, add, toggle, remove
   let l0 := TodoList.empty
   let l1 := l0.add "buy milk"

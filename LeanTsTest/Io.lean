@@ -1,12 +1,12 @@
-import LeanTodo.Basic
+import LeanTsTest.Vectors
 
 /-! IO demo program extracted by the lean-ts CLI to prove end-to-end effectful
 programs run under node and match Lean. Kept in a library module so its IR is
 persisted and visible to `findEnvDecl` on re-import. -/
 
-namespace LeanTs.DemoIO
+namespace LeanTsTest.Io
 
-open LeanTodo
+open LeanTsTest.Vectors (Todo TodoList)
 
 def fib : Nat → Nat
   | 0 => 0
@@ -97,4 +97,4 @@ def panicMain : IO Unit := do
   IO.println s!"a[oob]! = {oob}"
   IO.println "after panic"
 
-end LeanTs.DemoIO
+end LeanTsTest.Io

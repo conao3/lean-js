@@ -5,7 +5,7 @@ re-import. The module-init chain must run both before `main`: the `@[init]`
 banners for effect (in reverse-decl order) and the `initialize` ref bound once at
 startup, then read/mutated by `main`. -/
 
-namespace LeanTs.DemoInit
+namespace LeanTsTest.Init
 
 /-- An `@[init]` action: runs before `main`, for effect only.
     `getInitFnNameFor? = none`, `isIOUnitInitFn = true`. -/
@@ -25,4 +25,4 @@ def main : IO Unit := do
   let v1 ← gcounter.get
   IO.println s!"gcounter after set = {v1}"
 
-end LeanTs.DemoInit
+end LeanTsTest.Init
