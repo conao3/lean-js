@@ -44,4 +44,8 @@ theorem twice.proof.refines : twice.obligation.refines := by
   intro x
   exact twice_eq x
 
+theorem addOne.proof.refines : addOne.obligation.refines := by
+  intro x
+  simp [addOne, LeanTsEmbed.calc.spec.succ]
+
 end LeanTsModel.calc

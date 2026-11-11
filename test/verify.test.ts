@@ -21,6 +21,8 @@ function identity(x: number): number {
   return x
 }
 
+model(identity, { refines: (x: number) => x })
+
 describe("checkModel", () => {
   test("the fixture functions agree with their specifications", async () => {
     await checkModel(calc.clamp)
@@ -46,10 +48,8 @@ describe("checkModel", () => {
     expect(String(err)).toMatch(/breaks nonneg/u)
   })
 
-  test("a specification must come from a lean(...) block", () => {
-    expect(() => model(identity, { refines: (x: number) => x })).toThrow(
-      /not a function of a lean/u,
-    )
+  test("a specification must come from a lean(...) block", async () => {
+    await expect(checkModel(identity)).rejects.toThrow(/not a function of a lean/u)
   })
 
   test("a function without model(...) is rejected", async () => {

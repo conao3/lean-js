@@ -27,13 +27,16 @@ import { posixRelative, type ScannedBlock, scanFile, SyncError, tsFiles } from "
 export { SyncError }
 
 const LAKEFILE = `name = "lean-ts-workspace"
-defaultTargets = ["LeanTsModels", "LeanTsEmbed"]
+defaultTargets = ["LeanTsModels", "LeanTsEmbed", "LeanTsCsimp"]
 
 [[lean_lib]]
 name = "LeanTsModels"
 
 [[lean_lib]]
 name = "LeanTsEmbed"
+
+[[lean_lib]]
+name = "LeanTsCsimp"
 `
 
 const DEFAULT_SETTINGS: Readonly<Record<string, string>> = { tagKey: "ctor", option: "null" }
@@ -167,13 +170,16 @@ function outputsOf(blocks: readonly Output[]): Map<string, string> {
   return out
 }
 
+let recordRound = 0
+
 async function recordModels(files: readonly string[]): Promise<RecordedBlock[]> {
+  recordRound++
   const registry = blockRegistry()
   registry.recording = []
   try {
     for (const f of files) {
       try {
-        await import(pathToFileURL(f).href)
+        await import(`${pathToFileURL(f).href}?lean-ts-record=${recordRound}`)
       } catch (e) {
         throw new SyncError(
           `importing ${f} to read its models: ${e instanceof Error ? e.message : String(e)}`,
@@ -441,6 +447,7 @@ export async function syncPackage(
   dir: string,
   cliPath: string | undefined,
   log: Log,
+  csimp: (pkg: Package) => ReadonlyMap<string, string> = () => new Map(),
 ): Promise<Synced> {
   const cli = leanTypescriptCli(cliPath)
   const gv = run(cli, ["--generator-version"])
@@ -454,6 +461,7 @@ export async function syncPackage(
   const ws = join(pkg.root, ".lean-ts", "workspace")
   rmSync(join(ws, "LeanTsEmbed"), { recursive: true, force: true })
   rmSync(join(ws, "LeanTsModels"), { recursive: true, force: true })
+  rmSync(join(ws, "LeanTsCsimp"), { recursive: true, force: true })
   mkdirSync(ws, { recursive: true })
   writeFileSync(join(ws, "lakefile.toml"), LAKEFILE)
   const models = packageModels(pkg)
@@ -469,6 +477,17 @@ export async function syncPackage(
   writeFileSync(
     join(ws, "LeanTsEmbed.lean"),
     pkg.blocks.map((b) => `import ${leanName(b.leanModule)}\n`).join("") || "\n",
+  )
+  const csimps = csimp(pkg)
+  for (const [rel, text] of csimps) {
+    mkdirSync(dirname(join(ws, rel)), { recursive: true })
+    writeFileSync(join(ws, rel), text)
+  }
+  writeFileSync(
+    join(ws, "LeanTsCsimp.lean"),
+    [...csimps.keys()]
+      .map((rel) => `import ${leanName(rel.replace(/\.lean$/u, "").split("/"))}\n`)
+      .join("") || "\n",
   )
   const offsets = new Map<string, { b: Block; headLines: number }>()
   for (const b of pkg.blocks) {
@@ -503,9 +522,12 @@ export async function syncPackage(
     tag_key: b.settings["tagKey"],
     option: b.settings["option"],
     block: { name: b.name, module: b.module, fnv: b.fnv },
+    ts_root: `${posixRelative(dirname(b.outFile), pkg.root)}/`,
   }))
   writeFileSync(join(ws, "batch.json"), JSON.stringify(jobs, null, 2) + "\n")
   const outputs = outputsOf(pkg.blocks)
+  const companions = pkg.blocks.map((b) => b.outFile.replace(/\.ts$/u, ".block.ts"))
+  for (const c of companions) rmSync(c, { force: true })
   const summaries = new Map<string, Summary>()
   if (pkg.blocks.length !== 0) {
     const gen = run(cli, [
@@ -513,6 +535,8 @@ export async function syncPackage(
       "generate",
       "--batch",
       join(ws, "batch.json"),
+      "--import",
+      "LeanTsCsimp",
       "--search-path",
       join(ws, ".lake", "build", "lib", "lean"),
       "--output",
@@ -535,7 +559,10 @@ export async function syncPackage(
       })
   }
   for (const [f, text] of outputs) if (text !== "") writeFileSync(f, text)
-  removeStale(join(pkg.root, "src"), new Set(outputs.keys()))
+  removeStale(
+    join(pkg.root, "src"),
+    new Set([...outputs.keys(), ...companions.filter((c) => existsSync(c))]),
+  )
   const registry: Record<string, Json> = {}
   for (const b of pkg.blocks)
     registry[`${b.module}:${b.name}`] = {

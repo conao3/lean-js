@@ -97,7 +97,7 @@ def DescTable.get (s : Settings) (t : DescTable) (d : Desc) : String × DescTabl
 def docComment (text : String) : String :=
   s!"/** {text.replace "*/" "*\\/"} */\n"
 
-def emitPublicFn (s : Settings) (f : PublicFn) (tbl : DescTable) (lazyIdx : Nat) : String × DescTable × Nat := Id.run do
+def emitPublicFn (s : Settings) (subst : Std.HashMap Name Name) (f : PublicFn) (tbl : DescTable) (lazyIdx : Nat) : String × DescTable × Nat := Id.run do
   let mut tbl := tbl
   let mut sigParams := #[]
   let mut args := #[]
@@ -113,7 +113,7 @@ def emitPublicFn (s : Settings) (f : PublicFn) (tbl : DescTable) (lazyIdx : Nat)
       if live then args := args.push (coerce ty s!"L.toLean({dn}, {nm}, {quoteString nm})")
   let (rn, t) := tbl.get s f.sig.result
   tbl := t
-  let target := funRef f.lean
+  let target := funRef (subst.getD f.lean f.lean)
   let (pre, call, lazyIdx) :=
     if f.decl.params.isEmpty then
       let slot := s!"$c{lazyIdx}"
@@ -247,6 +247,50 @@ def emitDecider (d : IR.Decl) (n : Name) (ident : String) : String :=
   let args := d.params.mapIdx (fun i p => (p, s!"a{i}")) |>.filter (isLive ·.1) |>.map fun (p, a) => coerce p.ty a
   s!"const {ident} = ({", ".intercalate ps.toList}): boolean => {funRef n}({", ".intercalate args.toList}) !== 0\n"
 
+structure TsTarget where
+  path : String
+  exportName : String
+  modes : Array String
+
+def parseTsTarget (s : String) : Option TsTarget :=
+  match s.splitOn "ts:" with
+  | ["", rest] =>
+    match rest.splitOn "#" with
+    | [path, call] =>
+      match call.splitOn "(" with
+      | [exportName] => some { path, exportName, modes := #[] }
+      | [exportName, modes] =>
+        let ms := ((modes.replace ")" "").splitOn ",").filter (!·.isEmpty)
+        some { path, exportName, modes := ms.toArray }
+      | _ => none
+    | _ => none
+  | _ => none
+
+structure Bridge where
+  decl : IR.Decl
+  sig : PublicSig
+  target : TsTarget
+
+def emitBridge (s : Settings) (alias : String) (b : Bridge) (tbl : DescTable) : Except String (String × DescTable) := do
+  let mut tbl := tbl
+  let mut ps := #[]
+  let mut args := #[]
+  let live := b.decl.params.filter isLive
+  let values := b.sig.params.filterMap fun | .value _ d => some d | .world => none
+  unless values.size == live.size do throw s!"{b.decl.name}: the TypeScript function takes {values.size} values but the IR has {live.size} parameters"
+  for h : i in [0:live.size] do
+    let p := live[i]
+    let (dn, t) := tbl.get s values[i]!
+    tbl := t
+    ps := ps.push s!"a{i}: {tsType p.ty}"
+    let v := s!"L.toTs({dn}, a{i})"
+    args := args.push (if b.target.modes[i]? == some "n" then s!"L.tsNumbers({v})" else v)
+  let (rn, t) := tbl.get s b.sig.result
+  tbl := t
+  let call := s!"{alias}.{b.target.exportName}({", ".intercalate args.toList})"
+  let body := coerce b.decl.resultType s!"L.toLean({rn}, {call}, {quoteString b.target.exportName})"
+  return (s!"function {funRef b.decl.name}({", ".intercalate ps.toList}): {tsType b.decl.resultType} \{\n  return {body}\n}\n\n", tbl)
+
 structure PublicOut where
   imports : String
   body : String
@@ -259,9 +303,14 @@ def invariantsOf (td : TypeDef) : Array InvInfo :=
   | .subtype _ inv _ => #[inv]
   | .enum _ => #[]
 
-def renderPublic (env : Environment) (s : Settings) (fns : Array PublicFn) (st : MarshalState) :
+def renderPublic (env : Environment) (s : Settings) (fns : Array PublicFn) (st : MarshalState)
+    (bridges : Array Bridge := #[]) (tsRoot : String := "./") (subst : Std.HashMap Name Name := {}) :
     Except String PublicOut := do
-  let imports := String.join (st.foreignImports.toList.map fun (a, m) => s!"import * as {a} from {quoteString m}\n") ++
+  let mut tsModules : Array String := #[]
+  for b in bridges do
+    unless tsModules.contains b.target.path do tsModules := tsModules.push b.target.path
+  let tsImports := String.join (tsModules.toList.zipIdx.map fun (m, i) => s!"import * as $s{i} from {quoteString (tsRoot ++ m)}\n")
+  let imports := tsImports ++ String.join (st.foreignImports.toList.map fun (a, m) => s!"import * as {a} from {quoteString m}\n") ++
     String.join (st.modelImports.toList.map fun (a, m, e) => s!"import type \{ {e} as {a} } from {quoteString m}\n")
   let mut deciders : Std.HashMap Name String := {}
   let mut deciderSrc := ""
@@ -291,10 +340,16 @@ def renderPublic (env : Environment) (s : Settings) (fns : Array PublicFn) (st :
   let mut lazyIdx := 0
   let mut src := ""
   for f in fns do
-    let (out, t, k) := emitPublicFn s f tbl lazyIdx
+    let (out, t, k) := emitPublicFn s subst f tbl lazyIdx
     src := src ++ out
     tbl := t
     lazyIdx := k
+  let mut bridgeSrc := ""
+  for b in bridges do
+    let i := (tsModules.findIdx? (· == b.target.path)).getD 0
+    let (out, t) ← emitBridge s s!"$s{i}" b tbl
+    bridgeSrc := bridgeSrc ++ out
+    tbl := t
   let (nsSrc, merged) := emitNamespaces fns schemas
   let mut schemaSrc := ""
   for td in st.types do
@@ -302,7 +357,7 @@ def renderPublic (env : Environment) (s : Settings) (fns : Array PublicFn) (st :
       schemaSrc := schemaSrc ++ s!"export const {td.ident}: {schemaType td.ident} = {schemaValue td.ident}\n"
   let part (x : String) := if x.isEmpty then "" else x ++ "\n"
   let fnDescs := String.join (tbl.defs.toList.map (· ++ "\n"))
-  let body := part aliases ++ part deciderSrc ++ part descs ++ part schemaSrc ++ part fnDescs ++ src ++ nsSrc
+  let body := part aliases ++ part deciderSrc ++ part descs ++ part schemaSrc ++ part fnDescs ++ bridgeSrc ++ src ++ nsSrc
   return { imports, body, types := st.types.filter (·.exported) }
 
 end LeanTs

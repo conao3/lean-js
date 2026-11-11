@@ -33,7 +33,8 @@ proved src/calc.ts:firstOr refines
 sorry src/calc.ts:sumTo refines
 missing src/calc.ts:sumTo returnsNat
 proved src/calc.ts:sumAbs nonneg
-axioms src/calc.ts:twice refines"
+axioms src/calc.ts:twice refines
+proved src/calc.ts:addOne refines"
 
 scene base "$root/test/verify/app"
 rm -rf "$out/base/node_modules/lean-ts" "$out/base/src/_lean" "$out/base/.lean-ts" "$out/base/lean-ts.lock"
@@ -52,6 +53,19 @@ set -e
 rows="$(cd "$out/base" && "${lts[@]}" status --package .)"
 expect_rows "$rows" "$base_rows" "status"
 
+grep -q '$s0.addOne(L.tsNumbers(' "$out/base/src/_lean/calc__spec.ts" || fail "the proved refines of addOne did not make succ call the TypeScript function"
+grep -q '$s0.clamp(' "$out/base/src/_lean/calc__spec.ts" && fail "clamp has a requires and must not replace clampSpec"
+got="$(cd "$out/base" && node --input-type=module -e 'await import("./src/calc.ts"); const s = await import("./src/_lean/calc.ts"); console.log(String(s.succTwice(1)), String(s.succ(41n)))')"
+[[ "$got" == "3 42" ]] || fail "succTwice through the TypeScript addOne printed: $got"
+got="$(cd "$out/base" && node --input-type=module -e 'const s = await import("./src/_lean/calc.ts"); console.log(String(s.succTwice(1)))')"
+[[ "$got" == "3" ]] || fail "importing the generated module before the TypeScript module printed: $got"
+
+scene csimp-off "$out/base"
+sed -i 's/^  simp \[addOne, LeanTsEmbed.calc.spec.succ\]$/  sorry/' "$out/csimp-off/lean/Proofs/Calc.lean"
+(cd "$out/csimp-off" && "${lts[@]}" check --package . --lean-typescript "$cli" >/dev/null 2>&1)
+grep -q '$s0.addOne(' "$out/csimp-off/src/_lean/calc__spec.ts" && fail "a sorry refines still replaced the specification"
+grep -q '"sorry"' "$out/csimp-off/lean-ts.lock" || fail "the lock of csimp-off has no sorry"
+
 scene stale "$out/base"
 sed -i 's/  if (x > hi) return hi/  if (x >= hi) return hi/' "$out/stale/src/calc.ts"
 sed -i 's/^export function clamp/\/\/ moved down by a line\nexport function clamp/' "$out/stale/src/calc.ts"
@@ -66,7 +80,8 @@ proved src/calc.ts:firstOr refines
 sorry src/calc.ts:sumTo refines
 missing src/calc.ts:sumTo returnsNat
 proved src/calc.ts:sumAbs nonneg
-axioms src/calc.ts:twice refines" "status after a change"
+axioms src/calc.ts:twice refines
+proved src/calc.ts:addOne refines" "status after a change"
 
 scene moved "$out/base"
 sed -i 's/^export function clamp/\/\/ a comment above the function\nexport function clamp/' "$out/moved/src/calc.ts"
@@ -90,7 +105,8 @@ mismatch src/calc.ts:firstOr refines
 sorry src/calc.ts:sumTo refines
 failed src/calc.ts:sumTo returnsNat
 proved src/calc.ts:sumAbs nonneg
-axioms src/calc.ts:twice refines" "check with a wrong statement and a failing proof"
+axioms src/calc.ts:twice refines
+proved src/calc.ts:addOne refines" "check with a wrong statement and a failing proof"
 
 scene outside "$out/base"
 cat >>"$out/outside/src/calc.ts" <<'EOF'

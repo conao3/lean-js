@@ -2,7 +2,7 @@
 import { spawnSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { leanTypescriptCli, readPackage, statusPackage, SyncError, syncPackage } from "./sync.ts"
-import { checkPackage, statusModels } from "./verify/check.ts"
+import { checkPackage, csimpFiles, statusModels } from "./verify/check.ts"
 
 const USAGE = `usage: lean-ts [--version] <command> [parameters]
 
@@ -88,7 +88,12 @@ async function main(argv: readonly string[]): Promise<number> {
   }
   if (command === "sync") {
     const args = parseArgs(rest, ["--package", "--lean-typescript"])
-    await syncPackage(required(args, "--package"), args.single.get("--lean-typescript"), log)
+    await syncPackage(
+      required(args, "--package"),
+      args.single.get("--lean-typescript"),
+      log,
+      csimpFiles,
+    )
     return 0
   }
   if (command === "check") {

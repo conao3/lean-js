@@ -19,6 +19,10 @@ def sumTo (n : Nat) : Nat := n * (n + 1) / 2
 def nonneg (_xs : List Int) (r : Int) : Bool := 0 ≤ r
 
 def double (x : Int) : Int := 2 * x
+
+def succ (x : Int) : Int := x + 1
+
+def succTwice (x : Int) : Int := succ (succ x)
 `,
 )
 
@@ -59,3 +63,9 @@ model(sumAbs, { ensures: { nonneg: spec.nonneg } })
 export const twice = (x: number): number => x + x
 
 model(twice, { refines: spec.double })
+
+export function addOne(x: number): number {
+  return x + 1
+}
+
+model(addOne, { refines: spec.succ })

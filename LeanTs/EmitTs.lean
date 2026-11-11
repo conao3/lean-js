@@ -1,4 +1,5 @@
 import Lean.Compiler.IR
+import Lean.Compiler.CSimpAttr
 
 /-! # lean-ts: a Lean IR -> TypeScript backend, mirroring EmitC.
 
@@ -143,6 +144,30 @@ entry's literal string for backend `c`/`all`), or `none` for a non-extern decl
 or an extern with no usable C entry (adhoc/inline/opaque). -/
 def externSymbol (env : Environment) (c : Name) : Option String :=
   getExternNameFor env `c c
+
+def tsExternTarget (env : Environment) (c : Name) : Option String :=
+  match externSymbol env c with
+  | some s => if s.startsWith "ts:" then some s else none
+  | none => none
+
+def csimpToTs (env : Environment) : Std.HashMap Name Name :=
+  (Compiler.CSimp.ext.getState env).map.toList.foldl (init := {}) fun acc (k, e) =>
+    if (tsExternTarget env e.toDeclName).isSome then acc.insert k e.toDeclName else acc
+
+def substExpr (s : Std.HashMap Name Name) : IR.Expr → IR.Expr
+  | .fap c ys => .fap (s.getD c c) ys
+  | .pap c ys => .pap (s.getD c c) ys
+  | e => e
+
+partial def substBody (s : Std.HashMap Name Name) : FnBody → FnBody
+  | .vdecl x ty e b => .vdecl x ty (substExpr s e) (substBody s b)
+  | .jdecl j xs v b => .jdecl j xs (substBody s v) (substBody s b)
+  | .case tid x xty alts => .case tid x xty (alts.map (·.modifyBody (substBody s)))
+  | other => if other.isTerminal then other else other.setBody (substBody s other.body)
+
+def substDecl (s : Std.HashMap Name Name) : Decl → Decl
+  | .fdecl f xs ty b info => if s.isEmpty then .fdecl f xs ty b info else .fdecl f xs ty (substBody s b) info
+  | d => d
 
 /-- Escape a Lean string literal into a JS double-quoted string,
     mirroring `EmitC.quoteString` (\n \r \t \\ \" and control chars). -/
@@ -1062,7 +1087,7 @@ partial def collectBodyDeps (b : IR.FnBody) (acc : Array Name) : Array Name := I
     callee-before-caller order. `none` from `findEnvDecl` (builtins like
     Nat.rec) is the boundary; externs are included (their names map to the
     runtime). -/
-partial def collectTransitive (env : Environment) (roots : Array Name) : Array Decl := Id.run do
+partial def collectTransitive (env : Environment) (roots : Array Name) (subst : Std.HashMap Name Name := {}) : Array Decl := Id.run do
   let mut visited : Std.HashSet Name := {}
   let mut order : Array Name := #[]
   let mut stack : Array Name := roots
@@ -1072,7 +1097,7 @@ partial def collectTransitive (env : Environment) (roots : Array Name) : Array D
     | some n =>
       stack := stack.pop
       if visited.contains n then continue
-      match findEnvDecl env n with
+      match (findEnvDecl env n).map (substDecl subst) with
       | none => visited := visited.insert n
       | some d =>
         visited := visited.insert n
@@ -1085,7 +1110,7 @@ partial def collectTransitive (env : Environment) (roots : Array Name) : Array D
   -- order is roots-first (caller-before-callee); reverse for callee-first.
   let mut decls : Array Decl := #[]
   for n in order.reverse do
-    match findEnvDecl env n with
+    match (findEnvDecl env n).map (substDecl subst) with
     | some d => decls := decls.push d
     | none   => pure ()
   return decls
@@ -1181,6 +1206,8 @@ structure Rendered where
   body : String
   functions : Nat
   externs : Array String
+  tsExterns : Array Decl := #[]
+  subst : Std.HashMap Name Name := {}
 
 /-- Render the functions reachable from `roots` (and, for a program, from `main`
     and its module's init decls) as a module body. The roots are exported when `exportRoots`. Fails
@@ -1191,7 +1218,10 @@ def renderModule (env : Environment) (roots : Array Name) (main? : Option Name) 
   let (initRoots, initGlobals, initNames) := match main? with
     | some m => collectInitDecls env m
     | none => (#[], {}, #[])
-  let decls := collectTransitive env (roots ++ main?.toArray ++ initRoots)
+  let subst := csimpToTs env
+  let roots := roots.map fun r => subst.getD r r
+  let decls := collectTransitive env (roots ++ main?.toArray ++ initRoots) subst
+  let mut tsExterns : Array Decl := #[]
   let mut errors : Array String := #[]
   for r in roots ++ main?.toArray do
     if (findEnvDecl env r).isNone then errors := errors.push s!"{r}: no IR (not a compiled definition)"
@@ -1207,6 +1237,11 @@ def renderModule (env : Environment) (roots : Array Name) (main? : Option Name) 
       fdecls := fdecls.insert f
       arityMap := arityMap.insert f (xs.filter isLive).size
     | .extern f .. =>
+      if (tsExternTarget env f).isSome then
+        fdecls := fdecls.insert f
+        arityMap := arityMap.insert f (d.params.filter isLive).size
+        tsExterns := tsExterns.push d
+        continue
       match knownFap f, externSymbol env f with
       | some (.call s), _ => required := required.insert s
       | some (.lit _), _ => pure ()
@@ -1256,6 +1291,6 @@ def renderModule (env : Environment) (roots : Array Name) (main? : Option Name) 
   for p in entry do
     body := body ++ p.src
   let externs := (required.fold (fun s x => s.insert x) st.syms).toArray.qsort (· < ·)
-  return .ok { body, functions, externs }
+  return .ok { body, functions, externs, tsExterns, subst }
 
 end LeanTs

@@ -1,6 +1,20 @@
 {
+  "src/calc.ts:addOne": {
+    "spec_hash": "0db8ad878c43b47fa26aa4e354a825cdb59d3b442536c6117c93b5d7669b7376",
+    "lean": "LeanTsModel.calc.addOne",
+    "obligations": {
+      "refines": "proved"
+    },
+    "csimp": {
+      "spec": "LeanTsEmbed.calc.spec.succ",
+      "module": "LeanTsEmbed.«calc».«spec»",
+      "modes": [
+        "n"
+      ]
+    }
+  },
   "src/calc.ts:clamp": {
-    "spec_hash": "6e1419b751b3b5afa3f2d0e1e0800c83c2b87ca8addebfaaec803253641bcf83",
+    "spec_hash": "381edef95d902e61eee861551080112906e87e843488e2f2b3b2d7089976776e",
     "lean": "LeanTsModel.calc.clamp",
     "obligations": {
       "refines": "proved",
@@ -8,21 +22,29 @@
     }
   },
   "src/calc.ts:firstOr": {
-    "spec_hash": "5e5173f10edd081ab38aa4fe764f7cf19651ab135d3a691371933264527e9691",
+    "spec_hash": "8ad2381d3628264ed535427cfe9cdb181235110b7676278ef241867728c159a9",
     "lean": "LeanTsModel.calc.firstOr",
     "obligations": {
       "refines": "proved"
+    },
+    "csimp": {
+      "spec": "LeanTsEmbed.calc.spec.firstOr",
+      "module": "LeanTsEmbed.«calc».«spec»",
+      "modes": [
+        "n",
+        "n"
+      ]
     }
   },
   "src/calc.ts:sumAbs": {
-    "spec_hash": "50020333fbe6a724bd749945dac43bdeae38e1bb98de043c2d238b4f2d2d58ae",
+    "spec_hash": "9de37b4c325c7d87614c5a1d7dd4ec945e8960910332e0793f8303f767bcb505",
     "lean": "LeanTsModel.calc.sumAbs",
     "obligations": {
       "nonneg": "proved"
     }
   },
   "src/calc.ts:sumTo": {
-    "spec_hash": "03ad9cbc688e77a840f64c1de7f140d6ad04367a4ee65db2cf388b8d5be5f553",
+    "spec_hash": "2bbccc5930238660ff294cc1ca2bb4056a42d26e6727b5da6ddcde1eaa912e16",
     "lean": "LeanTsModel.calc.sumTo",
     "obligations": {
       "refines": "sorry",
@@ -30,7 +52,7 @@
     }
   },
   "src/calc.ts:twice": {
-    "spec_hash": "58782be2696ae87f33ca0f9d7f461560713ca19951a141f30249a49cb5b88ff2",
+    "spec_hash": "cb7119a9e45693611c7a3387ae259a3027134c008a22f741d80b46fb0e6931fc",
     "lean": "LeanTsModel.calc.twice",
     "obligations": {
       "refines": "axioms"

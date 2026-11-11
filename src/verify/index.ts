@@ -61,11 +61,7 @@ function checkSpec(fnName: string, label: string, s: unknown): void {
 }
 
 export function model<F extends Spec>(fn: F, options: ModelOptions): F {
-  const name = fn.name
-  if (options.refines !== undefined) checkSpec(name, "refines", options.refines)
-  if (options.requires !== undefined) checkSpec(name, "requires", options.requires)
-  for (const [label, s] of Object.entries(options.ensures ?? {})) checkSpec(name, label, s)
-  modelRegistry().set(fn, { fn, name, options, file: callerFile() })
+  modelRegistry().set(fn, { fn, name: fn.name, options, file: callerFile() })
   return fn
 }
 
@@ -216,6 +212,9 @@ export async function checkModel(fn: Spec, options: CheckOptions = {}): Promise<
   const arbs = sig.params.map((p) => arbOf(fc, p.type, p.nat, descs, options))
   const { refines, requires, ensures } = entry.options
   const name = entry.name
+  if (refines !== undefined) checkSpec(name, "refines", refines)
+  if (requires !== undefined) checkSpec(name, "requires", requires)
+  for (const [label, s] of Object.entries(ensures ?? {})) checkSpec(name, label, s)
   const property = fc.property(fc.tuple(...arbs), (args: unknown[]) => {
     if (requires !== undefined) fc.pre(Reflect.apply(requires, undefined, args) === true)
     let result: unknown

@@ -6,7 +6,7 @@ def version : String := "0.1.0"
 
 /-- Version of the generated code. Raise it when the emitted code changes, together with
     `GENERATOR_VERSION` of `src/embed.ts`; `lean-ts sync` checks it and puts it into its keys. -/
-def generatorVersion : String := "5"
+def generatorVersion : String := "6"
 
 def usage : String := "usage: lean-typescript [--version] [--generator-version] <command> <subcommand> [parameters]
 
@@ -30,7 +30,7 @@ lean-typescript module generate
   --batch <file>              JSON array of jobs {\"module\", \"output_file\", \"roots\"?, \"namespace\"?,
                               \"type_modules\"?: [{\"namespace\", \"module\"}],
                               \"model_modules\"?: [{\"namespace\", \"key\", \"module\"?, \"export\"?}],
-                              \"tag_key\"?, \"option\"?,
+                              \"tag_key\"?, \"option\"?, \"ts_root\"?,
                               \"block\"?: {\"name\", \"module\", \"fnv\"}}
                               run against one environment importing all their modules
   --import <Name> ...         More modules to import (their @[csimp] lemmas apply)
@@ -38,6 +38,7 @@ lean-typescript module generate
   --output-file <path>        Write the module here (default: standard output)
   --runtime-path <specifier>  Module the generated code imports the runtime from
                               (default: lean-ts/runtime)
+  --ts-root <specifier>       Prefix of the TypeScript modules of `ts:` externs (default: ./)
   --internal-only             Export the internal functions instead of the public wrappers
   --output json|text          Format of the summary
 
@@ -76,6 +77,7 @@ structure Opts where
   outputDir : Option System.FilePath := none
   modules : Array Name := #[]
   obligations : Option System.FilePath := none
+  tsRoot : String := "./"
 
 def parseAssoc (s : String) : Except String (Name × String) :=
   match s.splitOn "=" with
@@ -99,6 +101,7 @@ partial def parseOpts (args : List String) (o : Opts) : Except String Opts :=
   | "--lake-dir" :: v :: rest => parseOpts rest { o with lakeDir := some v }
   | "--output-dir" :: v :: rest => parseOpts rest { o with outputDir := some v }
   | "--obligations" :: v :: rest => parseOpts rest { o with obligations := some v }
+  | "--ts-root" :: v :: rest => parseOpts rest { o with tsRoot := v }
   | "--output" :: v :: rest =>
     if v == "json" || v == "text" then parseOpts rest { o with output := v }
     else .error s!"--output must be json or text: {v}"
@@ -145,6 +148,7 @@ structure Job where
   modelModules : Array ModelRef := #[]
   settings : Settings := {}
   block? : Option BlockInfo := none
+  tsRoot : String := "./"
 
 /-- The definitions of `mod` exported by default: public, written in the source (with a declaration
     range), not instances or their auxiliary definitions, with IR. -/
@@ -154,6 +158,7 @@ def defaultRoots (env : Environment) (mod : Name) : Array Name := Id.run do
   for c in env.header.moduleData[idx.toNat]!.constNames do
     if isPrivateName c || c.isInternalDetail || isAuxRecursor env c then continue
     if Meta.isInstanceCore env c || Meta.isInstanceCore env c.getPrefix then continue
+    if (tsExternTarget env c).isSome then continue
     if (declRangeExt.find? (level := .exported) env c).isNone then continue
     if (IR.findEnvDecl env c).isSome then out := out.push c
   return out
@@ -204,6 +209,20 @@ def collect (env : Environment) (cfg : MarshalCfg) (types roots : Array Name) :
   let ((r, _), st) ← ((((collectPublics types roots).run {}).run cfg).run').toIO ctx { env }
   return (r, st.env)
 
+def bridges (env : Environment) (cfg : MarshalCfg) (st : MarshalState) (decls : Array IR.Decl) :
+    IO (Except String (Array Bridge × MarshalState)) := do
+  let ctx : Core.Context := { fileName := "<lean-typescript>", fileMap := default, maxHeartbeats := 0 }
+  let act : MarshalM (Array Bridge) := decls.mapM fun d => do
+    let sym := (tsExternTarget (← getEnv) d.name).getD ""
+    let some target := parseTsTarget sym | throwError "{d.name}: malformed TypeScript extern {sym}"
+    let sig ← publicSig d.name d.params
+    if sig.io then throwError "{d.name}: a TypeScript extern cannot be an IO action"
+    return { decl := d, sig, target }
+  try
+    let ((r, st'), _) ← (((act.run st).run cfg).run').toIO ctx { env }
+    return .ok (r, st')
+  catch e => return .error (toString e)
+
 def runJob (env : Environment) (o : Opts) (job : Job) : IO (Json × UInt32) := do
   let failed (code : UInt32) (msg : String) : IO (Json × UInt32) :=
     return (Json.mkObj [("module", toString job.module), ("error", msg), ("code", code.toNat)], code)
@@ -223,17 +242,26 @@ def runJob (env : Environment) (o : Opts) (job : Job) : IO (Json × UInt32) := d
     let missing := r.externs.filter (!runtimeExterns.contains ·)
     unless missing.isEmpty do
       return ← failed 254 s!"externs not in the runtime: {", ".intercalate missing.toList}"
-    let pub ← match renderPublic env job.settings col.publics col.state with
+    let (bs, state) ← match ← bridges env cfg col.state r.tsExterns with
+      | .ok v => pure v
+      | .error e => return ← failed 254 e
+    let pub ← match renderPublic env job.settings col.publics state bs job.tsRoot r.subst with
       | .ok p => pure p
       | .error e => return ← failed 254 e
     let body := if pub.body.isEmpty then r.body else r.body ++ "\n" ++ pub.body
     let reg := job.block?.map (registration · job.settings) |>.getD ""
-    let src := header o job.module pub.imports (reg ++ body) ++ reg ++ body
+    let companion := if bs.isEmpty || job.block?.isNone then none else job.outputFile.map (·.withExtension "block.ts")
+    let (inline, imports) := match companion with
+      | some c => ("", s!"import \"./{c.fileName.getD ""}\"\n" ++ pub.imports)
+      | none => (reg, pub.imports)
+    let src := header o job.module imports (inline ++ body) ++ inline ++ body
     match job.outputFile with
     | none => IO.print src
     | some p =>
       if let some dir := p.parent then IO.FS.createDirAll dir
       IO.FS.writeFile p src
+    if let some c := companion then
+      IO.FS.writeFile c s!"// Generated by lean-typescript (generator {generatorVersion}) from {job.module}. Do not edit.\nimport * as L from \"{o.runtimePath}\"\n\n{reg}"
     let publicJson := col.publics.map fun f => Json.mkObj [("lean", toString f.lean), ("typescript", f.dotted)]
     let typesJson := pub.types.map fun t => Json.mkObj [("lean", toString t.lean), ("typescript", t.ident)]
     let skippedJson := col.skipped.map fun s => Json.mkObj [("name", toString s.name), ("reason", s.reason)]
@@ -287,7 +315,8 @@ def parseJobs (defaults : Settings) (j : Json) : Except String (Array Job) := do
       | .error _ => pure none
       | .ok b => pure (some { name := ← b.getObjValAs? String "name", module := ← b.getObjValAs? String "module",
                               fnv := ← b.getObjValAs? String "fnv" })
-    return { module, outputFile, roots, namespace?, typeModules, modelModules, settings, block? }
+    let tsRoot := (e.getObjValAs? String "ts_root").toOption.getD "./"
+    return { module, outputFile, roots, namespace?, typeModules, modelModules, settings, block?, tsRoot }
 
 def moduleGenerate (o : Opts) : IO UInt32 := do
   if let .error e := o.settings.check then return ← fail 254 s!"--tag-key/--option: {e}"
@@ -303,7 +332,7 @@ def moduleGenerate (o : Opts) : IO UInt32 := do
   let job : Job := { module := mod, roots := o.roots, main? := o.main?, namespace? := o.namespace?,
                      outputFile := o.outputFile, typeModules := o.typeModules,
                      modelModules := o.modelModules.map fun (ns, key) => { ns, key },
-                     settings := o.settings }
+                     settings := o.settings, tsRoot := o.tsRoot }
   let (out, code) ← runJobs o #[job]
   for j in out do printSummary o o.outputFile.isNone j
   return code

@@ -59,3 +59,18 @@ export function leanNameOf(fn: unknown): string | undefined {
   const n: unknown = typeof fn === "function" ? Reflect.get(fn, "__leanName") : undefined
   return typeof n === "string" ? n : undefined
 }
+
+export type Numbers<T> = T extends bigint
+  ? number
+  : T extends readonly [infer A, infer B]
+    ? [Numbers<A>, Numbers<B>]
+    : T extends readonly (infer U)[]
+      ? Numbers<U>[]
+      : T
+
+export function tsNumbers<T>(v: T): Numbers<T>
+export function tsNumbers(v: unknown): unknown {
+  if (typeof v === "bigint") return Number(v)
+  if (Array.isArray(v)) return v.map((x: unknown) => tsNumbers(x))
+  return v
+}

@@ -18,6 +18,7 @@ import {
   type Program,
   Visitor,
 } from "oxc-parser"
+import { canonicalJson } from "../key.ts"
 import { resolve as resolveDesc, type TypeDesc } from "../runtime/marshal.ts"
 import { posixRelative, SyncError, tsFiles } from "../scan.ts"
 import {
@@ -119,10 +120,17 @@ export interface Row {
   readonly status: Status
 }
 
+interface Csimp {
+  readonly spec: string
+  readonly module: string
+  readonly modes: readonly string[]
+}
+
 interface LockEntry {
   readonly spec_hash: string
   readonly lean: string
   readonly obligations: Readonly<Record<string, Status>>
+  readonly csimp?: Csimp
 }
 
 type Lock = Readonly<Record<string, LockEntry>>
@@ -341,6 +349,7 @@ async function loadDescs(pkg: Package, sources: readonly Source[]): Promise<Desc
   const out: Descs = new Map()
   for (const s of sources) {
     if (s.models.length === 0) continue
+    await import(pathToFileURL(s.file).href)
     for (const i of s.imports.values()) {
       const b = blockOf(pkg, i.from)
       if (b === undefined) continue
@@ -566,7 +575,23 @@ function readLock(root: string): Lock {
         throw new SyncError(`${f}: the entry ${k} has an unknown status for ${l}`, 254)
       obls[l] = s
     }
-    out[k] = { spec_hash: v["spec_hash"], lean: v["lean"], obligations: obls }
+    const c = v["csimp"]
+    const csimp =
+      isRecord(c) &&
+      typeof c["spec"] === "string" &&
+      typeof c["module"] === "string" &&
+      Array.isArray(c["modes"]) &&
+      c["modes"].every((x: unknown) => typeof x === "string")
+        ? { spec: c["spec"], module: c["module"], modes: c["modes"].map(String) }
+        : undefined
+    if (c !== undefined && csimp === undefined)
+      throw new SyncError(`${f}: the csimp of ${k} is malformed`, 254)
+    out[k] = {
+      spec_hash: v["spec_hash"],
+      lean: v["lean"],
+      obligations: obls,
+      ...(csimp === undefined ? {} : { csimp }),
+    }
   }
   return out
 }
@@ -586,7 +611,9 @@ export async function checkPackage(
   log: Log,
 ): Promise<Checked> {
   const cli = leanTypescriptCli(cliPath)
-  const { pkg, summaries } = await syncPackage(dir, cliPath, log)
+  const first = await syncPackage(dir, cliPath, log, csimpFiles)
+  const { pkg, summaries } = first
+  const before = canonicalJson(Object.fromEntries(csimpFiles(pkg)))
   const ws = join(pkg.root, ".lean-ts", "workspace")
   const sources = readSources(pkg.root).filter((s) => s.models.length !== 0)
   const descs = await loadDescs(pkg, sources)
@@ -606,6 +633,7 @@ export async function checkPackage(
   const refs: { m: ModelCall; label: string; lean: string }[] = []
   const modelModules: string[] = []
   const hashes = new Map<string, string>()
+  const candidates = new Map<string, Csimp>()
   for (const src of sources) {
     const types = typeResolver(pkg, src, summaries, descs)
     const fns = src.models.map((m) => new Fn(m.fn, m.fnNode, src, types))
@@ -628,9 +656,15 @@ export async function checkPackage(
     src.models.forEach((m, k) => {
       const fn = fns[k]
       if (fn === undefined) return
+      const modes = fn.params.map((p) => modeOf(p.type))
+      const target = `ts:${m.module}#${m.fn}(${modes.map((x) => (x === "mixed" ? "_" : x)).join(",")})`
       body.push(
-        `/-- \`${m.module}\` ${m.fn}, translated from TypeScript. -/\n${defs.get(m.fn) ?? ""}`,
+        `/-- \`${m.module}\` ${m.fn}, translated from TypeScript. -/\n@[extern ${JSON.stringify(target)}]\n${defs.get(m.fn) ?? ""}`,
       )
+      if (m.refines !== undefined && m.requires === undefined && !modes.includes("mixed")) {
+        const n = specName(pkg, src, m.refines, summaries)
+        candidates.set(qualified(m), { spec: n.lean, module: n.module, modes })
+      }
       const o = obligations(m, fn, pkg, src, summaries)
       for (const i of o.imports) imports.add(i)
       for (const [label, prop] of o.props) {
@@ -707,7 +741,7 @@ export async function checkPackage(
   }
   const lock: Record<
     string,
-    { spec_hash: string; lean: string; obligations: Record<string, Status> }
+    { spec_hash: string; lean: string; obligations: Record<string, Status>; csimp?: Csimp }
   > = {}
   const rows: Row[] = []
   refs.forEach((ref, k) => {
@@ -729,12 +763,60 @@ export async function checkPackage(
     const q = qualified(ref.m)
     const entry = lock[q] ?? { spec_hash: hashes.get(q) ?? "", lean: ref.lean, obligations: {} }
     entry.obligations[ref.label] = status
+    const cand = candidates.get(q)
+    if (ref.label === "refines" && status === "proved" && cand !== undefined) entry.csimp = cand
     lock[q] = entry
     rows.push({ fn: q, label: ref.label, status })
   })
   const sorted = Object.fromEntries(Object.entries(lock).toSorted(([a], [b]) => a.localeCompare(b)))
   writeFileSync(lockFile(pkg.root), JSON.stringify(sorted, null, 2) + "\n")
+  if (canonicalJson(Object.fromEntries(csimpFiles(pkg))) !== before)
+    await syncPackage(dir, cliPath, log, csimpFiles)
   return { rows, lock: sorted }
+}
+
+function modeOf(t: TsType): "n" | "_" | "mixed" {
+  const kinds = new Set<string>()
+  const walk = (x: TsType): void => {
+    if (x.k === "num" || x.k === "big") kinds.add(x.k)
+    else if (x.k === "list" || x.k === "opt") walk(x.item)
+    else if (x.k === "tuple") x.items.forEach(walk)
+    else if (x.k === "struct") x.fields.forEach((f) => walk(f.type))
+    else if (x.k === "ind") x.variants.forEach((v) => v.fields.forEach((f) => walk(f.type)))
+  }
+  walk(t)
+  if (kinds.has("num") && kinds.has("big")) return "mixed"
+  return kinds.has("num") ? "n" : "_"
+}
+
+export function csimpFiles(pkg: Package): Map<string, string> {
+  const lock = readLock(pkg.root)
+  const out = new Map<string, string>()
+  for (const src of readSources(pkg.root)) {
+    const parts = ["LeanTsCsimp", ...moduleParts(src.module)]
+    const ns = leanName(parts)
+    const imports = new Set<string>()
+    const defs: string[] = []
+    for (const m of src.models) {
+      const e = lock[qualified(m)]
+      if (e?.csimp === undefined || e.obligations["refines"] !== "proved") continue
+      if (e.spec_hash !== specHash(pkg, src, m)) continue
+      imports.add(e.csimp.module)
+      const target = `ts:${m.module}#${m.fn}(${e.csimp.modes.join(",")})`
+      defs.push(
+        `@[extern ${JSON.stringify(target)}]\ndef ${ident(m.fn)} := @_root_.${e.csimp.spec}\n\n@[csimp] theorem ${ident(m.fn)}.csimp : @_root_.${e.csimp.spec} = @${ident(m.fn)} := rfl`,
+      )
+    }
+    if (defs.length === 0) continue
+    out.set(
+      `${parts.join("/")}.lean`,
+      [...imports]
+        .toSorted()
+        .map((i) => `import ${i}\n`)
+        .join("") + `\nnamespace ${ns}\n\n${defs.join("\n\n")}\n\nend ${ns}\n`,
+    )
+  }
+  return out
 }
 
 export function statusModels(pkg: Package): Row[] {

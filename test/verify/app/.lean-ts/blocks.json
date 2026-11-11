@@ -1,7 +1,7 @@
 {
   "src/calc.ts:spec": {
-    "fnv": "47fa13e76986fd4e",
+    "fnv": "9886c87b2337a5ee",
     "output": "src/_lean/calc__spec.ts",
-    "sha256": "02edf82aa624a5210e9389c9bf04f6cd4d66490a87e6144ffe6a8357b32a7c37"
+    "sha256": "7159061e9f70cdce6c55f1f8ca469957d006b1a09c8c25267acb5681769b7a33"
   }
 }
