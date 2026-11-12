@@ -71,6 +71,10 @@ def main : IO Unit := do
   let h ← IO.FS.Handle.mk "test-out/io-exists.txt" .write
   h.putStr "x"
   IO.println s!"create existing = {← openError "test-out/io-exists.txt" .writeNew}"
+  IO.println s!"handle isTty = {← h.isTty}"
+  IO.println s!"stdin isTty = {← (← IO.getStdin).isTty}"
+  IO.println s!"stdout isTty = {← (← IO.getStdout).isTty}"
+  IO.println s!"stderr isTty = {← (← IO.getStderr).isTty}"
   IO.eprintln "diagnostic to stderr"
 
 /-- Stdin-echo program: reads all lines from stdin (IO.getStdin / Stream.getLine)

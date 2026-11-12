@@ -1,3 +1,5 @@
+import { closeSync, openSync } from "node:fs"
+import { isatty } from "node:tty"
 import { afterEach, describe, expect, test } from "vite-plus/test"
 import * as L from "../src/runtime/index.ts"
 
@@ -31,6 +33,10 @@ describe("trampoline", () => {
   })
 })
 
+function streamIsTty(stream: L.Obj): L.Obj {
+  return L.lean_trampoline(L.lean_apply(L.lean_ctor_get(stream, 5), [undefined]))
+}
+
 describe("platform", () => {
   test("OS operations return IO.Error.unsupportedOperation without Node", () => {
     L.setPlatform(L.browserPlatform)
@@ -41,6 +47,29 @@ describe("platform", () => {
     expect(L.lean_io_error_to_string(err)).toBe(
       "unsupported operation (error code: 0, opening a file is not supported on browser)",
     )
+  })
+
+  test("the std streams and handles ask the platform about their own fd", () => {
+    L.setPlatform({ ...L.browserPlatform, isTty: (fd) => fd === 1 })
+    expect(streamIsTty(L.lean_get_stdin())).toBe(0)
+    expect(streamIsTty(L.lean_get_stdout())).toBe(1)
+    expect(streamIsTty(L.lean_get_stderr())).toBe(0)
+    expect(L.lean_io_prim_handle_is_tty({ fd: 1 })).toBe(1)
+    expect(L.lean_io_prim_handle_is_tty({ fd: 2 })).toBe(0)
+    L.setPlatform({ ...L.browserPlatform, isTty: (fd) => fd === 2 })
+    expect(streamIsTty(L.lean_get_stdout())).toBe(0)
+    expect(streamIsTty(L.lean_get_stderr())).toBe(1)
+  })
+
+  test("the Node platform answers isatty for each fd", () => {
+    for (const fd of [0, 1, 2]) expect(nodePlatform.isTty(fd)).toBe(isatty(fd))
+    const fd = openSync("package.json", "r")
+    try {
+      expect(nodePlatform.isTty(fd)).toBe(false)
+    } finally {
+      closeSync(fd)
+    }
+    expect(nodePlatform.isTty(9999)).toBe(false)
   })
 })
 

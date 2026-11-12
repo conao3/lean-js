@@ -1,4 +1,5 @@
 import type * as fs from "node:fs"
+import type * as tty from "node:tty"
 import type { Platform } from "./io.ts"
 
 function isEof(e: unknown): boolean {
@@ -14,6 +15,11 @@ export function nodePlatform(): Platform {
   const nodeFs = (): typeof fs => {
     fsCache ??= process.getBuiltinModule("node:fs")
     return fsCache
+  }
+  let ttyCache: typeof tty | null = null
+  const nodeTty = (): typeof tty => {
+    ttyCache ??= process.getBuiltinModule("node:tty")
+    return ttyCache
   }
   return {
     target: "node",
@@ -35,7 +41,7 @@ export function nodePlatform(): Platform {
       nodeFs().writeSync(fd, data)
     },
     openFile: (path, flags) => nodeFs().openSync(path, flags),
-    isTty: (fd) => fd === 0 && process.stdin.isTTY,
+    isTty: (fd) => nodeTty().isatty(fd),
     getenv: (name) => process.env[name],
     argv: () => process.argv.slice(2),
     exit: (code) => process.exit(code),

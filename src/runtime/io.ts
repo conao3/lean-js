@@ -6,6 +6,7 @@ import {
   asRef,
   asString,
   lean_apply,
+  lean_bool,
   lean_ctor,
   lean_tag,
   lean_trampoline,
@@ -379,7 +380,7 @@ function mkStream(fields: Fn[]): Ctor {
   return lean_ctor(0, 6, 0, 0, ...fields)
 }
 
-function mkWriteStream(write: (data: string | Uint8Array) => void): Ctor {
+function mkWriteStream(fd: number, write: (data: string | Uint8Array) => void): Ctor {
   return mkStream([
     () => lean_io_result_mk_ok(0),
     (_n: Obj) => lean_io_result_mk_ok(new Uint8Array(0)),
@@ -392,7 +393,7 @@ function mkWriteStream(write: (data: string | Uint8Array) => void): Ctor {
       write(asString(s))
       return lean_io_result_mk_ok(0)
     },
-    () => lean_io_result_mk_ok(0),
+    () => lean_bool(platform.isTty(fd)),
   ])
 }
 
@@ -431,12 +432,12 @@ function mkStdinStream(): Ctor {
     (_b: Obj) => lean_io_result_mk_ok(0),
     () => ioAction(() => readLine(0)),
     (_s: Obj) => lean_io_result_mk_ok(0),
-    () => lean_io_result_mk_ok(platform.isTty(0) ? 1 : 0),
+    () => lean_bool(platform.isTty(0)),
   ])
 }
 
-let stdoutStream: Obj = mkWriteStream((x) => platform.writeStdout(x))
-let stderrStream: Obj = mkWriteStream((x) => platform.writeStderr(x))
+let stdoutStream: Obj = mkWriteStream(1, (x) => platform.writeStdout(x))
+let stderrStream: Obj = mkWriteStream(2, (x) => platform.writeStderr(x))
 let stdinStream: Obj = mkStdinStream()
 
 // getStdout/getStderr/getStdin are BaseIO actions: BaseIO cannot error, so its
@@ -565,8 +566,8 @@ export function lean_io_prim_handle_flush(_h: Obj): Obj {
   return lean_io_result_mk_ok(0)
 }
 
-export function lean_io_prim_handle_is_tty(_h: Obj): Obj {
-  return lean_io_result_mk_ok(0)
+export function lean_io_prim_handle_is_tty(h: Obj): number {
+  return lean_bool(platform.isTty(asHandle(h).fd))
 }
 
 // Handle.getLine: read up to and including the next '\n' from the handle's fd
