@@ -359,7 +359,8 @@ lean-ts status --package <dir>
   `<dir>/lean-ts.lock` (with a `spec_hash` of each function's AST without positions
   and of the keys of its specification blocks); `--require proved` exits with 254
   unless every obligation is proved. A construct outside the subset stops `check` with
-  254 and the file, line and column.
+  254 and the file, line and column. Commit `lean-ts.lock` with `_lean/`; `status` and the
+  replaced specifications read it.
 - `lean-ts status` also prints the obligations of the lock and marks a function whose
   hash changed `stale` (exit code 254) without Lean.
 - The subset: parameters and results annotated with `number`, `bigint`, `boolean`,
