@@ -19,7 +19,9 @@ Lean code compiled by the C backend. Lean blocks written in a TypeScript module 
   public functions, namespace objects and the skipped roots.
 - `LeanTs/RuntimeExterns.lean` — the runtime functions the generated code may call
   (generated from `src/runtime` by `make gen-externs`).
+- `LeanTs/Check.lean` — `obligations check`: the state of each obligation from the type and the axioms of its proof.
 - `Main.lean` — the CLI `lean-typescript`.
+- `src/verify/` — `lean-ts/verify` (`model`, `checkModel`, `checkModule`), the translation of TypeScript functions to Lean (`translate.ts`) and `lean-ts check` and `status` with `lean-ts.lock` (`check.ts`); `src/lean/LeanTsLib/Ts.lean` — the meaning of the TypeScript operations; `src/schema/arbitrary.ts` — fast-check arbitraries of the descriptors.
 - `src/index.ts`, `src/embed.ts` — `lean(...)`, `LeanBlockStale` and the block keys;
   `src/scan.ts`, `src/sync.ts`, `src/cli.ts` — the CLI `lean-ts` (`sync`, `status`,
   `generate`); `src/runtime/block.ts` — the registry the generated modules register in;
@@ -53,9 +55,10 @@ Lean code compiled by the C backend. Lean blocks written in a TypeScript module 
 lean-typescript module generate --module-name Foo.Bar [--roots <Name> ...] [--main <Name>]
   [--namespace <Name>] [--import <Name> ...] [--search-path <dir> ...] [--output-file <path>]
   [--runtime-path <specifier>] [--type-module <Name>=<specifier> ...] [--model-module <Name>=<key> ...]
-  [--tag-key <key>] [--option null|undefined] [--batch <file>] [--internal-only]
-  [--output json|text]
+  [--tag-key <key>] [--option null|undefined] [--ts-root <specifier>] [--batch <file>]
+  [--internal-only] [--output json|text]
 lean-typescript project generate --lake-dir <dir> --output-dir <dir> [--modules <Name> ...]
+lean-typescript obligations check --modules <Name> ... --obligations <file> [--search-path <dir> ...]
 lean-typescript help | --version | --generator-version
 ```
 
@@ -291,6 +294,108 @@ lean-ts generate --lake-dir <dir> --output-dir <dir> [--modules <Name> ...]
 - Commit `_lean/` and `.lean-ts/blocks.json`; ignore `.lean-ts/workspace/`. The
   package then runs without Lean.
 
+## Verifying TypeScript functions
+
+```ts
+// src/calc.ts
+import { lean } from "lean-ts"
+import { model } from "lean-ts/verify"
+import * as spec from "./_lean/calc.ts"
+
+export const specBlock = lean(
+  "spec",
+  String.raw`
+def clampSpec (x lo hi : Int) : Int := max lo (min hi x)
+def ordered (_x lo hi : Int) : Bool := lo ≤ hi
+def inRange (_x lo hi : Int) (r : Int) : Bool := lo ≤ r && r ≤ hi
+`,
+)
+
+export function clamp(x: number, lo: number, hi: number): number {
+  if (x < lo) return lo
+  if (x > hi) return hi
+  return x
+}
+
+model(clamp, {
+  refines: spec.clampSpec,
+  requires: spec.ordered,
+  ensures: { inRange: spec.inRange },
+})
+```
+
+```lean
+-- lean/Proofs/Calc.lean (next to package.json)
+import LeanTsModel.calc
+
+namespace LeanTsModel.calc
+
+theorem clamp.proof.refines : clamp.obligation.refines := by
+  intro x lo hi h
+  simp only [LeanTsEmbed.calc.spec.ordered, decide_eq_true_eq] at h
+  simp only [clamp, LeanTsEmbed.calc.spec.clampSpec]
+  split <;> (try split) <;> simp_all <;> omega
+```
+
+```
+lean-ts check --package <dir> [--lean-typescript <path>] [--require proved]
+lean-ts status --package <dir>
+```
+
+- `model(fn, { refines?, requires?, ensures? })` (`lean-ts/verify`) returns the function
+  and records it; the specifications are public functions of `lean(...)` blocks (each
+  generated function carries its Lean name as `__leanName`).
+- `lean-ts check` syncs the package, reads the `model(...)` calls with oxc-parser,
+  translates each function (a `function` declaration or a `const` arrow function) into
+  `LeanTsModel.<module>.<function>` in Lean `do` notation over `LeanTsLib.Ts`
+  (`src/lean/LeanTsLib/Ts.lean`), states `<function>.obligation.refines`
+  (`∀ x, requires x = true → f x = s x`, `= Except.ok (s x)` for a function that may
+  throw), `.obligation.<label>` for each `ensures` (partial correctness for a function
+  that may throw) and `.obligation.returnsNat` for a function returning `Nat`, builds
+  the proofs of `<dir>/lean/Proofs/` one file at a time and prints each obligation as
+  `proved`, `sorry`, `axioms` (an axiom outside `propext`, `Quot.sound`,
+  `Classical.choice`), `failed` (its proof file does not build), `missing` or
+  `mismatch` (the theorem's type is not the obligation). It writes
+  `<dir>/lean-ts.lock` (with a `spec_hash` of each function's AST without positions
+  and of the keys of its specification blocks); `--require proved` exits with 254
+  unless every obligation is proved. A construct outside the subset stops `check` with
+  254 and the file, line and column.
+- `lean-ts status` also prints the obligations of the lock and marks a function whose
+  hash changed `stale` (exit code 254) without Lean.
+- The subset: parameters and results annotated with `number`, `bigint`, `boolean`,
+  `string`, `T[]`, `readonly T[]`, `[A, B]`, `T | null`, `T | undefined`, `Nat` and `Int`
+  of `lean-ts/schema`, the structures, inductive types and enums generated from a block
+  and `z.infer<typeof X>` (any type taking `typeof X`) of a model `X` of a block;
+  `const`/`let` and reassignment, compound assignment, `++`, `if`, `switch` on a string,
+  an enum or the tag of an inductive value, early `return`, `for ... of`,
+  `for (let i = a; i < b; i++)`, `while`, `break`, `continue`, `throw new Error(...)`
+  (and the built-in errors), `push` to a local array, destructuring of tuples and
+  structures; `+ - * %`, `Math.floor(a / b)`, `Math.trunc(a / b)`, bigint `/`,
+  comparisons, `===`, `!==`, `&&`, `||`, `!`, `??`, `?:`, `xs[i]`, `xs[i]!`, `.length`,
+  tuple indices, properties, object and array literals, `map`, `filter`, `reduce`,
+  `some`, `every`, `includes`, `startsWith`, `endsWith`, template literals,
+  `Math.max`/`min`/`abs`, `BigInt`, `Number`, `String` and calls of the module's model
+  functions. A `x === null` test on a parameter narrows it as in TypeScript.
+- `checkModel(fn, { numRuns?, seed?, range? })` runs the specifications as a fast-check
+  property test (fast-check is an optional peer dependency): it reads the parameter
+  types from the source of the `model(...)` call, discards arguments that fail
+  `requires` and results that are not safe integers, and throws `PropertyFailure` with
+  the counterexample. `checkModule(m)` runs it for every model function of a module.
+  `arbitrary(schema, fc)` of `lean-ts/schema` generates the values of a descriptor.
+- A proved `refines` without `requires` replaces the specification: the lock records
+  it, `sync` writes `LeanTsCsimp/<module>.lean` (`@[extern "ts:src/calc.ts#addOne(n)"]
+  def addOne := @spec.succ` and an `rfl` `@[csimp]` theorem), and the emitter makes the
+  public function of the specification and every Lean function of the block that calls
+  it call the TypeScript function (the arguments pass through `toTs`, and `tsNumbers`
+  for `number` parameters, the result through `toLean`). The generated module then
+  imports the user's module; it registers its block in `<module>__<name>.block.ts`
+  first so that either module can be imported first.
+- The proofs hold for the translation of the function and assume that `number`
+  arguments and intermediate values are safe integers (`bigint` needs no assumption),
+  that the arguments have their annotated types (`tsc --strict`, `validate` at the
+  boundary), and that the translation and `LeanTsLib.Ts` keep the meaning of
+  TypeScript, which `checkModel` and `test/verify/ts-model.test.ts` test.
+
 ## Checks
 
 ```
@@ -303,7 +408,11 @@ modules into `test-out/` and diffs them against the native oracles), `./test-pub
 with `--tag-key _tag --option undefined` and `test-out/json.ts`, and runs
 `test/public.test.ts` and `test/json.test.ts` against `oracle-json`), `./fuzz.sh`,
 the type check of every generated module (`vp lint test-out/**/*.ts`), `lean-ts
-status` of the embedding fixture, and `vp run check` (`vp check && vp test`, which
+status` of the embedding and verification fixtures, `test/verify/test.sh` (copies
+`test/verify/app/` to `test-out/verify/<scene>/` and checks the states proved, sorry,
+axioms, missing, mismatch, failed and stale, `--require proved`, the TypeScript functions
+called through their specifications, an untranslatable function and a wrong
+implementation that `checkModel` rejects with a counterexample), and `vp run check` (`vp check && vp test`, which
 includes `test/embed.test.ts`). `test-diff.sh` covers: 135 function-level
 value assertions (numeric tower, UTF-8 `String`, `Array`/`List`, packed ctors, a
 `TodoList` sequence, closures); deep TCO (incl. closure-boundary tail `.ap`) at
