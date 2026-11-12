@@ -62,6 +62,13 @@ def str [Str α] (a : α) : String := Str.str a
   · rintro ⟨k, hk, rfl⟩; omega
   · intro h; exact ⟨(i - a).toNat, by omega, by omega⟩
 
+theorem range_succ (a b : Int) (h : a ≤ b) : range a (b + 1) = range a b ++ [b] := by
+  simp only [range]
+  have h1 : (b + 1 - a).toNat = (b - a).toNat + 1 := by omega
+  rw [h1, List.range_succ, List.map_append]
+  simp only [List.map_cons, List.map_nil, List.append_cancel_left_eq, List.cons.injEq, and_true]
+  omega
+
 @[simp] theorem index_nil (i : Int) : index ([] : List α) i = none := by
   unfold index; split <;> simp
 
