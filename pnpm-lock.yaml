@@ -34,6 +34,177 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
 
+  samples/generic-search:
+    dependencies:
+      lean-ts:
+        specifier: link:../..
+        version: link:../..
+
+  samples/inventory:
+    dependencies:
+      fast-check:
+        specifier: 4.10.2
+        version: 4.10.2
+      lean-ts:
+        specifier: link:../..
+        version: link:../..
+
+  samples/pricing-api:
+    dependencies:
+      '@hono/standard-validator':
+        specifier: 0.4.1
+        version: 0.4.1(@standard-schema/spec@1.1.0)(hono@4.13.14)
+      hono:
+        specifier: 4.13.14
+        version: 4.13.14
+      lean-ts:
+        specifier: link:../..
+        version: link:../..
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+
+  samples/roman-numerals:
+    dependencies:
+      lean-ts:
+        specifier: link:../..
+        version: link:../..
+
+  samples/sorted-search:
+    dependencies:
+      fast-check:
+        specifier: 4.10.2
+        version: 4.10.2
+      lean-ts:
+        specifier: link:../..
+        version: link:../..
+
+  samples/steps/01-functions:
+    dependencies:
+      lean-ts:
+        specifier: link:../../..
+        version: link:../../..
+
+  samples/steps/02-theorems:
+    dependencies:
+      lean-ts:
+        specifier: link:../../..
+        version: link:../../..
+
+  samples/steps/03-structures:
+    dependencies:
+      lean-ts:
+        specifier: link:../../..
+        version: link:../../..
+
+  samples/steps/04-inductives:
+    dependencies:
+      lean-ts:
+        specifier: link:../../..
+        version: link:../../..
+
+  samples/steps/05-collections:
+    dependencies:
+      lean-ts:
+        specifier: link:../../..
+        version: link:../../..
+
+  samples/steps/06-imports:
+    dependencies:
+      lean-ts:
+        specifier: link:../../..
+        version: link:../../..
+
+  samples/steps/07-io:
+    dependencies:
+      lean-ts:
+        specifier: link:../../..
+        version: link:../../..
+
+  samples/steps/08-user-schemas:
+    dependencies:
+      lean-ts:
+        specifier: link:../../..
+        version: link:../../..
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+
+  samples/steps/09-uses:
+    dependencies:
+      lean-ts:
+        specifier: link:../../..
+        version: link:../../..
+
+  samples/steps/10-ensures:
+    dependencies:
+      fast-check:
+        specifier: 4.10.2
+        version: 4.10.2
+      lean-ts:
+        specifier: link:../../..
+        version: link:../../..
+
+  samples/steps/11-requires:
+    dependencies:
+      fast-check:
+        specifier: 4.10.2
+        version: 4.10.2
+      lean-ts:
+        specifier: link:../../..
+        version: link:../../..
+
+  samples/steps/12-refines:
+    dependencies:
+      fast-check:
+        specifier: 4.10.2
+        version: 4.10.2
+      lean-ts:
+        specifier: link:../../..
+        version: link:../../..
+
+  samples/steps/13-loops:
+    dependencies:
+      fast-check:
+        specifier: 4.10.2
+        version: 4.10.2
+      lean-ts:
+        specifier: link:../../..
+        version: link:../../..
+
+  samples/steps/14-schemas:
+    dependencies:
+      fast-check:
+        specifier: 4.10.2
+        version: 4.10.2
+      lean-ts:
+        specifier: link:../../..
+        version: link:../../..
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+
+  samples/todo-cli:
+    dependencies:
+      lean-ts:
+        specifier: link:../..
+        version: link:../..
+
+  samples/verified-typescript:
+    dependencies:
+      fast-check:
+        specifier: 4.10.2
+        version: 4.10.2
+      lean-ts:
+        specifier: link:../..
+        version: link:../..
+
+  samples/word-count:
+    dependencies:
+      lean-ts:
+        specifier: link:../..
+        version: link:../..
+
 packages:
 
   '@babel/code-frame@7.29.7':

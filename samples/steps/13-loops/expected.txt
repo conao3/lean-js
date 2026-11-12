@@ -1,0 +1,3 @@
+0 1 4 9 100
+8
+checkModel: sumOdd and sumAbs agree with their specs

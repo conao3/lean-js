@@ -1,0 +1,9 @@
+{
+  "name": "lean-ts-step-08-user-schemas",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "lean-ts": "link:../../..",
+    "zod": "4.6.7"
+  }
+}

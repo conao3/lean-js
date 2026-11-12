@@ -1,0 +1,3 @@
+5 3 -5
+5
+checkModel: midpoint is between lo and hi when lo <= hi

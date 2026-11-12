@@ -1,0 +1,9 @@
+{
+  "name": "lean-ts-sample-verified-typescript",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "lean-ts": "link:../..",
+    "fast-check": "4.10.2"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "lean-ts-sample-generic-search",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "lean-ts": "link:../.."
+  }
+}

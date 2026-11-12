@@ -1,0 +1,12 @@
+{
+  "src/sort.ts:spec": {
+    "fnv": "7fe59fd7140017e5",
+    "output": "src/_lean/sort__spec.ts",
+    "sha256": "284c37ed101268f025d3615f27110cd4484cce07a5c7c9855358e926ceec76ab"
+  },
+  "src/sum.ts:sums": {
+    "fnv": "fdc68f64ba49c5bd",
+    "output": "src/_lean/sum__sums.ts",
+    "sha256": "d9a47fa888c8e471217d7ff98c9ec655404d3467a59d101ee0c0a351dcaf774c"
+  }
+}

@@ -8,3 +8,5 @@
 /.claude-dev
 /test/embed/app/node_modules
 /test/verify/app/node_modules
+/samples/**/node_modules
+/samples/**/.lake

@@ -1,0 +1,9 @@
+{
+  "src/search.ts:sortedIncludes": {
+    "spec_hash": "1e354f1419c0bccd5e20e197aeb0a5b8a6e6a720cf5df257218766a5209437b6",
+    "lean": "LeanTsModel.search.sortedIncludes",
+    "obligations": {
+      "refines": "proved"
+    }
+  }
+}

@@ -1,0 +1,5 @@
+lines 3, words 12, chars 59
+the 3
+dog 2
+brown 1
+{"lines":3,"words":12,"chars":59}

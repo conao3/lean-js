@@ -1,0 +1,9 @@
+{
+  "name": "lean-ts-step-12-refines",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "lean-ts": "link:../../..",
+    "fast-check": "4.10.2"
+  }
+}

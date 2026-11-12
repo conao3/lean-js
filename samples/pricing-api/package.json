@@ -1,0 +1,11 @@
+{
+  "name": "lean-ts-sample-pricing-api",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "lean-ts": "link:../..",
+    "zod": "4.6.7",
+    "hono": "4.13.14",
+    "@hono/standard-validator": "0.4.1"
+  }
+}

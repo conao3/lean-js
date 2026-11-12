@@ -1,0 +1,8 @@
+{
+  "name": "lean-ts-sample-word-count",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "lean-ts": "link:../.."
+  }
+}

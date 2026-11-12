@@ -1,0 +1,4 @@
+hearts diamonds
+-7
+{"neg":{"a":{"num":{"n":7}}}}
+negated 7

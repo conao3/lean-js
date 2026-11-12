@@ -1,0 +1,16 @@
+{
+  "src/calendar.ts:isLeap": {
+    "spec_hash": "22380b3ab5c0b7f090e64093cbad5a2e610cb83917cf6feca5363bd753051d9b",
+    "lean": "LeanTsModel.calendar.isLeap",
+    "obligations": {
+      "refines": "proved"
+    },
+    "csimp": {
+      "spec": "LeanTsEmbed.calendar.calendar.leap",
+      "module": "LeanTsEmbed.«calendar».«calendar»",
+      "modes": [
+        "n"
+      ]
+    }
+  }
+}

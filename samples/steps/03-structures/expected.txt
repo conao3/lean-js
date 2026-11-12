@@ -1,0 +1,3 @@
+{"x":4,"y":3} 7
+{"lo":11,"hi":14} 3
+rejected: Range.ordered: lo ≤ hi

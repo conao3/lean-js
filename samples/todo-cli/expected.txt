@@ -1,0 +1,4 @@
+{"items":[{"id":0,"title":"write the README","done":true,"priority":"high"},{"id":1,"title":"publish to npm","done":false,"priority":"normal"},{"id":2,"title":"water the plants","done":false,"priority":"low"}],"nextId":3}
+["publish to npm","water the plants"]
+["write the README"]
+rejected: Todos.fresh: ∀ t, t ∈ items → t.id < nextId

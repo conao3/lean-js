@@ -1,0 +1,3 @@
+1 3 4 5 7
+500000500000
+checkModel: insertSorted and sumTo agree with their specs

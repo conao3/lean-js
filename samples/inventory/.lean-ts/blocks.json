@@ -1,0 +1,7 @@
+{
+  "src/stock.ts:spec": {
+    "fnv": "5d302f81ed9e9713",
+    "output": "src/_lean/stock__spec.ts",
+    "sha256": "35ad9ceb900fa4034c5cb5fa20d7626bcba03343ef6846e407c6669c14d35b55"
+  }
+}

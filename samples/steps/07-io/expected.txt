@@ -1,0 +1,4 @@
+3
+Hello, Lean!
+Bonjour, Lean!
+LeanIOError noFileOrDirectory true

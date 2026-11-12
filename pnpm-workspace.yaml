@@ -1,2 +1,5 @@
 runtimeOnFail: ignore
 pmOnFail: ignore
+packages:
+  - samples/*
+  - samples/steps/*

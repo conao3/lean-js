@@ -1,0 +1,4 @@
+13
+hammer:2 apple:10 saw:5 17
+apple:10 10
+checkModel: total, restock and discard agree with their specs

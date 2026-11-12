@@ -1,0 +1,4 @@
+{"balance":70,"owner":"ann"} {"balance":35,"owner":"bob"} true
+[{"balance":70,"owner":"ann"},{"balance":35,"owner":"bob"}]
+[{"balance":70,"owner":"ann"},{"balance":999990,"owner":"cy"}]
+rejected: LeanValidationError a.owner: Too small: expected string to have >=1 characters

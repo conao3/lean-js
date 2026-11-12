@@ -1,0 +1,8 @@
+{
+  "name": "lean-ts-step-01-functions",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "lean-ts": "link:../../.."
+  }
+}

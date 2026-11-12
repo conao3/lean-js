@@ -1,0 +1,6 @@
+"none" 200 560
+{"percent":{"p":25}} 200 420
+{"fixed":{"amount":1000}} 200 0
+{"percent":{"p":150}} 400 Discount.percent.h: p ≤ 100
+qty 0 400 Too small: expected number to be >=1
+{"type":"object","properties":{"percent":{"type":"object","properties":{"p":{"type":"integer","minimum":0,"maximum":100}},"required":["p"],"additionalProperties":false}},"required":["percent"],"additionalProperties":false}
