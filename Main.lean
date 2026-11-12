@@ -2,7 +2,7 @@ import LeanTs
 
 open Lean LeanTs
 
-def version : String := "0.1.0"
+def version : String := "0.1.1"
 
 /-- Version of the generated code. Raise it when the emitted code changes, together with
     `GENERATOR_VERSION` of `src/embed.ts`; `lean-ts sync` checks it and puts it into its keys. -/
