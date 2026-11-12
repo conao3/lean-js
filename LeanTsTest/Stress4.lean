@@ -40,7 +40,28 @@ def dbgProg : IO Unit := do
   let v := dbgTraceIfShared "should-not-print" (41 + 1)
   IO.println s!"ifShared = {v}"
 
+def tracedThunk (n : Nat) : Thunk Nat :=
+  Thunk.mk fun _ => dbgTrace s!"thunk: forcing {n}" fun _ => n * 10 + 1
+
+def sumGets (t : Thunk Nat) (k : Nat) : Nat :=
+  (List.range k).foldl (fun acc _ => acc + t.get) 0
+
+def thunkProg (n : Nat) : IO Unit := do
+  let t := tracedThunk n
+  IO.println s!"thunk sum of 3 gets = {sumGets t 3}"
+  let _unforced := tracedThunk (n + 100)
+  IO.println s!"thunk pure = {(Thunk.pure (n + 2)).get}"
+  let m := (tracedThunk (n + 1)).map (· * 2)
+  IO.println s!"thunk map = {sumGets m 2}"
+  let b := (tracedThunk (n + 2)).bind fun x => Thunk.pure (x + 1000)
+  IO.println s!"thunk bind = {sumGets b 2}"
+  let c : Thunk String := s!"coe {n}"
+  IO.println s!"thunk coe = {c.get}"
+  let ts := (List.range 3).map fun i => tracedThunk (n + 10 + i)
+  IO.println s!"thunk list = {ts.map (·.get)} {ts.map (·.get)}"
+
 def stress4Main : IO Unit := do
   faProg; dbgProg
+  thunkProg 6
 
 end LeanTsTest.Stress4

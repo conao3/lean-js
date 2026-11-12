@@ -33,11 +33,18 @@ export interface Handle {
   fd: number
 }
 
+export interface Thunk {
+  closure: Obj
+  forced: boolean
+  result: Obj
+}
+
 export type Obj =
   | Ctor
   | Closure
   | Ref
   | Handle
+  | Thunk
   | Fn
   | bigint
   | number
@@ -302,4 +309,32 @@ export function lean_apply(clo: Obj, more: Obj[]): Obj | Bounce {
     cur = next
   }
   return cur
+}
+
+export function asThunk(x: Obj): Thunk {
+  if (typeof x === "object" && x !== null && "forced" in x) return x
+  return fail("a thunk", x)
+}
+
+export function lean_mk_thunk(c: Obj): Thunk {
+  return { closure: c, forced: false, result: undefined }
+}
+
+export function lean_thunk_pure(v: Obj): Thunk {
+  return { closure: null, forced: true, result: v }
+}
+
+export function lean_thunk_get(x: Obj): Obj {
+  const t = asThunk(x)
+  if (t.forced) return t.result
+  const c = t.closure
+  if (c === null) throw new TypeError("lean-ts runtime: a thunk forced itself")
+  t.closure = null
+  t.result = lean_trampoline(lean_apply(c, [0]))
+  t.forced = true
+  return t.result
+}
+
+export function lean_thunk_get_own(x: Obj): Obj {
+  return lean_thunk_get(x)
 }

@@ -33,6 +33,31 @@ describe("trampoline", () => {
   })
 })
 
+describe("thunks", () => {
+  test("a thunk runs its closure once and keeps the result", () => {
+    let runs = 0
+    const t = L.lean_mk_thunk(
+      L.lean_closure(
+        () => {
+          runs += 1
+          return 7n
+        },
+        1,
+        [],
+      ),
+    )
+    expect(L.lean_thunk_get_own(t)).toBe(7n)
+    expect(L.lean_thunk_get(t)).toBe(7n)
+    expect(runs).toBe(1)
+    expect(L.lean_thunk_get(L.lean_thunk_pure("v"))).toBe("v")
+  })
+
+  test("a thunk that forces itself is a TypeError", () => {
+    const t: L.Obj = L.lean_mk_thunk(L.lean_closure(() => L.lean_thunk_get(t), 1, []))
+    expect(() => L.lean_thunk_get(t)).toThrow(TypeError)
+  })
+})
+
 function streamIsTty(stream: L.Obj): L.Obj {
   return L.lean_trampoline(L.lean_apply(L.lean_ctor_get(stream, 5), [undefined]))
 }
