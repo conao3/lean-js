@@ -61,6 +61,7 @@ describe("exports", () => {
       "halfOff",
       "halve",
       "halve32",
+      "indexed",
       "ioEcho",
       "ioUnit",
       "isEven",
@@ -260,6 +261,10 @@ describe("List, Array, Option, products, Except", () => {
 
   test("products are arrays of two elements", () => {
     expect(P.swap([1n, "a"])).toEqual(["a", 1n])
+    expect(P.indexed(["a", "b"])).toEqual([
+      ["a", 0n],
+      ["b", 1n],
+    ])
     expect(P.rotate([1, [true, "s"]])).toEqual(["s", [1n, true]])
     expect(issuesOf(() => call(P.swap, [1]))).toHaveLength(1)
     expect(issuesOf(() => call(P.rotate, [1, [true, 2]]))).toEqual([

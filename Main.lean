@@ -6,7 +6,7 @@ def version : String := "0.1.0"
 
 /-- Version of the generated code. Raise it when the emitted code changes, together with
     `GENERATOR_VERSION` of `src/embed.ts`; `lean-ts sync` checks it and puts it into its keys. -/
-def generatorVersion : String := "7"
+def generatorVersion : String := "8"
 
 def usage : String := "usage: lean-typescript [--version] [--generator-version] <command> <subcommand> [parameters]
 

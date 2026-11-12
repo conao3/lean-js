@@ -50,6 +50,8 @@ def orDefault (o : Option String) : String := o.getD "default"
 
 def swap (p : Nat × String) : String × Nat := (p.2, p.1)
 
+def indexed (xs : List String) : List (String × Nat) := xs.zipIdx
+
 def rotate (t : Nat × Bool × String) : String × Nat × Bool := (t.2.2, t.1, t.2.1)
 
 def safeDiv (a b : Nat) : Except String Nat :=

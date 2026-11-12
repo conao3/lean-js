@@ -94,7 +94,7 @@ inductive Desc where
   deriving Inhabited, BEq
 
 def arrayElem (s : String) : String :=
-  if s.contains '|' || s.contains '&' then s!"({s})" else s
+  if s.contains '|' || s.contains '&' || s.startsWith "readonly " then s!"({s})" else s
 
 partial def Desc.code (s : Settings) (lazy : Bool) : Desc → String
   | .nat => "L.natDesc"

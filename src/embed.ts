@@ -2,7 +2,7 @@ import type { StandardJSONSchemaV1, StandardSchemaV1 } from "@standard-schema/sp
 import { canonicalJson, fnv1a64, type Json, toJson } from "./key.ts"
 import { type BlockEntry, blockRegistry, type BlockSettings } from "./runtime/block.ts"
 
-export const GENERATOR_VERSION: string = "7"
+export const GENERATOR_VERSION: string = "8"
 
 export type LeanModel = StandardSchemaV1 & StandardJSONSchemaV1
 

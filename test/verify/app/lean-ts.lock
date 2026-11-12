@@ -1,6 +1,6 @@
 {
   "src/calc.ts:addOne": {
-    "spec_hash": "36d85fae35523c5601ca6f4f327fb8e27d8a11465a3162df3d135b6d3b329e19",
+    "spec_hash": "27351097da5d3ec33247a297d7aa3f937ad65f4ac96d71d92c1b04a208aafe92",
     "lean": "LeanTsModel.calc.addOne",
     "obligations": {
       "refines": "proved"
@@ -14,7 +14,7 @@
     }
   },
   "src/calc.ts:clamp": {
-    "spec_hash": "4ee42f8bbeea79063b7f4d1b6f8d915f9340aad584e885fa5cc2c10f06f12232",
+    "spec_hash": "53227e34e65f63b9841a3cfe55517cdd41b8d0339c0835b7e1d94b608c66f0fa",
     "lean": "LeanTsModel.calc.clamp",
     "obligations": {
       "refines": "proved",
@@ -22,7 +22,7 @@
     }
   },
   "src/calc.ts:firstOr": {
-    "spec_hash": "344eba32e0fab5a97a05047ce575b821c56e6d9f9845ce6081f82abc79f65fc0",
+    "spec_hash": "cd71dd3f1650d3809c3a56b9c5d9608c5426a9bc1ab3dc4e969b67531a677ada",
     "lean": "LeanTsModel.calc.firstOr",
     "obligations": {
       "refines": "proved"
@@ -37,14 +37,14 @@
     }
   },
   "src/calc.ts:sumAbs": {
-    "spec_hash": "59f6a7b1da4f1b67d876a04e24002e0b26b2aefa4179c85dcfa7ac81059f4ae0",
+    "spec_hash": "63f4c43d18f3e42d53bbb54c43c23ecae22bbd3c97285b63ab74897cdaf38f80",
     "lean": "LeanTsModel.calc.sumAbs",
     "obligations": {
       "nonneg": "proved"
     }
   },
   "src/calc.ts:sumTo": {
-    "spec_hash": "172b4ca89b9e2ef0e34dfbe9e30d324b1910294fa4cac81a818621cdb4a9cbe5",
+    "spec_hash": "24ce05e409a4f95265cb50aaf62a5d88e71735db89513e2504e3c396e3a8b2bb",
     "lean": "LeanTsModel.calc.sumTo",
     "obligations": {
       "refines": "sorry",
@@ -52,14 +52,14 @@
     }
   },
   "src/calc.ts:twice": {
-    "spec_hash": "6da5bf91283323c5ce14d5955813803bd4bb9ffa6f3c8d1550897c362a0bb3d3",
+    "spec_hash": "1ada12f5d4d8cc115da8c8e976667600c4333965a5b23c2ea53770c7a8b5af97",
     "lean": "LeanTsModel.calc.twice",
     "obligations": {
       "refines": "axioms"
     }
   },
   "src/more.ts:area": {
-    "spec_hash": "76e79cbf2022eeefeb3fff0f41a9284ec78afb64909d0e2e1b0fe4dda6daf141",
+    "spec_hash": "e2f0ad3cf943407f16b5393140be38218d037a82527f16a29d5ad29805a08424",
     "lean": "LeanTsModel.more.area",
     "obligations": {
       "refines": "proved"
@@ -73,7 +73,7 @@
     }
   },
   "src/more.ts:code": {
-    "spec_hash": "a41e972a51f9331f0fabf596e364595a339c5e5f64c496e9e7c912376e9825cd",
+    "spec_hash": "1956d881ac6dcd1a142197a105363ad2d9dbcc9e1c4d0873b4031944a17c530d",
     "lean": "LeanTsModel.more.code",
     "obligations": {
       "refines": "proved"
@@ -87,14 +87,14 @@
     }
   },
   "src/more.ts:countDown": {
-    "spec_hash": "d71e9ba036acdc4390fda602baa5bf9b72517cebbc185584fe5bf4809167800c",
+    "spec_hash": "caadda754ad2ec8710e5c1548dbf0bfbcd2c2a0f875f59bd5fc56cced39c9e73",
     "lean": "LeanTsModel.more.countDown",
     "obligations": {
       "refines": "missing"
     }
   },
   "src/more.ts:describe": {
-    "spec_hash": "e39fe6470409432f1a110d8924bb764885d696f2d4ad9a9943844c92cac2abac",
+    "spec_hash": "91297e705a59dc3eec6fd36dbfa80da09e5fc750be1125d96a6532c01085fa37",
     "lean": "LeanTsModel.more.describe",
     "obligations": {
       "refines": "proved"
@@ -108,21 +108,21 @@
     }
   },
   "src/more.ts:evens": {
-    "spec_hash": "4a5057f15eb76c3140fbe4c649145e82d68b357f63c3b3f49ec5acb82c69ab9e",
+    "spec_hash": "b66d2b3cc8630740562045b8aebe61ed0df3fe0d16492cdeefeb18351966dabb",
     "lean": "LeanTsModel.more.evens",
     "obligations": {
       "refines": "missing"
     }
   },
   "src/more.ts:firstPositive": {
-    "spec_hash": "641479bc1a37b73525fc67233f712e8239be155eae5679b6b78762021f45939e",
+    "spec_hash": "2bfd11c6fa337cc0ebc6bcddb2c17d198189d795704505371149e35250e12af8",
     "lean": "LeanTsModel.more.firstPositive",
     "obligations": {
       "refines": "missing"
     }
   },
   "src/more.ts:label": {
-    "spec_hash": "47b6f813186aa8b6d552f6a9b1174ecc47c0aa608ba203a4a0ef22ff0111c9f5",
+    "spec_hash": "8cce8b94ae812a47839249b3645e9cdf91bbbdfd2ac4bef6693bffd5f5155df3",
     "lean": "LeanTsModel.more.label",
     "obligations": {
       "refines": "proved"
@@ -136,28 +136,28 @@
     }
   },
   "src/more.ts:manhattan": {
-    "spec_hash": "204ed48d5892a892c8a1183a74adc134acfb4ff4b73411c707793262075a8ad5",
+    "spec_hash": "cdcbb78c3476c9404b290b66389f532537cd3951322277ad47d2074c199b0ad5",
     "lean": "LeanTsModel.more.manhattan",
     "obligations": {
       "refines": "missing"
     }
   },
   "src/more.ts:nonNeg": {
-    "spec_hash": "e8ab53357f1065435543f729091f5d9228f02699cff945fc8c4bf60d45932c12",
+    "spec_hash": "25d9c28ce9e723b7f710c621e611a71c78becd7e7f3f05cedcdaf215edec2cee",
     "lean": "LeanTsModel.more.nonNeg",
     "obligations": {
       "refines": "missing"
     }
   },
   "src/more.ts:safeDiv": {
-    "spec_hash": "4018376b00f4c2d3c41b1148720447f38b8eda72d74467058af5ad75fd95abab",
+    "spec_hash": "bb0aaa94496d382ee25797d96d1a9e6fea355f3e47cc0eaa8b914b97bdde0889",
     "lean": "LeanTsModel.more.safeDiv",
     "obligations": {
       "refines": "missing"
     }
   },
   "src/more.ts:shift": {
-    "spec_hash": "5463707d3c06b16e5fd96d1ec96565f2c34a7a53c8b5505350fb5916eee11e01",
+    "spec_hash": "cca6707f7ed30f16cf76cbac0bb426f62a77d44da9ab49f563935ff5d7fa9f91",
     "lean": "LeanTsModel.more.shift",
     "obligations": {
       "refines": "proved"
@@ -172,14 +172,14 @@
     }
   },
   "src/more.ts:sumSquares": {
-    "spec_hash": "3835a0a8dea21ffc2673db14f0f601bc3c2b0ff6a7355ece3b46319aeaec57f3",
+    "spec_hash": "67a3b298a4488af19489ab395ef3e526d1bf183b66d20f59f235c25b126ed588",
     "lean": "LeanTsModel.more.sumSquares",
     "obligations": {
       "refines": "missing"
     }
   },
   "src/more.ts:swap": {
-    "spec_hash": "b6523eff2be3caa0a25a1fd853173c23b13774f283c757915fe30c765c6bd97c",
+    "spec_hash": "e595cb8057d2ae219b3746eb111abc61fd3459ef3c036e026ac00cb8896fd6af",
     "lean": "LeanTsModel.more.swap",
     "obligations": {
       "refines": "proved"
@@ -193,21 +193,21 @@
     }
   },
   "src/more.ts:tag": {
-    "spec_hash": "a1382120fb9411166d3f9bc6bbc049c904271cdfa7857be7146be63797dc3170",
+    "spec_hash": "a67caf0db6cf199303a847bc302a1ef8fb332cc5651f834c7218e33aa1187b0a",
     "lean": "LeanTsModel.more.tag",
     "obligations": {
       "refines": "missing"
     }
   },
   "src/orders.ts:hasNote": {
-    "spec_hash": "684195eb7a66543d025a1be7188f596f6ec9d4b60bf6659ce5a50a9dfe54cede",
+    "spec_hash": "1bc44a50b5efb4a4e2af4e12b7098f5680813f40f01e7c372c11e2f29e170854",
     "lean": "LeanTsModel.orders.hasNote",
     "obligations": {
       "refines": "missing"
     }
   },
   "src/orders.ts:lineTotal": {
-    "spec_hash": "8975219d3e2a9bf9f5f91cdbece31cac5b2ea1cc8fc4cadee71a872900d61153",
+    "spec_hash": "7bf2b83b1bc1d94b12805c8a210b2bd22baf963a2bc8273f68d97112c510cf6b",
     "lean": "LeanTsModel.orders.lineTotal",
     "obligations": {
       "refines": "proved"
@@ -221,7 +221,7 @@
     }
   },
   "src/orders.ts:quantity": {
-    "spec_hash": "e18eeea997c3913d5f6e8aec6b4bfcd6c55f2db3ff806ec4defc0ede05f78860",
+    "spec_hash": "3bf1a8fd8f9415c7f8d85057c5d364a40e08c7e2f745387c0fdde741ac8a34f1",
     "lean": "LeanTsModel.orders.quantity",
     "obligations": {
       "positive": "proved"
