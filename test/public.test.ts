@@ -438,6 +438,7 @@ describe("structures, inductive types and subtypes", () => {
 
   test("a namespace of functions is merged into the schema of the same name", () => {
     expect(P.Point.sum({ x: 2n, y: 3n })).toBe(5n)
+    expect(P.Point.new(4)).toEqual({ x: 4n, y: 4n })
     expect(P.Point["~standard"].vendor).toBe("lean-ts")
   })
 })

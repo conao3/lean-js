@@ -96,6 +96,8 @@ structure Point where
 
 def Point.sum (p : Point) : Nat := p.x + p.y
 
+def Point.new (n : Nat) : Point := ⟨n, n⟩
+
 def below (n : Nat) (_h : n < 10) : Nat := n
 
 structure Range where

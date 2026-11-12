@@ -29,10 +29,16 @@ def tsIdent (s : String) : String :=
 def camelParts (s : String) : List String :=
   ((sanitize s).splitOn "_").filter (!·.isEmpty)
 
-def lowerCamel (s : String) : String :=
-  tsIdent <| match camelParts s with
+def camelJoin (s : String) : String :=
+  match camelParts s with
     | [] => ""
     | p :: ps => p.decapitalize ++ String.join (ps.map String.capitalize)
+
+def lowerCamel (s : String) : String := tsIdent (camelJoin s)
+
+def memberIdent (s : String) : String :=
+  let t := camelJoin s
+  if t.isEmpty then "_" else if t.front.isDigit then "_" ++ t else t
 
 def namespaceIdent (s : String) : String :=
   tsIdent <| match camelParts s with
@@ -51,7 +57,8 @@ def tsPath (strip n : Name) : Array String :=
   let cs := (stripName strip n).components.toArray.map componentString
   match cs.back? with
   | none => #[]
-  | some last => cs.pop.map namespaceIdent |>.push (lowerCamel last)
+  | some last =>
+    if cs.size == 1 then #[lowerCamel last] else cs.pop.map namespaceIdent |>.push (memberIdent last)
 
 structure Settings where
   tagKey : String := "ctor"
