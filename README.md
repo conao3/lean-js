@@ -1,3 +1,5 @@
+> **This project moved to [conao3/lean-leanfran](https://github.com/conao3/lean-leanfran/tree/master/TypeScript).** Development continues in its `TypeScript/` directory.
+
 <p align="center"><strong>Write and prove functions in Lean 4, run them as TypeScript</strong></p>
 
 <p align="center">
