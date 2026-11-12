@@ -1,0 +1,35 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to publish (vX.Y.Z)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish lean-ts to npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/lean-ts
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: cachix/install-nix-action@v31.11.3
+      - run: test "v$(jq -r .version package.json)" = "$TAG"
+        env:
+          TAG: ${{ inputs.tag }}
+      - run: nix develop -c make pack
+      - run: nix develop -c npm --version
+      - run: nix develop -c npm publish --provenance

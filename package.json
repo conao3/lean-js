@@ -1,8 +1,10 @@
 {
   "name": "lean-ts",
   "version": "0.1.0",
-  "description": "Lean 4 IR -> TypeScript backend with a typed runtime and Lean blocks embedded in TypeScript",
+  "description": "Write and prove functions in Lean 4, run them as TypeScript: Lean blocks in TypeScript modules, Standard Schema for Lean types, TypeScript functions verified in Lean",
   "license": "Apache-2.0",
+  "homepage": "https://github.com/conao3/lean-ts#readme",
+  "bugs": "https://github.com/conao3/lean-ts/issues",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/conao3/lean-ts.git"

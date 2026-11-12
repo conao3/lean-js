@@ -1,4 +1,8 @@
 name = "lean-ts"
+description = "Lean 4 IR -> TypeScript backend, Lean embedded in TypeScript, Standard Schema models for Lean types, TypeScript functions verified in Lean"
+keywords = ["typescript", "compiler", "code-generation"]
+license = "Apache-2.0"
+homepage = "https://github.com/conao3/lean-ts"
 defaultTargets = ["lean-typescript"]
 
 [[lean_lib]]

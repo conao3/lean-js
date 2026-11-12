@@ -6,6 +6,12 @@ workflows:
     '.github/workflows/ci.yml':
         - 'actions/checkout@v7.0.1'
         - 'cachix/install-nix-action@v31.11.3'
+    '.github/workflows/publish.yml':
+        - 'actions/checkout@v7.0.1'
+        - 'cachix/install-nix-action@v31.11.3'
+    '.github/workflows/release.yml':
+        - 'actions/checkout@v7.0.1'
+        - 'cachix/install-nix-action@v31.11.3'
 dependencies:
     'actions/checkout@v7.0.1':
         ref: 'v7.0.1'

@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: Version bump type
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  release:
+    name: Bump the version, tag and start the publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: cachix/install-nix-action@v31.11.3
+      - id: bump
+        run: |
+          current=$(jq -r .version package.json)
+          IFS='.' read -r major minor patch <<< "$current"
+          case "$BUMP" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+          echo "new_version=${major}.${minor}.${patch}" >> "$GITHUB_OUTPUT"
+        env:
+          BUMP: ${{ inputs.version_bump }}
+      - run: nix develop -c scripts/bump-version.sh "$VERSION"
+        env:
+          VERSION: ${{ steps.bump.outputs.new_version }}
+      - run: nix develop -c make check
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "release v$VERSION"
+          git tag -a "v$VERSION" -m "v$VERSION"
+          git push origin "HEAD:$BRANCH"
+          git push origin "v$VERSION"
+        env:
+          VERSION: ${{ steps.bump.outputs.new_version }}
+          BRANCH: ${{ github.ref_name }}
+      - run: gh workflow run publish.yml -f tag="v$VERSION"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.bump.outputs.new_version }}
