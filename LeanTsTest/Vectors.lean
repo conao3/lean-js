@@ -65,6 +65,7 @@ def strGet1 (s : String) : Char := String.Pos.Raw.get s (String.Pos.Raw.next s �
 /-- Extract bytes [lo, hi) by raw byte offset. -/
 def strExtract (s : String) (lo hi : Nat) : String :=
   String.Pos.Raw.extract s ⟨lo⟩ ⟨hi⟩
+def strLt (a b : String) : Bool := decide (a < b)
 
 /-- Array building and querying. -/
 def arrSum (xs : Array Nat) : Nat := xs.foldl (· + ·) 0

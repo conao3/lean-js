@@ -50,6 +50,7 @@ def strGet0 (s : String) : Char := String.Pos.Raw.get s ⟨0⟩
 def strGet1 (s : String) : Char := String.Pos.Raw.get s (String.Pos.Raw.next s ⟨0⟩)
 def strExtract (s : String) (lo hi : Nat) : String :=
   String.Pos.Raw.extract s ⟨lo⟩ ⟨hi⟩
+def strLt (a b : String) : Bool := decide (a < b)
 def arrSum (xs : Array Nat) : Nat := xs.foldl (· + ·) 0
 def arrMapSum (xs : Array Nat) : Nat := (xs.map (· * 2)).foldl (· + ·) 0
 def arrRange (n : Nat) : Array Nat := (Array.range n)
@@ -177,6 +178,7 @@ def main : IO Unit := do
   IO.println s!"strGet1 = {strGet1 jp}"
   IO.println s!"strExtract03 = {strExtract jp 0 3}"
   IO.println s!"strExtract39 = {strExtract jp 3 9}"
+  IO.println s!"strLt = {strLt "abc" "abd"} {strLt "ab" "abc"} {strLt "b" "a"} {strLt "a" "a"} {strLt "\uFF61" "😀"} {strLt "😀" "\uFF61"}"
   let arr := #[1, 2, 3, 4, 5]
   IO.println s!"arrSum = {arrSum arr}"
   IO.println s!"arrMapSum = {arrMapSum arr}"

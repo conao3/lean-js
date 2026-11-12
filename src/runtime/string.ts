@@ -312,3 +312,19 @@ export function lean_string_memcmp(lhs: Obj, rhs: Obj, lstart: Obj, rstart: Obj,
   for (let i = 0; i < n; i++) if (a[l + i] !== b[r + i]) return 0
   return 1
 }
+
+export function lean_string_lt(a: Obj, b: Obj): number {
+  const x = utf8enc.encode(asString(a))
+  const y = utf8enc.encode(asString(b))
+  const n = Math.min(x.length, y.length)
+  for (let i = 0; i < n; i++) {
+    const p = x[i] ?? 0
+    const q = y[i] ?? 0
+    if (p !== q) return lean_bool(p < q)
+  }
+  return lean_bool(x.length < y.length)
+}
+
+export function lean_string_dec_lt(a: Obj, b: Obj): number {
+  return lean_string_lt(a, b)
+}

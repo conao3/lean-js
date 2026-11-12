@@ -25,6 +25,7 @@ const {
   l_LeanTsTest_Vectors_strGet0: strGet0,
   l_LeanTsTest_Vectors_strGet1: strGet1,
   l_LeanTsTest_Vectors_strExtract: strExtract,
+  l_LeanTsTest_Vectors_strLt: strLt,
   l_LeanTsTest_Vectors_arrSum: arrSum,
   l_LeanTsTest_Vectors_arrMapSum: arrMapSum,
   l_LeanTsTest_Vectors_arrRange: arrRange,
@@ -164,6 +165,18 @@ console.log(`strGet0 = ${show(String.fromCodePoint(strGet0(jp)))}`)
 console.log(`strGet1 = ${show(String.fromCodePoint(strGet1(jp)))}`)
 console.log(`strExtract03 = ${show(strExtract(jp, 0n, 3n))}`)
 console.log(`strExtract39 = ${show(strExtract(jp, 3n, 9n))}`)
+console.log(
+  `strLt = ${[
+    ["abc", "abd"],
+    ["ab", "abc"],
+    ["b", "a"],
+    ["a", "a"],
+    ["\uFF61", "😀"],
+    ["😀", "\uFF61"],
+  ]
+    .map(([a, b]) => (strLt(a, b) ? "true" : "false"))
+    .join(" ")}`,
+)
 
 // ---- Array / List operations ----
 // Lean prints Array as `#[a, b, ...]`, List as `[a, b, ...]`.
