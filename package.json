@@ -51,7 +51,7 @@
   "devDependencies": {
     "@hono/standard-validator": "0.4.1",
     "@types/node": "^26.6.6",
-    "hono": "4.13.14",
+    "hono": "4.13.16",
     "vite-plus": "1.5.0",
     "zod": "4.6.7"
   },
